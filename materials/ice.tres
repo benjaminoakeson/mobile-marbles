@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://ckv3kli7rij6x"]
+
+[ext_resource type="Texture2D" uid="uid://bkx1ia1ux0c01" path="res://materials/textures/ice/IceTexture.png" id="1_lmsvj"]
+[ext_resource type="Texture2D" uid="uid://dsrtv2fhf2yc" path="res://materials/textures/ice/IceNormal.png" id="2_y30kv"]
+
+[resource]
+albedo_texture = ExtResource("1_lmsvj")
+normal_enabled = true
+normal_texture = ExtResource("2_y30kv")
+uv1_triplanar = true

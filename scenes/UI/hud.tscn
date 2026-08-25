@@ -1,0 +1,143 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://jp8kmqb6wji0" path="res://scripts/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scripts/time_ring.gd" id="2_time_ring"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 28.0
+content_margin_top = 12.0
+content_margin_right = 28.0
+content_margin_bottom = 16.0
+bg_color = Color(0.09019608, 0.10980392, 0.12941177, 0.54901963)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+; The corner radius is half the circle's 300px box, which is what rounds it all
+; the way off. Change one and the other has to follow.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_circle"]
+bg_color = Color(0.09019608, 0.10980392, 0.12941177, 0.61176471)
+corner_radius_top_left = 150
+corner_radius_top_right = 150
+corner_radius_bottom_right = 150
+corner_radius_bottom_left = 150
+
+[node name="Hud" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_hud")
+
+; --- Top left: the lives, and how the run is climbing towards another one ---
+[node name="TopLeft" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 48.0
+offset_top = 60.0
+offset_right = 648.0
+offset_bottom = 320.0
+mouse_filter = 2
+theme_override_constants/separation = 18
+
+; A plain Control, not a container: the marbles overlap, and every container
+; Godot has would space them apart instead. The script places them by hand.
+[node name="Lives" type="Control" parent="TopLeft"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(340, 88)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="NextLifeRow" type="HBoxContainer" parent="TopLeft"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="NextLifePanel" type="PanelContainer" parent="TopLeft/NextLifeRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Stack" type="VBoxContainer" parent="TopLeft/NextLifeRow/NextLifePanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="NextLifeName" type="Label" parent="TopLeft/NextLifeRow/NextLifePanel/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
+theme_override_font_sizes/font_size = 30
+text = "NEXT LIFE"
+
+[node name="NextLifeValue" type="Label" parent="TopLeft/NextLifeRow/NextLifePanel/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 40
+text = "0 / 250"
+
+; --- Top centre: the clock, the one number the player watches while playing ---
+; A plain Panel, NOT a PanelContainer. A container clamps itself to its
+; children's minimum size, and the clock's own label is what sets that: the
+; circle stretched into a wider and wider pill every time the time gained a
+; digit -- once at ten seconds, again at a minute. Nothing about the box may
+; depend on the text, so the box is placed by hand and the children are anchored
+; inside it.
+[node name="TimeCircle" type="Panel" parent="."]
+custom_minimum_size = Vector2(300, 300)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 60.0
+offset_right = 150.0
+offset_bottom = 360.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_circle")
+
+; Traces the rim of the circle above, and is listed before the numbers so those
+; always draw over it.
+[node name="TimeRing" type="Control" parent="TimeCircle"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_time_ring")
+
+[node name="Stack" type="VBoxContainer" parent="TimeCircle"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="TimeName" type="Label" parent="TimeCircle/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
+theme_override_font_sizes/font_size = 30
+text = "TIME"
+horizontal_alignment = 1
+
+[node name="TimeValue" type="Label" parent="TimeCircle/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 60
+text = "0.00s"
+horizontal_alignment = 1

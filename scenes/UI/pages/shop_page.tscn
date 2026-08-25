@@ -1,0 +1,88 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://e2af4a2ygewo" path="res://scripts/pages/shop_page.gd" id="1_shop"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bank"]
+content_margin_left = 48.0
+content_margin_top = 32.0
+content_margin_right = 48.0
+content_margin_bottom = 32.0
+bg_color = Color(0.13333334, 0.15294118, 0.17254902, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
+[node name="ShopPage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_shop")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 60
+theme_override_constants/margin_top = 100
+theme_override_constants/margin_right = 60
+theme_override_constants/margin_bottom = 60
+
+[node name="Layout" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 48
+
+[node name="Title" type="Label" parent="Margin/Layout"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 86
+text = "SHOP"
+horizontal_alignment = 1
+
+[node name="BankPanel" type="PanelContainer" parent="Margin/Layout"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bank")
+
+[node name="Stack" type="VBoxContainer" parent="Margin/Layout/BankPanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="BankName" type="Label" parent="Margin/Layout/BankPanel/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
+theme_override_font_sizes/font_size = 40
+text = "GEMS BANKED"
+horizontal_alignment = 1
+
+[node name="BankValue" type="Label" parent="Margin/Layout/BankPanel/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 88
+text = "0"
+horizontal_alignment = 1
+
+[node name="Placeholder" type="Label" parent="Margin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
+theme_override_font_sizes/font_size = 52
+text = "Nothing for sale yet.
+Come back soon."
+horizontal_alignment = 1
+vertical_alignment = 1

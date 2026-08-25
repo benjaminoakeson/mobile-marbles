@@ -1,0 +1,568 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://bgsf65brplsii" path="res://scripts/pages/levels_page.gd" id="1_levels"]
+[ext_resource type="Script" uid="uid://bbpdohmappoe6" path="res://scripts/pages/level_preview.gd" id="2_preview"]
+[ext_resource type="Texture2D" path="res://materials/ui/chevron_left.svg" id="3_chevron_left"]
+[ext_resource type="Texture2D" path="res://materials/ui/chevron_right.svg" id="4_chevron_right"]
+[ext_resource type="Texture2D" path="res://materials/ui/crown.svg" id="5_crown"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tile"]
+bg_color = Color(0.20392157, 0.5019608, 0.24705882, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tile_pressed"]
+bg_color = Color(0.13725491, 0.34117648, 0.16862746, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_disabled"]
+bg_color = Color(0.18039216, 0.19607843, 0.20784314, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_secondary"]
+bg_color = Color(0.20392157, 0.22745098, 0.25490196, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_secondary_pressed"]
+bg_color = Color(0.12156863, 0.13725491, 0.15294118, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
+; The arrows and the name sit on top of the turning level, so they are barely
+; there until touched -- dark enough to stay readable over a bright level, light
+; enough not to become the thing being looked at.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_arrow"]
+bg_color = Color(0, 0, 0, 0.35)
+corner_radius_top_left = 36
+corner_radius_top_right = 36
+corner_radius_bottom_right = 36
+corner_radius_bottom_left = 36
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_arrow_pressed"]
+bg_color = Color(0, 0, 0, 0.65)
+corner_radius_top_left = 36
+corner_radius_top_right = 36
+corner_radius_bottom_right = 36
+corner_radius_bottom_left = 36
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_name"]
+content_margin_left = 32.0
+content_margin_top = 12.0
+content_margin_right = 32.0
+content_margin_bottom = 12.0
+bg_color = Color(0, 0, 0, 0.45)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_name_pressed"]
+content_margin_left = 32.0
+content_margin_top = 12.0
+content_margin_right = 32.0
+content_margin_bottom = 12.0
+bg_color = Color(0, 0, 0, 0.7)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+; Gold, with a lit rim and a warm glow under it. The shine itself is the Gloss
+; panel inside the button -- a stylebox is a flat colour and cannot fade.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_challenge"]
+bg_color = Color(0.94117647, 0.5568628, 0.078431375, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(1, 0.84313726, 0.42352942, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+shadow_color = Color(1, 0.6392157, 0.14901961, 0.35)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_challenge_pressed"]
+bg_color = Color(0.7137255, 0.40392157, 0.043137256, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.8, 0.63529414, 0.29411766, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gloss"]
+bg_color = Color(1, 1, 1, 0.20392157)
+corner_radius_top_left = 27
+corner_radius_top_right = 27
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 40.0
+content_margin_top = 40.0
+content_margin_right = 40.0
+content_margin_bottom = 40.0
+bg_color = Color(0.13333334, 0.15294118, 0.17254902, 1)
+corner_radius_top_left = 40
+corner_radius_top_right = 40
+corner_radius_bottom_right = 40
+corner_radius_bottom_left = 40
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_scrim"]
+bg_color = Color(0, 0, 0, 0.6)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
+
+[node name="LevelsPage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_levels")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 60
+theme_override_constants/margin_top = 60
+theme_override_constants/margin_right = 60
+theme_override_constants/margin_bottom = 40
+
+[node name="Layout" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+
+[node name="TopRow" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+
+[node name="WorldButton" type="Button" parent="Margin/Layout/TopRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 60
+theme_override_styles/normal = SubResource("StyleBoxFlat_secondary")
+theme_override_styles/hover = SubResource("StyleBoxFlat_secondary")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_secondary_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "WORLD 1"
+
+[node name="DifficultyButton" type="Button" parent="Margin/Layout/TopRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 52
+theme_override_styles/normal = SubResource("StyleBoxFlat_secondary")
+theme_override_styles/hover = SubResource("StyleBoxFlat_secondary")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_secondary_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "SUPER EASY"
+
+[node name="PreviewArea" type="Control" parent="Margin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="Preview" type="SubViewportContainer" parent="Margin/Layout/PreviewArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="Margin/Layout/PreviewArea/Preview"]
+own_world_3d = true
+handle_input_locally = false
+size = Vector2i(600, 600)
+render_target_update_mode = 3
+
+[node name="LevelPreview" type="Node3D" parent="Margin/Layout/PreviewArea/Preview/SubViewport"]
+unique_name_in_owner = true
+script = ExtResource("2_preview")
+
+[node name="Stage" type="Node3D" parent="Margin/Layout/PreviewArea/Preview/SubViewport/LevelPreview"]
+
+[node name="Rig" type="Node3D" parent="Margin/Layout/PreviewArea/Preview/SubViewport/LevelPreview"]
+
+[node name="Camera3D" type="Camera3D" parent="Margin/Layout/PreviewArea/Preview/SubViewport/LevelPreview/Rig"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+fov = 45.0
+
+[node name="EmptyNotice" type="Label" parent="Margin/Layout/PreviewArea"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.44705883, 0.47058824, 0.49019608, 1)
+theme_override_font_sizes/font_size = 52
+text = "Not built yet"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+; Stepping through the set is done on the picture itself, either side of it,
+; where a thumb already is. The grid of every level is still one tap away, on
+; the name underneath.
+[node name="PrevButton" type="Button" parent="Margin/Layout/PreviewArea"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 16.0
+offset_top = -72.0
+offset_right = 160.0
+offset_bottom = 72.0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_arrow")
+theme_override_styles/hover = SubResource("StyleBoxFlat_arrow")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_arrow_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_arrow")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+icon = ExtResource("3_chevron_left")
+expand_icon = true
+
+[node name="NextButton" type="Button" parent="Margin/Layout/PreviewArea"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -72.0
+offset_right = -16.0
+offset_bottom = 72.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_arrow")
+theme_override_styles/hover = SubResource("StyleBoxFlat_arrow")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_arrow_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_arrow")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+icon = ExtResource("4_chevron_right")
+expand_icon = true
+
+[node name="NameButton" type="Button" parent="Margin/Layout/PreviewArea"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 110.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 56
+theme_override_styles/normal = SubResource("StyleBoxFlat_name")
+theme_override_styles/hover = SubResource("StyleBoxFlat_name")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_name_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "First Roll"
+clip_text = true
+
+[node name="Status" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
+theme_override_font_sizes/font_size = 40
+text = "Free play - 3 lives for this level"
+horizontal_alignment = 1
+
+; What the level has already been done in, side by side, right where the thumb
+; is about to press Practice -- the two numbers a replay is aimed at beating.
+[node name="Records" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+
+[node name="HighScore" type="VBoxContainer" parent="Margin/Layout/Records"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Caption" type="Label" parent="Margin/Layout/Records/HighScore"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.44705883, 0.47058824, 0.49019608, 1)
+theme_override_font_sizes/font_size = 34
+text = "HIGH SCORE"
+horizontal_alignment = 1
+
+[node name="HighScoreValue" type="Label" parent="Margin/Layout/Records/HighScore"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 56
+text = "--"
+horizontal_alignment = 1
+
+[node name="BestTime" type="VBoxContainer" parent="Margin/Layout/Records"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Caption" type="Label" parent="Margin/Layout/Records/BestTime"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.44705883, 0.47058824, 0.49019608, 1)
+theme_override_font_sizes/font_size = 34
+text = "PERSONAL BEST"
+horizontal_alignment = 1
+
+[node name="BestTimeValue" type="Label" parent="Margin/Layout/Records/BestTime"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 56
+text = "--"
+horizontal_alignment = 1
+
+; Practice is the low-stakes way in and only asks for the width it needs. The
+; challenge run below it is the one that actually unlocks the next difficulty,
+; and is dressed to look like it.
+[node name="PracticeButton" type="Button" parent="Margin/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 150)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.44705883, 0.47058824, 0.49019608, 1)
+theme_override_font_sizes/font_size = 52
+theme_override_styles/normal = SubResource("StyleBoxFlat_tile")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tile")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_disabled")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Practice"
+
+[node name="ChallengeButton" type="Button" parent="Margin/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 170)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.25882354, 0.12156863, 0.015686275, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.94509804, 0.85882354, 1)
+theme_override_colors/font_hover_color = Color(0.25882354, 0.12156863, 0.015686275, 1)
+theme_override_colors/font_disabled_color = Color(0.44705883, 0.47058824, 0.49019608, 1)
+theme_override_font_sizes/font_size = 60
+theme_override_styles/normal = SubResource("StyleBoxFlat_challenge")
+theme_override_styles/hover = SubResource("StyleBoxFlat_challenge")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_challenge_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_disabled")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Challenge Run"
+
+; A lit band across the top half, stopping short of the rim, which is what reads
+; as a curved shiny surface rather than a flat orange rectangle.
+[node name="Gloss" type="Panel" parent="Margin/Layout/ChallengeButton"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = 74.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_gloss")
+
+[node name="Crown" type="TextureRect" parent="Margin/Layout/ChallengeButton"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 44.0
+offset_top = -44.0
+offset_right = 132.0
+offset_bottom = 44.0
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("5_crown")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Popup" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PopupScrim" type="Button" parent="Popup"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_scrim")
+theme_override_styles/hover = SubResource("StyleBoxFlat_scrim")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_scrim")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+
+[node name="Panel" type="PanelContainer" parent="Popup"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -480.0
+offset_top = -680.0
+offset_right = 480.0
+offset_bottom = 680.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Layout" type="VBoxContainer" parent="Popup/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="PopupTitle" type="Label" parent="Popup/Panel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 64
+text = "SELECT A LEVEL"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="Popup/Panel/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="PopupGrid" type="GridContainer" parent="Popup/Panel/Layout/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 32
+theme_override_constants/v_separation = 32
+columns = 3
+
+[node name="WorldTemplate" type="Button" parent="."]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 1
+anchors_preset = 0
+offset_right = 420.0
+offset_bottom = 200.0
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.44705883, 0.47058824, 0.49019608, 1)
+theme_override_font_sizes/font_size = 48
+theme_override_styles/normal = SubResource("StyleBoxFlat_tile")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tile")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_disabled")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "WORLD 1
+0 / 6 sets"
+
+[node name="DifficultyTemplate" type="Button" parent="."]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 160)
+layout_mode = 1
+anchors_preset = 0
+offset_right = 880.0
+offset_bottom = 180.0
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.44705883, 0.47058824, 0.49019608, 1)
+theme_override_font_sizes/font_size = 52
+theme_override_styles/normal = SubResource("StyleBoxFlat_tile")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tile")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_disabled")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Super Easy
+0 / 10 cleared"
+
+; Wider than it is tall now that it carries a name as well as a number.
+[node name="LevelTemplate" type="Button" parent="."]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 220)
+layout_mode = 1
+anchors_preset = 0
+offset_right = 420.0
+offset_bottom = 220.0
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.44705883, 0.47058824, 0.49019608, 1)
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_tile")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tile")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_disabled")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "1
+First Roll
+Next"

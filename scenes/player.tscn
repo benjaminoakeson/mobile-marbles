@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://odyo2cun2tc"]
+
+[ext_resource type="PhysicsMaterial" uid="uid://simkr1kes125" path="res://materials/physics_materials/player.tres" id="1_dqkch"]
+[ext_resource type="Material" path="res://materials/marble/marble_shaders/nebula.tres" id="3_dqkch"]
+[ext_resource type="Script" uid="uid://cmiaw7a2vi83j" path="res://scripts/ball_audio.gd" id="4_fjrip"]
+[ext_resource type="Script" uid="uid://c10m1v1y5x1du" path="res://scripts/player.gd" id="5_player"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_6x1ae"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_dpmpi"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_6t5aa"]
+radial_segments = 16
+rings = 8
+
+[node name="Player" type="RigidBody3D" unique_id=70575149 groups=["player"]]
+collision_layer = 4
+collision_mask = 3
+mass = 5.0
+physics_material_override = ExtResource("1_dqkch")
+gravity_scale = 3.0
+can_sleep = false
+continuous_cd = true
+contact_monitor = true
+max_contacts_reported = 4
+script = ExtResource("5_player")
+
+[node name="PlayerCollider" type="CollisionShape3D" parent="." unique_id=739215703]
+shape = SubResource("SphereShape3D_6x1ae")
+
+[node name="PlayerMesh" type="MeshInstance3D" parent="PlayerCollider" unique_id=1846725698]
+material_override = ExtResource("3_dqkch")
+cast_shadow = 0
+mesh = SubResource("SphereMesh_dpmpi")
+
+[node name="ShadowCaster" type="MeshInstance3D" parent="PlayerCollider" unique_id=754492296]
+cast_shadow = 3
+mesh = SubResource("SphereMesh_6t5aa")
+
+[node name="BallAudio" type="AudioStreamPlayer" parent="." unique_id=1091740662]
+script = ExtResource("4_fjrip")

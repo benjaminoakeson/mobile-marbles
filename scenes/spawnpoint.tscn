@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://b3lsg1wjkkrr2"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dpmpi"]
+transparency = 1
+albedo_color = Color(0, 0.46564585, 0.99934286, 0.19607843)
+
+[sub_resource type="SphereMesh" id="SphereMesh_6x1ae"]
+material = SubResource("StandardMaterial3D_dpmpi")
+
+[node name="Spawnpoint" type="Node3D" unique_id=496010059]
+
+[node name="DebugVisual" type="MeshInstance3D" parent="." unique_id=361553448]
+visible = false
+mesh = SubResource("SphereMesh_6x1ae")

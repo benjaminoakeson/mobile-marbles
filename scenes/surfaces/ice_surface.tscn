@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PhysicsMaterial" uid="uid://cf7hh1dqnymk3" path="res://materials/physics_materials/ice.tres" id="1_ice"]
+
+; Drop the collider and mesh you baked from an ice-only CSGCombiner in here, then
+; put this whole node under the Level body.
+;
+; It has to be its OWN body: `physics_material_override` is a property of the
+; body, so everything sharing one baked collider shares one friction. A second
+; body is what buys a second friction.
+;
+; StaticBody3D on purpose -- it never moves relative to the level, and a nested
+; AnimatableBody3D would bring the `sync_to_physics` trap with it.
+
+[node name="IceSurface" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+physics_material_override = ExtResource("1_ice")

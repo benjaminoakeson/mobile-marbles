@@ -1,0 +1,10 @@
+[gd_resource type="NoiseTexture3D" format=3 uid="uid://2xwfub1a47re"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_nebula"]
+frequency = 0.0481
+fractal_octaves = 4
+fractal_lacunarity = 2.1
+fractal_gain = 0.55
+
+[resource]
+noise = SubResource("FastNoiseLite_nebula")

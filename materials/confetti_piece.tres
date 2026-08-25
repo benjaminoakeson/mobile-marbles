@@ -1,0 +1,11 @@
+[gd_resource type="QuadMesh" format=3 uid="uid://bvyk3cj8w6466"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_paper"]
+transparency = 1
+cull_mode = 2
+shading_mode = 0
+vertex_color_use_as_albedo = true
+
+[resource]
+material = SubResource("StandardMaterial3D_paper")
+size = Vector2(0.09, 0.055)

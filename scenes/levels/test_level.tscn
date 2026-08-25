@@ -1,0 +1,97 @@
+[gd_scene format=4 uid="uid://1ypqs4f54l7f"]
+
+[ext_resource type="PackedScene" uid="uid://odyo2cun2tc" path="res://scenes/player.tscn" id="1_lhufc"]
+[ext_resource type="PackedScene" uid="uid://brgmkpo6nfamg" path="res://scenes/camera.tscn" id="2_ev5re"]
+[ext_resource type="PackedScene" path="res://scenes/thumbstick.tscn" id="3_kq7cu"]
+[ext_resource type="Script" uid="uid://f0unaaq2y4xp" path="res://scripts/level_tilt.gd" id="4_qdwhv"]
+[ext_resource type="PackedScene" uid="uid://dff8ndsvoi5a4" path="res://scenes/goal_ring.tscn" id="5_080hp"]
+[ext_resource type="Material" uid="uid://cdg65oouqgh1f" path="res://materials/prototype_materials/PrototypeBlack.tres" id="6_7dvck"]
+[ext_resource type="Material" uid="uid://ccx0h56h5bg3p" path="res://materials/grass.tres" id="7_e7ksy"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_b07c4"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_2ytpj"]
+sky_material = SubResource("ProceduralSkyMaterial_b07c4")
+
+[sub_resource type="Environment" id="Environment_db73o"]
+background_mode = 2
+sky = SubResource("Sky_2ytpj")
+glow_enabled = true
+
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_7rivk"]
+data = PackedVector3Array(-2.5, -0.5, -16, -2.5, 0.5, -16, -2.5, -0.5, 2, -2.5, -0.5, -16, -2.5, -0.5, 2, 2.5, -0.5, -16, -2.5, -0.5, -16, 2, 0, -16, -2, 0, -16, -2.5, -0.5, -16, -2, 0, -16, -2.5, 0.5, -16, -2.5, 0.5, -16, -2, 0, -16, -2, 0.5, -16, -2.5, 0.5, -16, -2, 0.5, -16, -2.5, 0.5, 2, -2.5, -0.5, 2, -2.5, 0.5, -16, -2.5, 0.5, 2, -2.5, 0.5, 2, -2, 0.5, -16, -2, 0.5, 1.5, -2.5, -0.5, 2, -2.5, 0.5, 2, 2.5, 0.5, 2, -2.5, 0.5, 2, -2, 0.5, 1.5, 2.5, 0.5, 2, -2.5, -0.5, -16, 2.5, -0.5, -16, 2, 0, -16, -2.5, -0.5, 2, 2.5, -0.5, 2, 2.5, -0.5, -16, -2.5, -0.5, 2, 2.5, 0.5, 2, 2.5, -0.5, 2, 2.5, -0.5, -16, 2.5, -0.5, 2, 2.5, 0.5, 2, 2.5, -0.5, -16, 2, 0.5, -16, 2, 0, -16, 2.5, -0.5, -16, 2.5, 0.5, -16, 2, 0.5, -16, 2.5, -0.5, -16, 2.5, 0.5, 2, 2.5, 0.5, -16, 2.5, 0.5, -16, 2, 0.5, 1.5, 2, 0.5, -16, 2.5, 0.5, 2, -2, 0.5, 1.5, 2, 0.5, 1.5, 2.5, 0.5, -16, 2.5, 0.5, 2, 2, 0.5, 1.5, -2, 0, 1.5, -2, 0.5, -16, -2, 0, -16, -2, 0, 1.5, -2, 0, -16, 2, 0, -16, -2, 0, 1.5, -2, 0.5, 1.5, -2, 0.5, -16, -2, 0, 1.5, 2, 0, 1.5, -2, 0.5, 1.5, 2, 0, -16, 2, 0.5, -16, 2, 0.5, 1.5, -2, 0, 1.5, 2, 0, -16, 2, 0, 1.5, 2, 0, 1.5, 2, 0.5, 1.5, -2, 0.5, 1.5, 2, 0, 1.5, 2, 0, -16, 2, 0.5, 1.5)
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_hyk2w"]
+_surfaces = [{
+"aabb": AABB(-2.5, -0.5, -16, 5, 1, 18),
+"attribute_data": PackedByteArray("AACAPwAAAAAAAAAAAAAAAAAAgD8AAIA/AACAPwAAAAAAAAAAAAAAAAAAgD8AAIA/AACAPwAAAADNzMw9AAAAP2ZmZj8AAAA/AACAPwAAAABmZmY/AAAAPwAAgD8AAIA/AACAPwAAgD9mZmY/AAAAP2ZmZj8AAIA/AACAPwAAgD8AAIA/ZmZmPwAAAAAAAIA/AACAPwAAgD8AAAAAAAAAAAAAAAAAAIA/AAAAAAAAgD8AAIA/ZmZmPzmO4zxmZmY/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAgD85juM8ZmZmPwAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAM3MzD0AAAA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAgD8AAAAAAAAAAAAAAAAAAIA/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAADNzMw9AACAP83MzD0AAAA/AAAAAAAAAAAAAAAAAACAP83MzD0AAIA/AACAPwAAgD8AAAAAAAAAAAAAAAAAAIA/AACAPwAAAAA5juM8zczMPQAAgD/NzMw9AAAAAAAAAAA5juM8ZmZmPzmO4zzNzMw9AACAPwAAAAAAAAAAAAAAADmO4zzNzMw9"),
+"format": 34359738391,
+"material": ExtResource("6_7dvck"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 60,
+"vertex_data": PackedByteArray("AAAgwAAAAL8AAIDBAAAgwAAAAD8AAIDBAAAgwAAAAL8AAABAAAAgwAAAAL8AAIDBAAAgwAAAAL8AAABAAAAgQAAAAL8AAIDBAAAgwAAAAL8AAIDBAAAAQAAAAAAAAIDBAAAAwAAAAAAAAIDBAAAgwAAAAL8AAIDBAAAAwAAAAAAAAIDBAAAgwAAAAD8AAIDBAAAgwAAAAD8AAIDBAAAAwAAAAAAAAIDBAAAAwAAAAD8AAIDBAAAgwAAAAD8AAIDBAAAAwAAAAD8AAIDBAAAgwAAAAD8AAABAAAAgwAAAAL8AAABAAAAgwAAAAD8AAIDBAAAgwAAAAD8AAABAAAAgwAAAAD8AAABAAAAAwAAAAD8AAIDBAAAAwAAAAD8AAMA/AAAgwAAAAL8AAABAAAAgwAAAAD8AAABAAAAgQAAAAD8AAABAAAAgwAAAAD8AAABAAAAAwAAAAD8AAMA/AAAgQAAAAD8AAABAAAAgwAAAAL8AAIDBAAAgQAAAAL8AAIDBAAAAQAAAAAAAAIDBAAAgwAAAAL8AAABAAAAgQAAAAL8AAABAAAAgQAAAAL8AAIDBAAAgwAAAAL8AAABAAAAgQAAAAD8AAABAAAAgQAAAAL8AAABAAAAgQAAAAL8AAIDBAAAgQAAAAL8AAABAAAAgQAAAAD8AAABAAAAgQAAAAL8AAIDBAAAAQAAAAD8AAIDBAAAAQAAAAAAAAIDBAAAgQAAAAL8AAIDBAAAgQAAAAD8AAIDBAAAAQAAAAD8AAIDBAAAgQAAAAL8AAIDBAAAgQAAAAD8AAABAAAAgQAAAAD8AAIDBAAAgQAAAAD8AAIDBAAAAQAAAAD8AAMA/AAAAQAAAAD8AAIDBAAAgQAAAAD8AAABAAAAAwAAAAD8AAMA/AAAAQAAAAD8AAMA/AAAgQAAAAD8AAIDBAAAgQAAAAD8AAABAAAAAQAAAAD8AAMA/AAD/f/9//n8AAP9//3/+fwAA/3//f/5//38AAP//AAD/fwAA//8AAP9/AAD//wAA/////wAA/z//////AAD/P/////8AAP8//////wAA/z//////AAD/P/////8AAP8//////wAA/z//////AAD/P/////8AAP8//3//////AAD/f/////8AAP9///8AAAAAAAD/f/9//n8AAP9//3/+fwAA/3//f/5//3///wAAAAD/f/////8AAP9///8AAAAA/3//fwAA/z//f/9/AAD/P/9//38AAP8//3///wAAAAD/f///AAAAAP9//////wAA/////wAA/z//////AAD/P/////8AAP8//38AAP//AAD/fwAA//8AAP9/AAD//wAA/3//fwAA/z//f/9/AAD/P/9//38AAP8/////f/9//n////9//3/+f////3//f/5//////wAA/z//////AAD/P/////8AAP8//////wAA/z//////AAD/P/////8AAP8/////f/9//n////9//3/+f////3//f/5//3//////AAD/f/////8AAP9//////wAA/3//////AAD/f///AAAAAP9//////wAA/3//////AAD/f/////8AAP9//////wAA")
+}, {
+"aabb": AABB(-2, 0, -16, 4, 0.5, 17.5),
+"attribute_data": PackedByteArray("AACAPwAAgD8AAAA/OY7jPAAAgD85juM8AAAAAAAAAACO43g/AAAAAI7jeD8AAIA/AACAPwAAgD8AAAA/AACAPwAAAD85juM8AACAPwAAgD8AAAAAAACAPwAAgD8AAAA/AACAP47jeD8AAAA/juN4PwAAAD8AAAAAAAAAAAAAAACO43g/AACAPwAAAAAAAIA/AAAAAAAAgD8AAAAAAAAAPwAAgD8AAAA/AACAPwAAAAAAAIA/juN4PwAAAD8AAAAA"),
+"format": 34359738391,
+"material": ExtResource("7_e7ksy"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("AAAAwAAAAAAAAMA/AAAAwAAAAD8AAIDBAAAAwAAAAAAAAIDBAAAAwAAAAAAAAMA/AAAAwAAAAAAAAIDBAAAAQAAAAAAAAIDBAAAAwAAAAAAAAMA/AAAAwAAAAD8AAMA/AAAAwAAAAD8AAIDBAAAAwAAAAAAAAMA/AAAAQAAAAAAAAMA/AAAAwAAAAD8AAMA/AAAAQAAAAAAAAIDBAAAAQAAAAD8AAIDBAAAAQAAAAD8AAMA/AAAAwAAAAAAAAMA/AAAAQAAAAAAAAIDBAAAAQAAAAAAAAMA/AAAAQAAAAAAAAMA/AAAAQAAAAD8AAMA/AAAAwAAAAD8AAMA/AAAAQAAAAAAAAMA/AAAAQAAAAAAAAIDBAAAAQAAAAD8AAMA/////f/9/AID///9//38AgP///3//fwCA/3//////////f/////////9/////////////f/9/AID///9//38AgP///3//fwCA/////wAA/7//////AAD/v/////8AAP+/AAD/f/9/AIAAAP9//38AgAAA/3//fwCA/3//////////f/////////9//////////////wAA/7//////AAD/v/////8AAP+/AAD/f/9/AIAAAP9//38AgAAA/3//fwCA")
+}]
+
+[node name="TestLevel" type="Node3D" unique_id=924034932]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1148341025]
+environment = SubResource("Environment_db73o")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2013135875]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Player" parent="." unique_id=70575149 instance=ExtResource("1_lhufc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="Camera" parent="." unique_id=499086097 instance=ExtResource("2_ev5re")]
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=2002579800]
+
+[node name="Thumbstick" parent="UI" unique_id=940955346 instance=ExtResource("3_kq7cu")]
+layout_mode = 3
+offset_left = -415.0
+offset_top = -415.0
+offset_right = 385.0
+offset_bottom = 385.0
+
+[node name="AnimatableBody3D" type="AnimatableBody3D" parent="." unique_id=1147466422]
+script = ExtResource("4_qdwhv")
+thumbstick_path = NodePath("../UI/Thumbstick")
+pivot_target_path = NodePath("../Player")
+
+[node name="GoalRing" parent="AnimatableBody3D" unique_id=325633537 instance=ExtResource("5_080hp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -15)
+throw_force = 100.0
+
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="AnimatableBody3D" unique_id=1794021242]
+shape = SubResource("ConcavePolygonShape3D_7rivk")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="AnimatableBody3D" unique_id=143026981]
+mesh = SubResource("ArrayMesh_hyk2w")
+
+[node name="CSGCombiner3D" type="CSGCombiner3D" parent="." unique_id=1852447056]
+visible = false
+
+[node name="CSGBox3D" type="CSGBox3D" parent="CSGCombiner3D" unique_id=1556228931]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7)
+size = Vector3(5, 1, 18)
+material = ExtResource("6_7dvck")
+
+[node name="CSGBox3D" type="CSGBox3D" parent="CSGCombiner3D/CSGBox3D" unique_id=2098034835]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -0.5)
+operation = 2
+size = Vector3(4, 1, 18)
+material = ExtResource("7_e7ksy")

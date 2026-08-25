@@ -1,0 +1,36 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://materials/marble/marble_shaders/nebula_marble.gdshader" id="1_shader"]
+[ext_resource type="NoiseTexture3D" uid="uid://2xwfub1a47re" path="res://materials/marble/marble_noise.tres" id="2_noise"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/glass_tint = Color(0.8, 0.86, 1, 1)
+shader_parameter/surface_roughness = 0.02
+shader_parameter/void_colour = Color(0.03, 0.02, 0.09, 1)
+shader_parameter/void_opacity = 0.8
+shader_parameter/rim_tint = Color(0.75, 0.85, 1, 1)
+shader_parameter/rim_power = 3.0
+shader_parameter/rim_strength = 0.35
+shader_parameter/core_colour = Color(1, 0.55, 0.85, 1)
+shader_parameter/mid_colour = Color(0.55, 0.25, 0.95, 1)
+shader_parameter/outer_colour = Color(0.1, 0.45, 0.9, 1)
+shader_parameter/nebula_noise = ExtResource("2_noise")
+shader_parameter/cloud_scale = 1.1
+shader_parameter/cloud_threshold = 0.54
+shader_parameter/cloud_softness = 0.26
+shader_parameter/cloud_density = 1.6
+shader_parameter/nebula_glow = 1.5
+shader_parameter/warp_amount = 0.45
+shader_parameter/spiral_axis = Vector3(0.2, 1, 0.1)
+shader_parameter/spiral_turns = 0.8
+shader_parameter/drift_speed = 0.03
+shader_parameter/star_colour = Color(1, 0.95, 0.88, 1)
+shader_parameter/star_scale = 20.0
+shader_parameter/star_threshold = 0.74
+shader_parameter/star_size = 0.25
+shader_parameter/star_shell = 0.78
+shader_parameter/star_brightness = 3.4
+shader_parameter/twinkle_speed = 2.0
+shader_parameter/marble_radius = 0.5

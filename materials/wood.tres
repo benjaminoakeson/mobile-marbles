@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://sr5p41ba3r67"]
+
+[ext_resource type="Texture2D" uid="uid://pk42blaxwkg1" path="res://materials/textures/cherry_wood/CherryWoodTexture.png" id="1_svq0u"]
+[ext_resource type="Texture2D" uid="uid://v3gkuwqow0o0" path="res://materials/textures/cherry_wood/CherryWoodNormal.png" id="2_0obp0"]
+
+[resource]
+albedo_color = Color(0.70519364, 0.70519364, 0.7051936, 1)
+albedo_texture = ExtResource("1_svq0u")
+normal_enabled = true
+normal_texture = ExtResource("2_0obp0")
+uv1_triplanar = true

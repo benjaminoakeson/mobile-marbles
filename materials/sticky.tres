@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dvxj3txqum6um"]
+
+[ext_resource type="Texture2D" uid="uid://bx53ytljye5lt" path="res://materials/textures/sticky/StickyTexture.png" id="1_5vrcr"]
+[ext_resource type="Texture2D" uid="uid://dp0eyhrj8615c" path="res://materials/textures/sticky/StickyNormal.png" id="2_6qs42"]
+
+[resource]
+albedo_texture = ExtResource("1_5vrcr")
+normal_enabled = true
+normal_texture = ExtResource("2_6qs42")
+uv1_triplanar = true

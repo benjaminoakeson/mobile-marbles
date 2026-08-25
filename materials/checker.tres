@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bvexw1h6yljjf"]
+
+[ext_resource type="Texture2D" uid="uid://5p0mu5kq2d7y" path="res://materials/textures/finish/Checker.png" id="1_lreae"]
+[ext_resource type="Texture2D" uid="uid://c2dqffv15ldi6" path="res://materials/textures/finish/CheckerNormal.png" id="2_rof5a"]
+
+[resource]
+albedo_texture = ExtResource("1_lreae")
+normal_enabled = true
+normal_texture = ExtResource("2_rof5a")
+uv1_scale = Vector3(4, 4, 4)

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Placeholder crown for the challenge run button. Swap the file, keep the name. -->
+  <path d="M4 16 L21 29 L32 6 L43 29 L60 16 L55 48 L9 48 Z"
+        fill="#FFD86B" stroke="#8A4B08" stroke-width="4" stroke-linejoin="round"/>
+  <rect x="9" y="45" width="46" height="12" rx="5"
+        fill="#FFC53D" stroke="#8A4B08" stroke-width="4"/>
+  <circle cx="32" cy="24" r="4" fill="#FFF3C4"/>
+</svg>

@@ -1,0 +1,32 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://ccdmgewvmbcrx"]
+
+[ext_resource type="Shader" uid="uid://bgemglass0001" path="res://materials/gems/gem.gdshader" id="1_p6tyy"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_p6tyy")
+shader_parameter/gem_colour = Color(0.25286597, 0.90612036, 0.5517922, 1)
+shader_parameter/absorption = 6.698000318155
+shader_parameter/inner_brightness = 4.0
+shader_parameter/inner_glow = 0.35
+shader_parameter/ior = 3.0
+shader_parameter/dispersion = 0.770000036575
+shader_parameter/facet_count = 24.0
+shader_parameter/facet_bite = 1.0
+shader_parameter/facet_contrast = 1.0
+shader_parameter/facet_sharpness = 1.0
+shader_parameter/gem_radius = 0.22
+shader_parameter/reflectivity = 0.050000002375
+shader_parameter/fresnel_power = 4.0
+shader_parameter/surface_roughness = 0.0050000002375
+shader_parameter/body_alpha = 0.85
+shader_parameter/edge_solidity = 1.0
+shader_parameter/sparkle_colour = Color(1, 1, 1, 1)
+shader_parameter/sparkle_strength = 1.0
+shader_parameter/sparkle_sharpness = 28.0
+shader_parameter/key_direction = Vector3(0.35, 0.9, 0.4)
+shader_parameter/sky_colour = Color(0.55, 0.72, 1, 1)
+shader_parameter/horizon_colour = Color(1, 0.97, 0.92, 1)
+shader_parameter/ground_colour = Color(0.16, 0.15, 0.14, 1)
+shader_parameter/key_energy = 2.0
+shader_parameter/key_sharpness = 90.0

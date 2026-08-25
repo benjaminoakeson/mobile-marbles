@@ -1,0 +1,12 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cgsin6dlvrha1"]
+
+[ext_resource type="Texture2D" uid="uid://bp7wgnfow2qm5" path="res://materials/textures/marble/Marble.png" id="1_0mcnh"]
+[ext_resource type="Texture2D" uid="uid://dkiua12543gwk" path="res://materials/textures/marble/MarbleNormal.png" id="1_g1ef2"]
+
+[resource]
+albedo_texture = ExtResource("1_0mcnh")
+metallic_specular = 1.0
+roughness = 0.0
+normal_enabled = true
+normal_texture = ExtResource("1_g1ef2")
+uv1_triplanar = true
