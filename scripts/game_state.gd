@@ -18,6 +18,10 @@ signal gem_progress_changed(collected: int, target: int)
 ## Out of lives. Handled here by sending the player back to the level list.
 signal run_ended
 
+## Fired when the player picks a different marble. The menu's preview listens so
+## the marble on the page changes under the picker as it is tapped.
+signal marble_skin_changed(skin_id: String)
+
 ## A level has been loaded and is about to be played. What it is worth hearing
 ## about is which world it belongs to, so the music can match.
 signal level_started(level_path: String)
@@ -33,7 +37,7 @@ signal timing_started
 const SAVE_PATH := "user://progress.cfg"
 
 ## Lives are handed out per set, not per level: three of them cover all ten
-## levels of a difficulty. Running out means the set is attempted again.
+## levels of a chapter. Running out means the set is attempted again.
 const STARTING_LIVES := 3
 
 ## What a level's gems have to add up to for the first extra life of a run.
@@ -71,12 +75,12 @@ var extra_life_target := FIRST_EXTRA_LIFE
 
 ## How the current level is being played.
 ##
-## FREE is the level list: any level of an unlocked difficulty, on its own, with
+## FREE is the level list: any level of an unlocked chapter, on its own, with
 ## its own three lives. Nothing is unlocked by it.
 ##
 ## CHALLENGE is one continuous attempt at a whole set, starting at its first
 ## level and carrying the same lives all the way through. Finishing it is the
-## ONLY thing that unlocks the next difficulty; running out of lives part way
+## ONLY thing that unlocks the next chapter; running out of lives part way
 ## fails the run and unlocks nothing.
 enum Mode { FREE, CHALLENGE }
 
@@ -87,7 +91,7 @@ var run_mode := Mode.FREE
 var run_set := ""
 var run_index := 0
 var run_world := 0
-var run_difficulty := ""
+var run_chapter := ""
 
 ## Whether the level just finished beat a best score or a best time. Read by the
 ## victory panel, which is where that news is worth hearing.
@@ -105,7 +109,7 @@ var best_time := {}
 
 ## Set id -> the level numbers beaten in it at least once, in whatever order
 ## they were played. Shown by the menus; nothing is gated on it, since free play
-## lets the levels of an unlocked difficulty be taken in any order.
+## lets the levels of an unlocked chapter be taken in any order.
 var cleared_levels := {}
 
 ## Set id -> true once its challenge run has been finished. This is the only
@@ -116,8 +120,12 @@ var challenges_done := {}
 ## own gem tally resets with the level; this never does.
 var bank := 0
 
-## Dev override: every world and difficulty reads as open, whatever has actually
-## been finished. Set from the marble page's dev tools and cleared by resetting.
+## Which marble the player is wearing, as a `MarbleSkins` id. Purely cosmetic --
+## nothing is gated on it and every skin is always available.
+var marble_skin := MarbleSkins.DEFAULT
+
+## Dev override: every world and chapter reads as open, whatever has actually
+## been finished. Set from the levels page's dev tools and cleared by resetting.
 ##
 ## Kept apart from the real records rather than faking them, so the menus go on
 ## telling the truth about what has been cleared and challenged, and turning it
@@ -183,12 +191,12 @@ func _enter_set(level_path: String) -> void:
 		run_set = ""
 		run_index = 0
 		run_world = 0
-		run_difficulty = ""
+		run_chapter = ""
 		run_mode = Mode.FREE
 		_deal_lives()
 		return
 
-	var set_id := LevelManager.set_id(place.world, place.difficulty)
+	var set_id := LevelManager.set_id(place.world, place.chapter)
 
 	# A challenge run keeps its lives, and its climb towards the next extra one,
 	# for as long as it is running -- that is what makes it one attempt at the
@@ -212,7 +220,7 @@ func _enter_set(level_path: String) -> void:
 	run_set = set_id
 	run_index = place.index
 	run_world = place.world
-	run_difficulty = place.difficulty
+	run_chapter = place.chapter
 
 	# Free play is every level on its own, with its own three lives.
 	if not carries_on:
@@ -231,11 +239,11 @@ func begin_free_play() -> void:
 ##
 ## The lives are dealt HERE, once, rather than when the first level loads. That
 ## is what lets every level of the run leave them alone.
-func begin_challenge(world: int, difficulty: String) -> void:
+func begin_challenge(world: int, chapter: String) -> void:
 	run_mode = Mode.CHALLENGE
 	run_world = world
-	run_difficulty = difficulty
-	run_set = LevelManager.set_id(world, difficulty)
+	run_chapter = chapter
+	run_set = LevelManager.set_id(world, chapter)
 	_deal_lives()
 
 
@@ -392,7 +400,7 @@ func finish_level(clear_points: int) -> void:
 
 ## Marks the level off, and -- when this was the last level of a challenge run
 ## -- marks the whole challenge done. That flag is what opens the next
-## difficulty, so it is the one piece of progress free play can never write.
+## chapter, so it is the one piece of progress free play can never write.
 func _bank_progress() -> void:
 	if run_set.is_empty():
 		return
@@ -405,7 +413,7 @@ func _bank_progress() -> void:
 	if run_mode != Mode.CHALLENGE:
 		return
 
-	var length := LevelManager.levels_in(run_world, run_difficulty).size()
+	var length := LevelManager.levels_in(run_world, run_chapter).size()
 	if length > 0 and run_index >= length - 1:
 		challenges_done[run_set] = true
 
@@ -450,7 +458,7 @@ func reset_run() -> void:
 ## Takes the same challenge on again from the top of its set, and hands back the
 ## level to load. Empty if there is nothing to go back to.
 func restart_challenge() -> String:
-	var first := LevelManager.level_at(run_world, run_difficulty, 0)
+	var first := LevelManager.level_at(run_world, run_chapter, 0)
 	if first.is_empty():
 		return ""
 
@@ -479,72 +487,72 @@ func _show_game_over() -> void:
 
 ## How many of a set's levels have been beaten, in any order and either mode.
 ## For the menus to show; nothing is gated on it.
-func cleared_in(world: int, difficulty: String) -> int:
-	var cleared: Array = cleared_levels.get(LevelManager.set_id(world, difficulty), [])
+func cleared_in(world: int, chapter: String) -> int:
+	var cleared: Array = cleared_levels.get(LevelManager.set_id(world, chapter), [])
 	return cleared.size()
 
 
 ## Whether one level has been beaten at least once.
-func is_level_cleared(world: int, difficulty: String, index: int) -> bool:
-	var cleared: Array = cleared_levels.get(LevelManager.set_id(world, difficulty), [])
+func is_level_cleared(world: int, chapter: String, index: int) -> bool:
+	var cleared: Array = cleared_levels.get(LevelManager.set_id(world, chapter), [])
 	return cleared.has(index)
 
 
 ## Whether this set's challenge run has been finished -- the whole set in one
 ## attempt without running out of lives.
 ##
-## A set with nothing built for it never counts, so an empty difficulty cannot
+## A set with nothing built for it never counts, so an empty chapter cannot
 ## unlock the one after it.
-func is_challenge_complete(world: int, difficulty: String) -> bool:
-	if LevelManager.levels_in(world, difficulty).is_empty():
+func is_challenge_complete(world: int, chapter: String) -> bool:
+	if LevelManager.levels_in(world, chapter).is_empty():
 		return false
 
-	return challenges_done.get(LevelManager.set_id(world, difficulty), false)
+	return challenges_done.get(LevelManager.set_id(world, chapter), false)
 
 
-## Whether a difficulty can be played at all. The easiest one opens as soon as
-## its world does; every one after it waits on the CHALLENGE of the difficulty
+## Whether a chapter can be played at all. The easiest one opens as soon as
+## its world does; every one after it waits on the CHALLENGE of the chapter
 ## before it, which is the only thing that unlocks anything.
-func is_set_unlocked(world: int, difficulty: String) -> bool:
+func is_set_unlocked(world: int, chapter: String) -> bool:
 	if dev_unlock_all:
 		return true
 
-	var step := LevelManager.DIFFICULTIES.find(difficulty)
+	var step := LevelManager.CHAPTERS.find(chapter)
 	if step > 0:
-		return is_challenge_complete(world, LevelManager.DIFFICULTIES[step - 1])
+		return is_challenge_complete(world, LevelManager.CHAPTERS[step - 1])
 
 	return is_world_unlocked(world)
 
 
-## Whether a level can be opened from the list. Once a difficulty is unlocked
+## Whether a level can be opened from the list. Once a chapter is unlocked
 ## every level in it is, in any order -- the run that has to be done in order is
 ## the challenge, and that one starts itself at the top.
-func is_level_unlocked(world: int, difficulty: String, index: int) -> bool:
-	if LevelManager.level_at(world, difficulty, index).is_empty():
+func is_level_unlocked(world: int, chapter: String, index: int) -> bool:
+	if LevelManager.level_at(world, chapter, index).is_empty():
 		return false
 
-	return is_set_unlocked(world, difficulty)
+	return is_set_unlocked(world, chapter)
 
 
-## Whether a challenge run can be started: the difficulty is open and there is
+## Whether a challenge run can be started: the chapter is open and there is
 ## something in it to run.
-func can_start_challenge(world: int, difficulty: String) -> bool:
-	if LevelManager.levels_in(world, difficulty).is_empty():
+func can_start_challenge(world: int, chapter: String) -> bool:
+	if LevelManager.levels_in(world, chapter).is_empty():
 		return false
 
-	return is_set_unlocked(world, difficulty)
+	return is_set_unlocked(world, chapter)
 
 
 ## World 1 is always open. Every world after it waits on the whole of the world
-## before it -- every difficulty's challenge finished. A difficulty with no
+## before it -- every chapter's challenge finished. A chapter with no
 ## levels in it never counts as done, so this stays shut until a world is
 ## actually built out.
 func is_world_unlocked(world: int) -> bool:
 	if dev_unlock_all or world <= 1:
 		return true
 
-	for difficulty in LevelManager.DIFFICULTIES:
-		if not is_challenge_complete(world - 1, difficulty):
+	for chapter in LevelManager.CHAPTERS:
+		if not is_challenge_complete(world - 1, chapter):
 			return false
 
 	return true
@@ -592,6 +600,19 @@ static func format_gems(value: int) -> String:
 	return "-" + grouped if value < 0 else grouped
 
 
+## Picks a marble. Saved straight away: a skin chosen and then never followed by
+## a finished level would otherwise be forgotten on quit, and picking one is the
+## sort of thing a player expects to stick the moment they do it.
+func select_marble_skin(skin_id: String) -> void:
+	var resolved := MarbleSkins.resolve(skin_id)
+	if resolved == marble_skin:
+		return
+
+	marble_skin = resolved
+	marble_skin_changed.emit(marble_skin)
+	save_progress()
+
+
 func save_progress() -> void:
 	var file := ConfigFile.new()
 	file.set_value("run", "lives", lives)
@@ -601,6 +622,7 @@ func save_progress() -> void:
 	file.set_value("best", "time", best_time)
 	file.set_value("progress", "cleared", cleared_levels)
 	file.set_value("progress", "challenges", challenges_done)
+	file.set_value("marble", "skin", marble_skin)
 	file.set_value("dev", "unlock_all", dev_unlock_all)
 
 	var result := file.save(SAVE_PATH)
@@ -624,6 +646,9 @@ func load_progress() -> void:
 	best_time = file.get_value("best", "time", {})
 	cleared_levels = file.get_value("progress", "cleared", {})
 	challenges_done = file.get_value("progress", "challenges", {})
+	# Resolved on the way in, so a save naming a skin that no longer exists comes
+	# back as the default instead of as a marble with no material at all.
+	marble_skin = MarbleSkins.resolve(file.get_value("marble", "skin", MarbleSkins.DEFAULT))
 	dev_unlock_all = file.get_value("dev", "unlock_all", false)
 
 	# Saves written before challenge runs existed kept one running count
@@ -656,10 +681,11 @@ func _adopt_legacy_progress(legacy: Dictionary) -> void:
 
 
 # --- Dev tools ---
-# Driven by the buttons on the marble page, which only exist in a debug build.
+# Driven by the dev popup on the levels page, which only opens in a debug build.
 
 ## Wipes the save back to a first run: nothing cleared, no challenges, no best
-## times or scores, an empty bank, and the dev unlock off again.
+## times or scores, an empty bank, the marble back to the default one, and the
+## dev unlock off again.
 ##
 ## Written to disk straight away rather than left for the next save, so quitting
 ## immediately afterwards cannot resurrect the old progress.
@@ -670,16 +696,18 @@ func dev_reset_progress() -> void:
 	best_time = {}
 	bank = 0
 	dev_unlock_all = false
+	marble_skin = MarbleSkins.DEFAULT
 
 	_run_over = false
 	run_mode = Mode.FREE
 	_deal_lives()
 
 	bank_changed.emit(bank)
+	marble_skin_changed.emit(marble_skin)
 	save_progress()
 
 
-## Opens every world and difficulty at once. Nothing is marked as finished --
+## Opens every world and chapter at once. Nothing is marked as finished --
 ## see `dev_unlock_all` for why -- so `dev_reset_progress()` is the way back off.
 func dev_unlock_everything() -> void:
 	dev_unlock_all = true

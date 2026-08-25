@@ -1,15 +1,15 @@
-[gd_resource type="ShaderMaterial" format=3]
+[gd_resource type="ShaderMaterial" format=3 uid="uid://lnqnqxghbg6q"]
 
-[ext_resource type="Shader" path="res://materials/marble/marble_shaders/nebula_marble.gdshader" id="1_shader"]
-[ext_resource type="NoiseTexture3D" uid="uid://2xwfub1a47re" path="res://materials/marble/marble_noise.tres" id="2_noise"]
+[ext_resource type="Shader" uid="uid://dw6kuxof828js" path="res://materials/marble/marble_shaders/nebula_marble.gdshader" id="1_shader"]
+[ext_resource type="NoiseTexture3D" uid="uid://2xwfub1a47re" path="res://materials/marble/marble_shaders/marble_noise.tres" id="2_noise"]
 
 [resource]
 render_priority = 0
 shader = ExtResource("1_shader")
-shader_parameter/glass_tint = Color(0.8, 0.86, 1, 1)
+shader_parameter/glass_tint = Color(0, 0, 0, 1)
 shader_parameter/surface_roughness = 0.02
 shader_parameter/void_colour = Color(0.03, 0.02, 0.09, 1)
-shader_parameter/void_opacity = 0.8
+shader_parameter/void_opacity = 1.0
 shader_parameter/rim_tint = Color(0.75, 0.85, 1, 1)
 shader_parameter/rim_power = 3.0
 shader_parameter/rim_strength = 0.35

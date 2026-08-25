@@ -1,7 +1,7 @@
 [gd_resource type="ShaderMaterial" format=3 uid="uid://dq07qayiupw87"]
 
 [ext_resource type="Shader" uid="uid://l2p86a77edcv" path="res://materials/marble/marble_shaders/glass_marble.gdshader" id="1_shader"]
-[ext_resource type="NoiseTexture3D" uid="uid://2xwfub1a47re" path="res://materials/marble/marble_noise.tres" id="2_noise"]
+[ext_resource type="NoiseTexture3D" uid="uid://2xwfub1a47re" path="res://materials/marble/marble_shaders/marble_noise.tres" id="2_noise"]
 
 [resource]
 render_priority = 0

@@ -1,8 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" uid="uid://j2v3gbt1qtt1" path="res://scripts/marble_preview.gd" id="1_preview"]
-[ext_resource type="Material" uid="uid://cgsin6dlvrha1" path="res://materials/marble/marble.tres" id="2_marble"]
-[ext_resource type="Material" uid="uid://dq07qayiupw87" path="res://materials/marble/blue_green_specs.tres" id="3_glass"]
+[ext_resource type="Material" path="res://materials/marble/solid/solid_black.tres" id="2_marble"]
 [ext_resource type="Script" uid="uid://kax1ljr2urgm" path="res://scripts/pages/marble_page.gd" id="4_page"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_marble"]
@@ -17,39 +16,19 @@ sky = SubResource("Sky_marble")
 ambient_light_source = 3
 reflected_light_source = 2
 
-; Muted on purpose. These are tools, not part of the game, and should not look
-; like something the player is meant to press.
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dev"]
-content_margin_left = 24.0
-content_margin_top = 16.0
-content_margin_right = 24.0
-content_margin_bottom = 16.0
-bg_color = Color(0.20392157, 0.21568627, 0.23529412, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.38039216, 0.40392157, 0.43137255, 1)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dev_pressed"]
-content_margin_left = 24.0
-content_margin_top = 16.0
-content_margin_right = 24.0
-content_margin_bottom = 16.0
-bg_color = Color(0.12156863, 0.12941176, 0.14117647, 1)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_dev_focus"]
-
 [sub_resource type="SphereMesh" id="SphereMesh_marble"]
-material = ExtResource("2_marble")
+
+; A tile is painted with its own skin's colour at build time, so the styleboxes
+; here only carry the shape. The colours in them are what an unrecognised skin
+; would fall back to and are never normally seen.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_skin"]
+bg_color = Color(0.20392157, 0.22745098, 0.25490196, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
 
 [node name="MarblePage" type="Control"]
 layout_mode = 3
@@ -65,8 +44,8 @@ script = ExtResource("4_page")
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 100.0
-offset_bottom = 220.0
+offset_top = 60.0
+offset_bottom = 180.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -74,19 +53,17 @@ theme_override_font_sizes/font_size = 86
 text = "YOUR MARBLE"
 horizontal_alignment = 1
 
+; Smaller than it was: the picker below it now wants the bottom half of the
+; page, and the marble still reads at this size on a phone.
 [node name="MarbleView" type="SubViewportContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -380.0
-offset_top = -420.0
-offset_right = 380.0
-offset_bottom = 340.0
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 240.0
+offset_top = 200.0
+offset_right = -240.0
+offset_bottom = 800.0
 grow_horizontal = 2
-grow_vertical = 2
 mouse_filter = 2
 stretch = true
 
@@ -94,7 +71,7 @@ stretch = true
 own_world_3d = true
 transparent_bg = true
 handle_input_locally = false
-size = Vector2i(760, 760)
+size = Vector2i(600, 600)
 render_target_update_mode = 3
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="MarbleView/SubViewport"]
@@ -107,108 +84,98 @@ fov = 40.0
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="MarbleView/SubViewport"]
 transform = Transform3D(0.8660254, -0.25, 0.4330127, 0, 0.8660254, 0.5, -0.5, -0.4330127, 0.75, 0, 0, 0)
 
+; The material here is only what shows in the editor. The page swaps in whatever
+; skin the player is wearing -- see marble_page.gd.
 [node name="Marble" type="MeshInstance3D" parent="MarbleView/SubViewport"]
+unique_name_in_owner = true
 mesh = SubResource("SphereMesh_marble")
-surface_material_override/0 = ExtResource("3_glass")
+surface_material_override/0 = ExtResource("2_marble")
 
 [node name="MarbleTouch" type="Control" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -380.0
-offset_top = -420.0
-offset_right = 380.0
-offset_bottom = 340.0
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 240.0
+offset_top = 200.0
+offset_right = -240.0
+offset_bottom = 800.0
 grow_horizontal = 2
-grow_vertical = 2
 script = ExtResource("1_preview")
 marble_path = NodePath("../MarbleView/SubViewport/Marble")
 
 [node name="Hint" type="Label" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -400.0
-offset_top = 400.0
-offset_right = 400.0
-offset_bottom = 467.0
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 812.0
+offset_bottom = 868.0
 grow_horizontal = 2
-grow_vertical = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
-theme_override_font_sizes/font_size = 44
+theme_override_font_sizes/font_size = 40
 text = "Drag to spin your marble"
 horizontal_alignment = 1
 
-; Pinned to the bottom of the page, well clear of the marble so spinning it
-; cannot brush a button. Hidden outright in a release build -- see marble_page.gd.
-[node name="DevTools" type="VBoxContainer" parent="."]
-unique_name_in_owner = true
+; The picker owns the bottom half of the page. It scrolls, so the catalogue can
+; grow past what fits without the page having to be re-laid out.
+[node name="Picker" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 60.0
-offset_top = -320.0
+offset_top = -840.0
 offset_right = -60.0
-offset_bottom = -40.0
+offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_constants/separation = 14
-
-[node name="DevTitle" type="Label" parent="DevTools"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.55686275, 0.58431373, 0.61176471, 1)
-theme_override_font_sizes/font_size = 32
-text = "DEV TOOLS"
-
-[node name="Buttons" type="HBoxContainer" parent="DevTools"]
-layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="UnlockAllButton" type="Button" parent="DevTools/Buttons"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 120)
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.85882353, 0.89019608, 0.92156863, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 40
-theme_override_styles/normal = SubResource("StyleBoxFlat_dev")
-theme_override_styles/hover = SubResource("StyleBoxFlat_dev")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_dev_pressed")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_dev_focus")
-text = "Unlock Everything"
-
-[node name="ResetProgressButton" type="Button" parent="DevTools/Buttons"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 120)
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 0.63529414, 0.63529414, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 0.63529414, 0.63529414, 1)
-theme_override_font_sizes/font_size = 40
-theme_override_styles/normal = SubResource("StyleBoxFlat_dev")
-theme_override_styles/hover = SubResource("StyleBoxFlat_dev")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_dev_pressed")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_dev_focus")
-text = "Reset All Progress"
-
-[node name="DevStatus" type="Label" parent="DevTools"]
-unique_name_in_owner = true
+[node name="PickerTitle" type="Label" parent="Picker"]
 layout_mode = 2
 mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 48
+text = "CHOOSE A SKIN"
+
+[node name="Scroll" type="ScrollContainer" parent="Picker"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="SkinList" type="VBoxContainer" parent="Picker/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 24
+
+; Cloned per family and per skin, so every tile keeps the styling authored here
+; rather than having it rebuilt in code.
+[node name="FamilyTemplate" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 0
+offset_right = 400.0
+offset_bottom = 50.0
+mouse_filter = 2
 theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
-theme_override_font_sizes/font_size = 30
-autowrap_mode = 2
-text = ""
+theme_override_font_sizes/font_size = 36
+text = "Solid"
+
+[node name="SkinTemplate" type="Button" parent="."]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 1
+anchors_preset = 0
+offset_right = 300.0
+offset_bottom = 150.0
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_skin")
+theme_override_styles/hover = SubResource("StyleBoxFlat_skin")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_skin")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Black"

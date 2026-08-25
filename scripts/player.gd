@@ -17,9 +17,23 @@ extends RigidBody3D
 ## over again mid-level.
 var _waiting := true
 
+@onready var _mesh: MeshInstance3D = $PlayerCollider/PlayerMesh
+
 
 func _ready() -> void:
 	GameState.timing_started.connect(_release)
+	_wear_chosen_skin()
+
+
+## Puts the player's chosen marble on the ball.
+##
+## Done here rather than authored into the scene so every level picks the skin up
+## without knowing anything about it. The material in `player.tscn` is the one
+## that shows in the editor and stands in if the catalogue cannot supply one.
+func _wear_chosen_skin() -> void:
+	var skin_material := MarbleSkins.material_for(GameState.marble_skin)
+	if skin_material != null:
+		_mesh.material_override = skin_material
 
 
 func _physics_process(_delta: float) -> void:

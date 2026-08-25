@@ -1,0 +1,19 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://ob5m53mfome5"]
+
+[ext_resource type="Shader" uid="uid://polomsmup7ot" path="res://materials/marble/marble_shaders/solid_marble.gdshader" id="1_solid"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_solid")
+shader_parameter/base_colour = Color(0.78, 0.8, 0.84, 1)
+shader_parameter/metallic_amount = 1.0
+shader_parameter/surface_roughness = 0.50000002375
+shader_parameter/specular_amount = 0.7
+shader_parameter/shade_colour = Color(0.18, 0.2, 0.25, 1)
+shader_parameter/shade_strength = 0.22
+shader_parameter/shade_power = 1.8
+shader_parameter/rim_tint = Color(0.49485445, 0.4948545, 0.49485445, 1)
+shader_parameter/rim_power = 3.0
+shader_parameter/rim_strength = 0.5
+shader_parameter/glow_colour = Color(1, 1, 1, 1)
+shader_parameter/glow_strength = 0.0

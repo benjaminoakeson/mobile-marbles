@@ -4,9 +4,9 @@ extends RefCounted
 ## Where every playable level is registered.
 ##
 ## The game is laid out as ten worlds, each holding one set of levels per
-## difficulty, each set ten levels long. A set is what the player takes on in a
-## single run: three lives to clear all ten, which unlocks the next difficulty
-## in that world. Clearing every difficulty unlocks the next world.
+## chapter, each set ten levels long. A set is what the player takes on in a
+## single run: three lives to clear all ten, which unlocks the next chapter
+## in that world. Clearing every chapter unlocks the next world.
 ##
 ## Only the levels that have actually been built are listed in `CATALOG`. The
 ## menus still draw a full set of ten tiles, showing the ones with nothing behind
@@ -22,9 +22,14 @@ const GAME_OVER := "res://scenes/UI/game_over.tscn"
 const WORLD_COUNT := 10
 const LEVELS_PER_SET := 10
 
-## The difficulties every world runs through, easiest first. Play order, and the
+## The chapters every world runs through, easiest first. Play order, and the
 ## order they unlock in.
-const DIFFICULTIES := [
+##
+## These strings are also half of the key a set's progress is saved under, so
+## they are not free text -- renaming one here orphans everything ever cleared in
+## it. The player-facing name comes from `CHAPTER_NAMES` instead, which is safe
+## to change whenever.
+const CHAPTERS := [
 	"Super Easy",
 	"Easy",
 	"Medium",
@@ -33,9 +38,25 @@ const DIFFICULTIES := [
 	"Master",
 ]
 
-## world number -> difficulty -> the levels of that set, in play order.
+## world number -> the chapter names for that world, in `CHAPTERS` order.
 ##
-## A missing world or difficulty is simply an empty set. A set can hold fewer
+## What the chapter selector puts above the difficulty. A world with no entry, or
+## a list shorter than `CHAPTERS`, falls back to the difficulty itself, so a
+## chapter is never nameless while a world is still being written.
+const CHAPTER_NAMES := {
+	1: [
+		"Rolling Meadow",
+		"Garden Path",
+		"Hedge Maze",
+		"Timber Yard",
+		"The Long Fall",
+		"Meadow's End",
+	],
+}
+
+## world number -> chapter -> the levels of that set, in play order.
+##
+## A missing world or chapter is simply an empty set. A set can hold fewer
 ## than `LEVELS_PER_SET` levels while it is being built out.
 const CATALOG := {
 	1: {
@@ -90,25 +111,43 @@ const NAMES := {
 ##
 ## Changing scenes cannot carry arguments, and these outlive the change.
 static var selected_world := 0
-static var selected_difficulty := ""
+static var selected_chapter := ""
 static var selected_level := 0
 
 
 ## The key a set is saved and looked up under. Stable across reorderings, since
-## it is built from the world number and the difficulty's name.
-static func set_id(world: int, difficulty: String) -> String:
-	return "%d/%s" % [world, difficulty]
+## it is built from the world number and the chapter's name.
+static func set_id(world: int, chapter: String) -> String:
+	return "%d/%s" % [world, chapter]
+
+
+## Where a chapter sits in the run through a world, counting from 0. -1 for a
+## chapter that is not one of `CHAPTERS`.
+static func chapter_index(chapter: String) -> int:
+	return CHAPTERS.find(chapter)
+
+
+## What a chapter is called in this world. Falls back to its difficulty, so an
+## unnamed chapter reads as "Easy" rather than as a blank line.
+static func chapter_name(world: int, chapter: String) -> String:
+	var names: Array = CHAPTER_NAMES.get(world, [])
+	var index := chapter_index(chapter)
+
+	if index >= 0 and index < names.size():
+		return names[index]
+
+	return chapter
 
 
 ## The levels of a set, in play order. Empty for a set nobody has filled in yet.
-static func levels_in(world: int, difficulty: String) -> Array:
-	var difficulties: Dictionary = CATALOG.get(world, {})
-	return difficulties.get(difficulty, [])
+static func levels_in(world: int, chapter: String) -> Array:
+	var chapters: Dictionary = CATALOG.get(world, {})
+	return chapters.get(chapter, [])
 
 
 ## The level at a slot, or "" for a slot with nothing built for it yet.
-static func level_at(world: int, difficulty: String, index: int) -> String:
-	var levels := levels_in(world, difficulty)
+static func level_at(world: int, chapter: String, index: int) -> String:
+	var levels := levels_in(world, chapter)
 	return levels[index] if index >= 0 and index < levels.size() else ""
 
 
@@ -131,25 +170,36 @@ static func numbered_name(path: String, index: int) -> String:
 	return "Level %d" % (index + 1)
 
 
-## Which slot a level scene sits in, as `{world, difficulty, index}`.
+## The one line the level page heads the preview with: "1:1 - First Roll" -- the
+## world, the level's slot in its chapter, and its name.
+##
+## The world and chapter buttons that used to sit above the preview are gone, so
+## this is what has to say where the player is. The chapter is deliberately not
+## in it: it is picked in the selector, where the whole run through the world is
+## on show, and repeating it here made the line too long to read at a glance.
+static func headline(world: int, index: int, path: String) -> String:
+	return "%d:%d - %s" % [world, index + 1, name_for(path, index)]
+
+
+## Which slot a level scene sits in, as `{world, chapter, index}`.
 ##
 ## Empty for a level that is not registered -- the scratch test level, or one
 ## opened straight from the editor. Callers treat that as "not part of a set",
 ## which is what keeps a loose level from spending lives or banking progress.
 static func locate(path: String) -> Dictionary:
 	for world in CATALOG:
-		for difficulty in CATALOG[world]:
-			var index: int = CATALOG[world][difficulty].find(path)
+		for chapter in CATALOG[world]:
+			var index: int = CATALOG[world][chapter].find(path)
 			if index != -1:
-				return {"world": world, "difficulty": difficulty, "index": index}
+				return {"world": world, "chapter": chapter, "index": index}
 	return {}
 
 
 ## The level after `path` within its own set. Empty at the end of a set, or for
 ## a level that is not registered at all -- a run does not spill into the next
-## difficulty, since that one has to be unlocked by finishing this one.
+## chapter, since that one has to be unlocked by finishing this one.
 static func next_after(path: String) -> String:
 	var place := locate(path)
 	if place.is_empty():
 		return ""
-	return level_at(place.world, place.difficulty, place.index + 1)
+	return level_at(place.world, place.chapter, place.index + 1)

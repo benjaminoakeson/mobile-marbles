@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" path="res://materials/ui/chevron_left.svg" id="3_chevron_left"]
 [ext_resource type="Texture2D" path="res://materials/ui/chevron_right.svg" id="4_chevron_right"]
 [ext_resource type="Texture2D" path="res://materials/ui/crown.svg" id="5_crown"]
+[ext_resource type="Script" path="res://scripts/pages/chapter_track.gd" id="6_track"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tile"]
 bg_color = Color(0.20392157, 0.5019608, 0.24705882, 1)
@@ -159,41 +160,6 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 28
 
-[node name="TopRow" type="HBoxContainer" parent="Margin/Layout"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 28
-
-[node name="WorldButton" type="Button" parent="Margin/Layout/TopRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 160)
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 60
-theme_override_styles/normal = SubResource("StyleBoxFlat_secondary")
-theme_override_styles/hover = SubResource("StyleBoxFlat_secondary")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_secondary_pressed")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
-text = "WORLD 1"
-
-[node name="DifficultyButton" type="Button" parent="Margin/Layout/TopRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 160)
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 52
-theme_override_styles/normal = SubResource("StyleBoxFlat_secondary")
-theme_override_styles/hover = SubResource("StyleBoxFlat_secondary")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_secondary_pressed")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
-text = "SUPER EASY"
-
 [node name="PreviewArea" type="Control" parent="Margin/Layout"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -226,6 +192,21 @@ script = ExtResource("2_preview")
 [node name="Camera3D" type="Camera3D" parent="Margin/Layout/PreviewArea/Preview/SubViewport/LevelPreview/Rig"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
 fov = 45.0
+
+; Invisible, and only here to be pressed. Ordered before the arrows so their
+; taps reach them instead of this.
+[node name="PreviewButton" type="Button" parent="Margin/Layout/PreviewArea"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 
 [node name="EmptyNotice" type="Label" parent="Margin/Layout/PreviewArea"]
 unique_name_in_owner = true
@@ -287,7 +268,9 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 icon = ExtResource("4_chevron_right")
 expand_icon = true
 
-[node name="NameButton" type="Button" parent="Margin/Layout/PreviewArea"]
+; Everything the player needs to know about where they are, in one line, now
+; that the world and chapter buttons above the preview are gone.
+[node name="NameLabel" type="Label" parent="Margin/Layout/PreviewArea"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 110)
 layout_mode = 1
@@ -295,15 +278,12 @@ anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 110.0
 grow_horizontal = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 56
-theme_override_styles/normal = SubResource("StyleBoxFlat_name")
-theme_override_styles/hover = SubResource("StyleBoxFlat_name")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_name_pressed")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
-text = "First Roll"
+text = "1:1 - First Roll"
+horizontal_alignment = 1
+vertical_alignment = 1
 clip_text = true
 
 [node name="Status" type="Label" parent="Margin/Layout"]
@@ -371,11 +351,36 @@ horizontal_alignment = 1
 ; Practice is the low-stakes way in and only asks for the width it needs. The
 ; challenge run below it is the one that actually unlocks the next difficulty,
 ; and is dressed to look like it.
-[node name="PracticeButton" type="Button" parent="Margin/Layout"]
+;
+; The row centres itself, so with the dev button hidden -- which is every release
+; build -- Practice sits exactly where it always did, in the middle of the page.
+[node name="PlayRow" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+mouse_filter = 2
+alignment = 1
+theme_override_constants/separation = 24
+
+; Debug builds only, and dressed down to match: it is a tool, not something the
+; player is meant to press. See levels_page.gd.
+[node name="DevToolsButton" type="Button" parent="Margin/Layout/PlayRow"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(220, 150)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6862745, 0.7176471, 0.7529412, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(0.6862745, 0.7176471, 0.7529412, 1)
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_secondary")
+theme_override_styles/hover = SubResource("StyleBoxFlat_secondary")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_secondary_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Dev"
+
+[node name="PracticeButton" type="Button" parent="Margin/Layout/PlayRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 150)
 layout_mode = 2
-size_flags_horizontal = 4
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
@@ -475,15 +480,91 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="Layout" type="VBoxContainer" parent="Popup/Panel"]
 layout_mode = 2
-theme_override_constants/separation = 32
+theme_override_constants/separation = 24
 
 [node name="PopupTitle" type="Label" parent="Popup/Panel/Layout"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
+theme_override_font_sizes/font_size = 56
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "SELECT A LEVEL"
+horizontal_alignment = 1
+
+; Everything that belongs to picking a level and not to the panel itself. The
+; dev tools borrow this same popup and switch the whole group off.
+[node name="SelectorChrome" type="VBoxContainer" parent="Popup/Panel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 24
+
+; The world steps one at a time rather than opening a list of its own. There are
+; only ten of them and they are taken in order, so a pair of arrows says more
+; about where you are than a grid of numbers would.
+[node name="WorldRow" type="HBoxContainer" parent="Popup/Panel/Layout/SelectorChrome"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="WorldPrev" type="Button" parent="Popup/Panel/Layout/SelectorChrome/WorldRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 110)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_arrow")
+theme_override_styles/hover = SubResource("StyleBoxFlat_arrow")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_arrow_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_arrow")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+icon = ExtResource("3_chevron_left")
+expand_icon = true
+
+[node name="WorldLabel" type="Label" parent="Popup/Panel/Layout/SelectorChrome/WorldRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 64
-text = "SELECT A LEVEL"
+text = "WORLD 1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WorldNext" type="Button" parent="Popup/Panel/Layout/SelectorChrome/WorldRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 110)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_arrow")
+theme_override_styles/hover = SubResource("StyleBoxFlat_arrow")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_arrow_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_arrow")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+icon = ExtResource("4_chevron_right")
+expand_icon = true
+
+; The whole run through the world, drawn as one road. See chapter_track.gd.
+[node name="ChapterTrack" type="Control" parent="Popup/Panel/Layout/SelectorChrome"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 130)
+layout_mode = 2
+script = ExtResource("6_track")
+
+[node name="ChapterName" type="Label" parent="Popup/Panel/Layout/SelectorChrome"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 52
+text = "Rolling Meadow"
+horizontal_alignment = 1
+
+; The difficulty under the name. The dots say how far through the world a
+; chapter is; this says what it is going to ask of you when you get there.
+[node name="ChapterDifficulty" type="Label" parent="Popup/Panel/Layout/SelectorChrome"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
+theme_override_font_sizes/font_size = 36
+text = "Super Easy"
 horizontal_alignment = 1
 
 [node name="Scroll" type="ScrollContainer" parent="Popup/Panel/Layout"]
@@ -495,63 +576,20 @@ horizontal_scroll_mode = 0
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/h_separation = 32
-theme_override_constants/v_separation = 32
-columns = 3
+theme_override_constants/h_separation = 24
+theme_override_constants/v_separation = 24
+columns = 2
 
-[node name="WorldTemplate" type="Button" parent="."]
-unique_name_in_owner = true
-visible = false
-custom_minimum_size = Vector2(0, 200)
-layout_mode = 1
-anchors_preset = 0
-offset_right = 420.0
-offset_bottom = 200.0
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/font_disabled_color = Color(0.44705883, 0.47058824, 0.49019608, 1)
-theme_override_font_sizes/font_size = 48
-theme_override_styles/normal = SubResource("StyleBoxFlat_tile")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tile")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_disabled")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
-text = "WORLD 1
-0 / 6 sets"
-
-[node name="DifficultyTemplate" type="Button" parent="."]
-unique_name_in_owner = true
-visible = false
-custom_minimum_size = Vector2(0, 160)
-layout_mode = 1
-anchors_preset = 0
-offset_right = 880.0
-offset_bottom = 180.0
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/font_disabled_color = Color(0.44705883, 0.47058824, 0.49019608, 1)
-theme_override_font_sizes/font_size = 52
-theme_override_styles/normal = SubResource("StyleBoxFlat_tile")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tile")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_disabled")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
-text = "Super Easy
-0 / 10 cleared"
-
-; Wider than it is tall now that it carries a name as well as a number.
+; Just the number and the name. The best time and the lock reason that used to
+; ride along under them made the grid into a wall of small print.
 [node name="LevelTemplate" type="Button" parent="."]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(0, 220)
+custom_minimum_size = Vector2(0, 170)
 layout_mode = 1
 anchors_preset = 0
 offset_right = 420.0
-offset_bottom = 220.0
+offset_bottom = 170.0
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
@@ -564,5 +602,4 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
 theme_override_styles/disabled = SubResource("StyleBoxFlat_disabled")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 text = "1
-First Roll
-Next"
+First Roll"

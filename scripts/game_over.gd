@@ -4,7 +4,7 @@ extends CanvasLayer
 ##
 ## What that means depends on how the level was being played. A free-play level
 ## is just spent -- the way out is the menu. A challenge run has FAILED: the set
-## has to be taken again from its first level for the next difficulty to open,
+## has to be taken again from its first level for the next chapter to open,
 ## so that run is offered straight from here.
 
 ## How long the panel takes to fade up.

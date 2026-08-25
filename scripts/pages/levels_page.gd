@@ -1,21 +1,31 @@
 extends Control
 
 ## The level select page: the level itself turning in the middle of the screen,
-## with the world and the difficulty picked from popups above it. The level is
-## stepped through with the arrows either side of the picture, and its name sits
-## along the bottom of it -- tapping that name opens the whole set as a grid.
+## with one line above it saying where that is -- "1:1 - First Roll". The level is
+## stepped through with the arrows either side of the picture, and tapping the
+## picture anywhere else opens the selector.
 ##
-## Nothing here is authored per world or per level -- the popups are built from
+## The world and chapter buttons that used to sit across the top are gone. They
+## were on screen permanently to be used about once a session, and between them
+## and the records and the two play buttons the page had four separate things
+## competing to be read first. Everything about choosing where to play now lives
+## in the selector, and the page itself is the level, its name, and how to start.
+##
+## Nothing here is authored per world or per level -- the selector is built from
 ## the catalogue in LevelManager and the progress in GameState, so a level added
 ## to one, or cleared in the other, shows up here on its own.
+##
+## The dev tools sit next to Practice, and open as another popup. They used to be
+## on the marble page; they are here because this is the page whose state they
+## actually move.
 
-@onready var _world_button: Button = %WorldButton
-@onready var _difficulty_button: Button = %DifficultyButton
-@onready var _name_button: Button = %NameButton
+@onready var _name_label: Label = %NameLabel
+@onready var _preview_button: Button = %PreviewButton
 @onready var _prev_button: Button = %PrevButton
 @onready var _next_button: Button = %NextButton
 @onready var _practice_button: Button = %PracticeButton
 @onready var _challenge_button: Button = %ChallengeButton
+@onready var _dev_button: Button = %DevToolsButton
 @onready var _challenge_gloss: Panel = %Gloss
 @onready var _challenge_crown: TextureRect = %Crown
 @onready var _status: Label = %Status
@@ -28,9 +38,15 @@ extends Control
 @onready var _popup_scrim: Button = %PopupScrim
 @onready var _popup_title: Label = %PopupTitle
 @onready var _popup_grid: GridContainer = %PopupGrid
+@onready var _selector_chrome: Control = %SelectorChrome
 
-@onready var _world_template: Button = %WorldTemplate
-@onready var _difficulty_template: Button = %DifficultyTemplate
+@onready var _world_prev: Button = %WorldPrev
+@onready var _world_next: Button = %WorldNext
+@onready var _world_label: Label = %WorldLabel
+@onready var _chapter_track: Control = %ChapterTrack
+@onready var _chapter_name: Label = %ChapterName
+@onready var _chapter_difficulty: Label = %ChapterDifficulty
+
 @onready var _level_template: Button = %LevelTemplate
 
 ## Set once a level has been asked for. Play can be hit twice before the scene
@@ -38,23 +54,57 @@ extends Control
 ## the same one again.
 var _leaving := false
 
+## Where the selector is currently looking, which is not the same as what the
+## page is showing.
+##
+## The player is allowed to read ahead -- walk the world's chapters past the one
+## they have reached, or step into a world they have not opened -- and none of
+## that should move the page behind the popup. Only picking an actual level
+## commits, so backing out of the selector leaves everything as it was.
+var _browse_world := 1
+var _browse_chapter := ""
+
+## Reset asks twice. It throws away every best time, every cleared level and the
+## whole bank, and one stray press should not be able to do that.
+var _reset_armed := false
+var _disarm_timer: SceneTreeTimer
+
+## How long the reset stays armed before it forgets it was asked. Without this
+## the two taps need not be anywhere near each other in time, and one stray
+## press minutes after another is enough to wipe the save.
+const RESET_ARMED_FOR := 3.0
+
+## What the wipe is labelled in. The dev popup builds both tools from one
+## template, and this is the only thing telling them apart.
+const DESTRUCTIVE_TEXT := Color(1, 0.63529414, 0.63529414, 1)
+
 
 func _ready() -> void:
-	_world_button.pressed.connect(_open_world_popup)
-	_difficulty_button.pressed.connect(_open_difficulty_popup)
-	_name_button.pressed.connect(_open_level_popup)
+	# The picture is the way in to the selector. The arrows are later siblings, so
+	# a tap that lands on one goes there instead of here.
+	_preview_button.pressed.connect(_open_selector)
 	_prev_button.pressed.connect(_step_level.bind(-1))
 	_next_button.pressed.connect(_step_level.bind(1))
 	_practice_button.pressed.connect(_play)
 	_challenge_button.pressed.connect(_start_challenge)
 
+	# `OS.is_debug_build()` is false in a release export, so the tools cannot
+	# reach players by accident -- but a debug export still shows them, which is
+	# what makes them usable on a phone.
+	_dev_button.visible = OS.is_debug_build()
+	if _dev_button.visible:
+		_dev_button.pressed.connect(_open_dev_popup)
+
 	# Tapping the dimmed page around a popup puts it away, which is the way out
 	# every other app on the phone has trained a thumb to expect.
 	_popup_scrim.pressed.connect(_close_popup)
 
+	_world_prev.pressed.connect(_step_browse_world.bind(-1))
+	_world_next.pressed.connect(_step_browse_world.bind(1))
+	_chapter_track.chapter_picked.connect(_browse_chapter_at)
+
 	# The menu keeps all three pages alive and only hides them, so this one can
-	# be minutes stale by the time it is looked at again -- and the dev tools on
-	# the marble page can move the very progress it is drawn from.
+	# be minutes stale by the time it is looked at again.
 	visibility_changed.connect(_on_visibility_changed)
 
 	_restore_selection()
@@ -80,13 +130,13 @@ func _restore_selection() -> void:
 		_select_world(1)
 		return
 
-	var difficulty := LevelManager.selected_difficulty
-	if difficulty.is_empty() or not GameState.is_set_unlocked(world, difficulty):
-		_select_difficulty(_furthest_difficulty(world))
+	var chapter := LevelManager.selected_chapter
+	if chapter.is_empty() or not GameState.is_set_unlocked(world, chapter):
+		_select_chapter(_furthest_chapter(world))
 		return
 
-	if not GameState.is_level_unlocked(world, difficulty, LevelManager.selected_level):
-		_select_level(_next_level_due(world, difficulty))
+	if not GameState.is_level_unlocked(world, chapter, LevelManager.selected_level):
+		_select_level(_next_level_due(world, chapter))
 
 
 ## Picking a world picks the set the player is up to in it, and the level they
@@ -94,12 +144,12 @@ func _restore_selection() -> void:
 ## to dig back out of it.
 func _select_world(world: int) -> void:
 	LevelManager.selected_world = world
-	_select_difficulty(_furthest_difficulty(world))
+	_select_chapter(_furthest_chapter(world))
 
 
-func _select_difficulty(difficulty: String) -> void:
-	LevelManager.selected_difficulty = difficulty
-	_select_level(_next_level_due(LevelManager.selected_world, difficulty))
+func _select_chapter(chapter: String) -> void:
+	LevelManager.selected_chapter = chapter
+	_select_level(_next_level_due(LevelManager.selected_world, chapter))
 
 
 func _select_level(index: int) -> void:
@@ -108,15 +158,15 @@ func _select_level(index: int) -> void:
 
 ## The set a player is up to in a world: the first they have not finished, or
 ## the hardest one they have unlocked.
-func _furthest_difficulty(world: int) -> String:
-	var furthest: String = LevelManager.DIFFICULTIES[0]
+func _furthest_chapter(world: int) -> String:
+	var furthest: String = LevelManager.CHAPTERS[0]
 
-	for difficulty in LevelManager.DIFFICULTIES:
-		if not GameState.is_set_unlocked(world, difficulty):
+	for chapter in LevelManager.CHAPTERS:
+		if not GameState.is_set_unlocked(world, chapter):
 			break
 
-		furthest = difficulty
-		if not GameState.is_challenge_complete(world, difficulty):
+		furthest = chapter
+		if not GameState.is_challenge_complete(world, chapter):
 			break
 
 	return furthest
@@ -125,9 +175,9 @@ func _furthest_difficulty(world: int) -> String:
 ## Where to land in a set. The first level not yet beaten, since that is what
 ## the player most likely came for -- but every level is open, so this is only
 ## a starting point and not a limit.
-func _next_level_due(world: int, difficulty: String) -> int:
-	for index in LevelManager.levels_in(world, difficulty).size():
-		if not GameState.is_level_cleared(world, difficulty, index):
+func _next_level_due(world: int, chapter: String) -> int:
+	for index in LevelManager.levels_in(world, chapter).size():
+		if not GameState.is_level_cleared(world, chapter, index):
 			return index
 
 	return 0
@@ -137,28 +187,26 @@ func _next_level_due(world: int, difficulty: String) -> int:
 
 func _refresh() -> void:
 	var world := LevelManager.selected_world
-	var difficulty := LevelManager.selected_difficulty
+	var chapter := LevelManager.selected_chapter
 	var index := LevelManager.selected_level
-	var path := LevelManager.level_at(world, difficulty, index)
+	var path := LevelManager.level_at(world, chapter, index)
 
-	_world_button.text = "WORLD %d" % world
-	_difficulty_button.text = difficulty.to_upper()
-	_name_button.text = LevelManager.numbered_name(path, index)
-	_status.text = _status_text(world, difficulty, path)
+	_name_label.text = LevelManager.headline(world, index, path)
+	_status.text = _status_text(world, chapter, path)
 	_show_records(path)
 
 	# Nothing to step to in a set holding one level, or none at all.
-	var built: int = LevelManager.levels_in(world, difficulty).size()
+	var built: int = LevelManager.levels_in(world, chapter).size()
 	_prev_button.visible = built > 1
 	_next_button.visible = built > 1
 
 	_practice_button.disabled = path.is_empty() \
-		or not GameState.is_level_unlocked(world, difficulty, index)
+		or not GameState.is_level_unlocked(world, chapter, index)
 
-	var can_challenge := GameState.can_start_challenge(world, difficulty)
+	var can_challenge := GameState.can_start_challenge(world, chapter)
 	_challenge_button.disabled = not can_challenge
 	_challenge_button.text = "Challenge Run \u2713" \
-		if GameState.is_challenge_complete(world, difficulty) else "Challenge Run"
+		if GameState.is_challenge_complete(world, chapter) else "Challenge Run"
 
 	# The shine and the crown belong to the gold face. Left on over the grey
 	# disabled one they would read as a button that is still on offer.
@@ -171,14 +219,15 @@ func _refresh() -> void:
 
 ## The line under the level: what is on offer here, or why it cannot be taken.
 ## The best time used to live here too; it has a readout of its own now.
-func _status_text(world: int, difficulty: String, path: String) -> String:
+func _status_text(world: int, chapter: String, path: String) -> String:
 	if path.is_empty():
 		return "Nothing built for this slot yet"
 
-	if not GameState.is_set_unlocked(world, difficulty):
-		var step := LevelManager.DIFFICULTIES.find(difficulty)
+	if not GameState.is_set_unlocked(world, chapter):
+		var step := LevelManager.chapter_index(chapter)
 		if step > 0:
-			return "Finish the %s challenge run first" % LevelManager.DIFFICULTIES[step - 1]
+			return "Finish %s first" % LevelManager.chapter_name(
+				world, LevelManager.CHAPTERS[step - 1])
 		return "Locked"
 
 	return "Free play - %d lives for this level" % GameState.STARTING_LIVES
@@ -199,7 +248,7 @@ func _show_records(path: String) -> void:
 ## dead -- a short set is a small loop rather than two disabled buttons.
 func _step_level(step: int) -> void:
 	var built: int = LevelManager.levels_in(
-		LevelManager.selected_world, LevelManager.selected_difficulty).size()
+		LevelManager.selected_world, LevelManager.selected_chapter).size()
 	if built <= 1:
 		return
 
@@ -213,7 +262,7 @@ func _play() -> void:
 
 	var path := LevelManager.level_at(
 		LevelManager.selected_world,
-		LevelManager.selected_difficulty,
+		LevelManager.selected_chapter,
 		LevelManager.selected_level)
 	if path.is_empty():
 		return
@@ -224,17 +273,17 @@ func _play() -> void:
 
 ## The whole set in one attempt. Always from its first level -- a challenge is
 ## not something that can be joined part way through -- and losing the lives
-## fails it. Finishing it is what opens the next difficulty.
+## fails it. Finishing it is what opens the next chapter.
 func _start_challenge() -> void:
 	if _leaving:
 		return
 
 	var world := LevelManager.selected_world
-	var difficulty := LevelManager.selected_difficulty
-	if not GameState.can_start_challenge(world, difficulty):
+	var chapter := LevelManager.selected_chapter
+	if not GameState.can_start_challenge(world, chapter):
 		return
 
-	var path := LevelManager.level_at(world, difficulty, 0)
+	var path := LevelManager.level_at(world, chapter, 0)
 	if path.is_empty():
 		return
 
@@ -242,7 +291,7 @@ func _start_challenge() -> void:
 	# the player happened to be browsing.
 	_select_level(0)
 
-	GameState.begin_challenge(world, difficulty)
+	GameState.begin_challenge(world, chapter)
 	_load(path)
 
 
@@ -255,142 +304,203 @@ func _load(path: String) -> void:
 		_leaving = false
 
 
-# --- Popups ---
+# --- The selector ---
+# One popup now, instead of three. The world is stepped along the top, the
+# chapters are the road under it, and the levels of whichever chapter is being
+# looked at fill the rest.
 
-func _open_world_popup() -> void:
-	_show_popup("SELECT A WORLD", 2)
+## Opens the selector on whatever the page is currently showing.
+func _open_selector() -> void:
+	_browse_world = maxi(LevelManager.selected_world, 1)
+	_browse_chapter = LevelManager.selected_chapter
+	if _browse_chapter.is_empty():
+		_browse_chapter = LevelManager.CHAPTERS[0]
 
-	for world in range(1, LevelManager.WORLD_COUNT + 1):
-		var button := _clone(_world_template)
-		var unlocked := GameState.is_world_unlocked(world)
-
-		button.text = "WORLD %d\n%s" % [world, _world_status(world)]
-		button.disabled = not unlocked
-		if unlocked:
-			button.pressed.connect(_pick_world.bind(world))
-
-		_popup_grid.add_child(button)
-
-
-## How much of a world is finished, for the line under its number.
-func _world_status(world: int) -> String:
-	if not GameState.is_world_unlocked(world):
-		return "Locked"
-
-	var complete := 0
-	for difficulty in LevelManager.DIFFICULTIES:
-		if GameState.is_challenge_complete(world, difficulty):
-			complete += 1
-
-	return "%d / %d challenges" % [complete, LevelManager.DIFFICULTIES.size()]
-
-
-func _open_difficulty_popup() -> void:
-	_show_popup("SELECT A DIFFICULTY", 1)
-
-	var world := LevelManager.selected_world
-	for difficulty in LevelManager.DIFFICULTIES:
-		var button := _clone(_difficulty_template)
-		var unlocked := GameState.is_set_unlocked(world, difficulty)
-
-		button.text = "%s\n%s" % [difficulty, _difficulty_status(world, difficulty)]
-		button.disabled = not unlocked
-		if unlocked:
-			button.pressed.connect(_pick_difficulty.bind(difficulty))
-
-		_popup_grid.add_child(button)
-
-
-## Where a set stands, for the line under its name.
-func _difficulty_status(world: int, difficulty: String) -> String:
-	if not GameState.is_set_unlocked(world, difficulty):
-		return "Locked"
-
-	var levels := LevelManager.levels_in(world, difficulty)
-	if levels.is_empty():
-		return "No levels yet"
-
-	if GameState.is_challenge_complete(world, difficulty):
-		return "Challenge done"
-
-	return "%d / %d cleared" % [GameState.cleared_in(world, difficulty), levels.size()]
-
-
-## A full set of tiles is always drawn, so the ten levels a set is meant to hold
-## are visible even while most of them are still to be built.
-func _open_level_popup() -> void:
-	# Two across rather than three: a tile carries a name now, and a name needs
-	# the width to be read at a glance.
 	_show_popup("SELECT A LEVEL", 2)
+	_refresh_selector()
 
-	var world := LevelManager.selected_world
-	var difficulty := LevelManager.selected_difficulty
+
+## Steps to the next world along, wrapping at either end.
+##
+## Every world can be looked at, locked or not -- the point of the selector is to
+## show what the game holds, and a locked world that cannot even be seen teaches
+## the player nothing about what they are working towards.
+func _step_browse_world(step: int) -> void:
+	_browse_world = posmod(
+		_browse_world - 1 + step, LevelManager.WORLD_COUNT) + 1
+
+	# Chapters are per world, so reading into a new one starts at its beginning
+	# rather than keeping a position that meant something in the last one.
+	_browse_chapter = LevelManager.CHAPTERS[0]
+	_refresh_selector()
+
+
+func _browse_chapter_at(index: int) -> void:
+	_browse_chapter = LevelManager.CHAPTERS[index]
+	_refresh_selector()
+
+
+## Redraws the whole selector for wherever it is now looking.
+func _refresh_selector() -> void:
+	_world_label.text = "WORLD %d" % _browse_world
+
+	# A world whose chapters have not been named yet falls back to the difficulty
+	# for the name. Printing it again underneath reads as a bug rather than as a
+	# subtitle, so the second line drops out until there is a real name above it.
+	var chapter_name := LevelManager.chapter_name(_browse_world, _browse_chapter)
+	_chapter_name.text = chapter_name
+	_chapter_difficulty.text = \
+		"" if chapter_name == _browse_chapter else _browse_chapter
+
+	_chapter_track.show_world(_browse_world, _browse_chapter)
+	_build_level_grid()
+
+
+## A full set of tiles is always drawn, so the ten levels a chapter is meant to
+## hold are visible even while most of them are still to be built.
+##
+## A tile carries its number and its name and nothing else. The best time and the
+## reason a locked level was locked used to ride along underneath, which turned
+## the grid into a wall of small print at exactly the moment the player was
+## trying to find one level in it.
+func _build_level_grid() -> void:
+	_clear(_popup_grid)
 
 	for index in LevelManager.LEVELS_PER_SET:
 		var button := _clone(_level_template)
-		var path := LevelManager.level_at(world, difficulty, index)
-		var unlocked := GameState.is_level_unlocked(world, difficulty, index)
+		var path := LevelManager.level_at(_browse_world, _browse_chapter, index)
+		var playable := not path.is_empty() \
+			and GameState.is_level_unlocked(_browse_world, _browse_chapter, index)
 
-		button.text = "%d\n%s\n%s" % [
-			index + 1,
-			LevelManager.name_for(path, index),
-			_level_status(world, difficulty, index, path),
-		]
-		button.disabled = not unlocked
-		if unlocked:
-			button.pressed.connect(_pick_level.bind(index))
+		# An empty slot is its number alone. Falling back to the placeholder name
+		# would print "3" twice, once as the number and once as the name.
+		button.text = "%d\n%s" % [index + 1, LevelManager.name_for(path, index)] \
+			if not path.is_empty() else "%d" % (index + 1)
+
+		button.disabled = not playable
+		if playable:
+			button.pressed.connect(_pick_level_at.bind(index))
 
 		_popup_grid.add_child(button)
 
 
-## The line under a level's number: its best time once cleared, and why it
-## cannot be opened when it cannot.
-func _level_status(world: int, difficulty: String, index: int, path: String) -> String:
-	if path.is_empty():
-		return "--"
-
-	if GameState.is_level_cleared(world, difficulty, index):
-		return GameState.format_time(GameState.best_time_for(path))
-
-	if GameState.is_level_unlocked(world, difficulty, index):
-		return "Open"
-
-	return "Locked"
-
-
-func _pick_world(world: int) -> void:
-	_select_world(world)
-	_finish_pick()
-
-
-func _pick_difficulty(difficulty: String) -> void:
-	_select_difficulty(difficulty)
-	_finish_pick()
-
-
-func _pick_level(index: int) -> void:
+## Taking a level is the only thing in the selector that commits. Everything up
+## to here was reading; this is the point the page moves.
+func _pick_level_at(index: int) -> void:
+	LevelManager.selected_world = _browse_world
+	LevelManager.selected_chapter = _browse_chapter
 	_select_level(index)
-	_finish_pick()
 
-
-func _finish_pick() -> void:
 	_close_popup()
 	_refresh()
 
 
-func _show_popup(title: String, columns: int) -> void:
+## Opens the shared popup. `with_chrome` is what tells the level selector apart
+## from the dev tools: both fill the same grid, but only one of them wants a
+## world, a chapter road and a chapter name above it.
+func _show_popup(title: String, columns: int, with_chrome := true) -> void:
 	_clear(_popup_grid)
 	_popup_title.text = title
 	_popup_grid.columns = columns
+	_selector_chrome.visible = with_chrome
 	_popup.visible = true
 
 
 func _close_popup() -> void:
 	_popup.visible = false
 
+	# The reset lives on a button inside the popup, which is about to be freed.
+	# Leaving it armed would mean a popup reopened later starts one tap from a
+	# wipe, with nothing on screen saying so.
+	_disarm()
+
 	# Emptied on the way out rather than on the way in, so a popup is never left
 	# holding buttons built against progress that has since moved on.
 	_clear(_popup_grid)
+
+
+# --- Dev tools ---
+# Debug builds only. Both tools reach straight into GameState, so the page is
+# rebuilt afterwards -- the world, chapter and level it is showing may not
+# survive what they just did.
+
+## Two buttons, built the same way every other popup here is built. Held on to
+## so pressing one can report back through its own label, which saves the popup
+## needing a status line of its own.
+var _dev_unlock_button: Button
+var _dev_reset_button: Button
+
+
+func _open_dev_popup() -> void:
+	_show_popup("DEV TOOLS", 1, false)
+
+	_dev_unlock_button = _clone(_level_template)
+	_dev_unlock_button.text = "Unlock Everything"
+	_dev_unlock_button.pressed.connect(_unlock_everything)
+	_popup_grid.add_child(_dev_unlock_button)
+
+	_dev_reset_button = _clone(_level_template)
+	_dev_reset_button.text = "Delete Everything"
+	_dev_reset_button.pressed.connect(_reset_progress)
+
+	# The two tools come off the same template, so without this the one that
+	# wipes the save looks exactly like the one that does not.
+	_dev_reset_button.add_theme_color_override("font_color", DESTRUCTIVE_TEXT)
+	_dev_reset_button.add_theme_color_override("font_hover_color", DESTRUCTIVE_TEXT)
+
+	_popup_grid.add_child(_dev_reset_button)
+
+
+func _unlock_everything() -> void:
+	GameState.dev_unlock_everything()
+
+	# Arming the wipe and then reaching for this button instead should not leave
+	# it armed behind the popup.
+	_disarm()
+	_dev_unlock_button.text = "Unlocked \u2713"
+
+	_restore_selection()
+	_refresh()
+
+
+## Asks twice. The first press only arms it; the second is the one that wipes.
+func _reset_progress() -> void:
+	if not _reset_armed:
+		_arm()
+		return
+
+	GameState.dev_reset_progress()
+	_reset_armed = false
+	_disarm_timer = null
+	_dev_reset_button.text = "Deleted \u2713"
+
+	_restore_selection()
+	_refresh()
+
+
+func _arm() -> void:
+	_reset_armed = true
+	_dev_reset_button.text = "Tap again to wipe"
+
+	# The timer is held on to so a second arming cannot leave an older one still
+	# running, ready to disarm the new one out from under the player's thumb.
+	_disarm_timer = get_tree().create_timer(RESET_ARMED_FOR)
+	var armed_with := _disarm_timer
+
+	await armed_with.timeout
+
+	if _reset_armed and _disarm_timer == armed_with:
+		_disarm()
+
+
+## Puts the wipe back to needing two taps. Also called when the popup closes, by
+## which point the button it was labelling has been freed -- hence the check.
+func _disarm() -> void:
+	_reset_armed = false
+	_disarm_timer = null
+
+	if is_instance_valid(_dev_reset_button):
+		_dev_reset_button.text = "Delete Everything"
 
 
 # --- Building blocks ---

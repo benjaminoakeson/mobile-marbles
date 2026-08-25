@@ -1,77 +1,149 @@
 extends Control
 
-## The marble page, and the dev tools parked at the bottom of it.
+## The marble page: the marble the player is actually wearing, turning in the
+## middle of the screen, with every skin in the catalogue laid out under it.
 ##
-## The tools are only built in a debug build. `OS.is_debug_build()` is false in
-## a release export, so they cannot reach players by accident -- but a debug
-## export still shows them, which is what makes them usable on a phone.
+## Nothing here is authored per skin. The tiles are built from `MarbleSkins`, so
+## a skin added to the catalogue shows up on its own -- the same arrangement the
+## levels page has with `LevelManager`.
+##
+## The dev tools used to live at the bottom of this page. They are on the levels
+## page now, next to Practice.
 
-@onready var _dev_tools: Control = %DevTools
-@onready var _unlock_button: Button = %UnlockAllButton
-@onready var _reset_button: Button = %ResetProgressButton
-@onready var _dev_status: Label = %DevStatus
+## How many tiles fit across the page.
+const COLUMNS := 3
 
-## How long the reset stays armed before it forgets it was asked. Without this
-## the two taps need not be anywhere near each other in time, and one stray
-## press hours after another is enough to wipe the save.
-const RESET_ARMED_FOR := 3.0
+## Painted round the tile of the skin currently being worn. The tiles carry their
+## own colours, so the marker has to be something a colour cannot accidentally
+## look like -- a white ring is the one thing none of them can be.
+const SELECTED_BORDER := Color(1, 1, 1, 1)
+const SELECTED_BORDER_WIDTH := 8
 
-## Reset asks twice. It throws away every best time, every cleared level and the
-## whole bank, and a thumb landing on it while spinning the marble should not be
-## able to do that.
-var _reset_armed := false
-var _disarm_timer: SceneTreeTimer
+## A tile's colour is the skin's, so its label has to pick a side per tile --
+## dark text on gold, light text on navy. Anything brighter than this counts as
+## a light tile.
+const DARK_TEXT_ABOVE := 0.55
+const DARK_TEXT := Color(0.08, 0.09, 0.1, 1)
+const LIGHT_TEXT := Color(1, 1, 1, 1)
+
+@onready var _marble: MeshInstance3D = %Marble
+@onready var _skin_list: VBoxContainer = %SkinList
+@onready var _family_template: Label = %FamilyTemplate
+@onready var _skin_template: Button = %SkinTemplate
+
+## Tile per skin id, so picking one can repaint just the two that changed rather
+## than rebuilding the whole list under the player's thumb.
+var _tiles := {}
 
 
 func _ready() -> void:
-	_dev_tools.visible = OS.is_debug_build()
-	if not _dev_tools.visible:
-		return
+	GameState.marble_skin_changed.connect(_on_skin_changed)
 
-	_unlock_button.pressed.connect(_unlock_everything)
-	_reset_button.pressed.connect(_reset_progress)
-
-	_disarm()
+	_build_picker()
+	_show_skin(GameState.marble_skin)
 
 
-func _unlock_everything() -> void:
-	GameState.dev_unlock_everything()
+# --- The picker ---
 
-	# Arming the reset and then wandering off to this button should not leave it
-	# armed for whenever the page is next opened.
-	_disarm()
-	_dev_status.text = "Every world and difficulty unlocked"
+func _build_picker() -> void:
+	_tiles.clear()
+	for child in _skin_list.get_children():
+		_skin_list.remove_child(child)
+		child.queue_free()
+
+	# One heading and one grid per family, in catalogue order. A family with
+	# nothing in it is skipped rather than left as a heading over empty space.
+	for family in MarbleSkins.FAMILIES:
+		var ids := MarbleSkins.ids().filter(
+			func(id: String) -> bool: return MarbleSkins.family_for(id) == family)
+		if ids.is_empty():
+			continue
+
+		var heading: Label = _family_template.duplicate()
+		heading.unique_name_in_owner = false
+		heading.visible = true
+		heading.text = family
+		_skin_list.add_child(heading)
+
+		var grid := GridContainer.new()
+		grid.columns = COLUMNS
+		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		grid.add_theme_constant_override("h_separation", 24)
+		grid.add_theme_constant_override("v_separation", 24)
+		_skin_list.add_child(grid)
+
+		for id: String in ids:
+			var tile := _build_tile(id)
+			grid.add_child(tile)
+			_tiles[id] = tile
 
 
-func _reset_progress() -> void:
-	if not _reset_armed:
-		_arm()
-		return
+func _build_tile(id: String) -> Button:
+	var tile: Button = _skin_template.duplicate()
+	tile.unique_name_in_owner = false
+	tile.visible = true
+	tile.text = MarbleSkins.name_for(id)
+	tile.pressed.connect(_pick.bind(id))
 
-	GameState.dev_reset_progress()
-	_disarm()
-	_dev_status.text = "Progress wiped"
+	# Built after the menu was given its clicks, so it asks for its own.
+	Audio.wire_clicks(tile)
 
-
-## Asks for the second tap, and gives up waiting for it shortly afterwards.
-func _arm() -> void:
-	_reset_armed = true
-	_reset_button.text = "Tap again to wipe"
-	_dev_status.text = "Clears cleared levels, challenges, best times and the bank"
-
-	# The timer is held on to so a second arming cannot leave an older one still
-	# running, ready to disarm the new one out from under the player's thumb.
-	_disarm_timer = get_tree().create_timer(RESET_ARMED_FOR)
-	var armed_with := _disarm_timer
-
-	await armed_with.timeout
-
-	if _reset_armed and _disarm_timer == armed_with:
-		_disarm()
+	_paint(tile, id, id == GameState.marble_skin)
+	return tile
 
 
-func _disarm() -> void:
-	_reset_armed = false
-	_disarm_timer = null
-	_reset_button.text = "Reset All Progress"
-	_dev_status.text = ""
+## Colours one tile in its own skin's colour, and rings it if it is the one being
+## worn.
+##
+## The stylebox is duplicated per tile rather than shared: the template's is one
+## resource, and recolouring it in place would repaint every tile at once.
+func _paint(tile: Button, id: String, selected: bool) -> void:
+	var tint := MarbleSkins.tint_for(id)
+
+	for state: String in ["normal", "hover", "pressed"]:
+		var style: StyleBoxFlat = _skin_template.get_theme_stylebox(state).duplicate()
+		style.bg_color = tint.darkened(0.25) if state == "pressed" else tint
+
+		if selected:
+			style.border_width_left = SELECTED_BORDER_WIDTH
+			style.border_width_top = SELECTED_BORDER_WIDTH
+			style.border_width_right = SELECTED_BORDER_WIDTH
+			style.border_width_bottom = SELECTED_BORDER_WIDTH
+			style.border_color = SELECTED_BORDER
+
+		tile.add_theme_stylebox_override(state, style)
+
+	var font_colour := DARK_TEXT if _is_light(tint) else LIGHT_TEXT
+	tile.add_theme_color_override("font_color", font_colour)
+	tile.add_theme_color_override("font_hover_color", font_colour)
+	tile.add_theme_color_override("font_pressed_color", font_colour)
+
+
+## Whether a tile wants dark text on it. Weighted for how the eye actually reads
+## brightness -- green carries most of it, blue almost none -- so a saturated
+## blue tile is treated as dark even though its colour is not.
+func _is_light(tint: Color) -> bool:
+	return tint.r * 0.299 + tint.g * 0.587 + tint.b * 0.114 > DARK_TEXT_ABOVE
+
+
+func _pick(id: String) -> void:
+	GameState.select_marble_skin(id)
+
+
+# --- The marble on show ---
+
+## Only the two tiles that changed are repainted. Rebuilding the list here would
+## drop the scroll position back to the top every time a skin was tapped.
+func _on_skin_changed(skin_id: String) -> void:
+	for id: String in _tiles:
+		_paint(_tiles[id], id, id == skin_id)
+
+	_show_skin(skin_id)
+
+
+func _show_skin(skin_id: String) -> void:
+	# Named for the skin rather than just `material`: a Control already has one,
+	# and shadowing it here reads as though this line touches the page's own.
+	var skin_material := MarbleSkins.material_for(skin_id)
+	if skin_material != null:
+		_marble.set_surface_override_material(0, skin_material)
