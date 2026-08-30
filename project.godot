@@ -19,7 +19,6 @@ config/icon="res://icon.svg"
 
 GameState="*res://scripts/game_state.gd"
 Audio="*res://scripts/audio.gd"
-_shot="*res://_shot.gd"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [display]
@@ -49,6 +48,7 @@ pointing/emulate_touch_from_mouse=true
 3d_physics/layer_1="Static"
 3d_physics/layer_2="Dynamic"
 3d_physics/layer_3="Player"
+3d_physics/layer_4="Debris"
 3d_physics/layer_5="Sensor"
 
 [physics]

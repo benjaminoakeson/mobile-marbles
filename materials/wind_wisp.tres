@@ -1,0 +1,15 @@
+[gd_resource type="QuadMesh" format=3 uid="uid://bwindwisp001"]
+
+[ext_resource type="Shader" uid="uid://dcxnr21utm6lb" path="res://materials/wind_wisp.gdshader" id="1_wisp"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wisp"]
+render_priority = 0
+shader = ExtResource("1_wisp")
+shader_parameter/bow = 0.33
+shader_parameter/thickness = 0.1
+shader_parameter/taper = 0.6
+shader_parameter/edge_softness = 0.55
+
+[resource]
+material = SubResource("ShaderMaterial_wisp")
+size = Vector2(1.15, 2.6)

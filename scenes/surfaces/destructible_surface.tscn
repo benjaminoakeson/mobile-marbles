@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/destructible_surface.gd" id="1_break"]
+
+; A pane the ball can smash through. Put it under the Level body, then set its
+; size and material in the inspector -- the collider and the mesh below are both
+; built from those, so there is nothing here to keep in sync by hand.
+;
+; Glass out of the box. Switch `pattern` to CHUNKS, and the material and physics
+; material with it, for something blunter.
+;
+; The shape and the mesh are left empty on purpose: the script fills them in, and
+; anything authored here would only be overwritten the moment the scene loads.
+
+[node name="DestructibleSurface" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_break")
+
+[node name="Shape" type="CollisionShape3D" parent="."]
+
+[node name="Mesh" type="MeshInstance3D" parent="."]

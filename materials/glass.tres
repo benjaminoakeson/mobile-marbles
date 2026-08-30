@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Pale, cold and see-through, because the point of a glass floor is watching the
+; drop underneath it. Culling is off: a shard is a wafer, and with only the front
+; face drawn it vanishes every time it tumbles edge-over.
+
+[resource]
+transparency = 1
+cull_mode = 2
+albedo_color = Color(0.68, 0.85, 0.92, 0.34)
+metallic_specular = 0.85
+roughness = 0.05
+rim_enabled = true
+rim = 0.65
+rim_tint = 0.3

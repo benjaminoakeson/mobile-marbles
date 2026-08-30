@@ -95,8 +95,8 @@ func _process(delta: float) -> void:
 		return
 
 	# Bobbing in LOCAL space, so "up" is the level's up. The gem hangs off the
-	# tilting body, and a world-space bob would drift it through the floor as
-	# soon as the track leaned over.
+	# level body, and reading its own axes is what keeps the hover square to the
+	# floor under it however that level is placed.
 	_bob_time += delta
 	position.y = _rest_y + sin(_bob_time * bob_speed + _bob_phase) * bob_height
 
@@ -160,6 +160,15 @@ func _on_body_entered(body: Node3D) -> void:
 ## One burst of mini gems, in every direction. The shards are drawn with this
 ## gem's own mesh, which carries its own material, so an emerald throws emerald
 ## shards and a ruby throws ruby ones with nothing else to set up.
+##
+## The burst emits in LOCAL coordinates, so the shards ride the level. It is the
+## stage that moves in this game, not the ground under it -- it swings about the
+## ball and slides bodily through the world as it does -- and shards left in
+## world space are left behind by all of it, sinking through the floor or sliding
+## off it while they are still in the air. Riding the level, they stay where the
+## gem was. Nothing else has to hold still for that: this node stops bobbing and
+## turning the moment it is taken, and the pop scales the mesh rather than the
+## gem for exactly this reason.
 func _spray() -> void:
 	if _burst == null:
 		return

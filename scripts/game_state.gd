@@ -517,9 +517,13 @@ func is_set_unlocked(world: int, chapter: String) -> bool:
 	if dev_unlock_all:
 		return true
 
-	var step := LevelManager.CHAPTERS.find(chapter)
+	# Counted among the chapters this world actually HAS. Waiting on a chapter
+	# that was planned but never built would lock the rest of the world behind a
+	# challenge nobody can run.
+	var built := LevelManager.built_chapters(world)
+	var step := built.find(chapter)
 	if step > 0:
-		return is_challenge_complete(world, LevelManager.CHAPTERS[step - 1])
+		return is_challenge_complete(world, built[step - 1])
 
 	return is_world_unlocked(world)
 
@@ -551,7 +555,14 @@ func is_world_unlocked(world: int) -> bool:
 	if dev_unlock_all or world <= 1:
 		return true
 
-	for chapter in LevelManager.CHAPTERS:
+	# Every chapter the world before this one actually has. A world with nothing
+	# in it has no challenges to finish, so it never opens the next -- which is
+	# what stops the whole game unlocking itself down an unbuilt chain.
+	var built := LevelManager.built_chapters(world - 1)
+	if built.is_empty():
+		return false
+
+	for chapter in built:
 		if not is_challenge_complete(world - 1, chapter):
 			return false
 

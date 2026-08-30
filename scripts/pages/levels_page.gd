@@ -159,9 +159,12 @@ func _select_level(index: int) -> void:
 ## The set a player is up to in a world: the first they have not finished, or
 ## the hardest one they have unlocked.
 func _furthest_chapter(world: int) -> String:
-	var furthest: String = LevelManager.CHAPTERS[0]
+	var built := LevelManager.built_chapters(world)
+	if built.is_empty():
+		return ""
+	var furthest: String = built[0]
 
-	for chapter in LevelManager.CHAPTERS:
+	for chapter in built:
 		if not GameState.is_set_unlocked(world, chapter):
 			break
 
@@ -224,10 +227,11 @@ func _status_text(world: int, chapter: String, path: String) -> String:
 		return "Nothing built for this slot yet"
 
 	if not GameState.is_set_unlocked(world, chapter):
-		var step := LevelManager.chapter_index(chapter)
+		var built := LevelManager.built_chapters(world)
+		var step := built.find(chapter)
 		if step > 0:
 			return "Finish %s first" % LevelManager.chapter_name(
-				world, LevelManager.CHAPTERS[step - 1])
+				world, built[step - 1])
 		return "Locked"
 
 	return "Free play - %d lives for this level" % GameState.STARTING_LIVES
@@ -314,30 +318,47 @@ func _open_selector() -> void:
 	_browse_world = maxi(LevelManager.selected_world, 1)
 	_browse_chapter = LevelManager.selected_chapter
 	if _browse_chapter.is_empty():
-		_browse_chapter = LevelManager.CHAPTERS[0]
+		_browse_chapter = _first_built_chapter(_browse_world)
 
 	_show_popup("SELECT A LEVEL", 2)
 	_refresh_selector()
 
 
-## Steps to the next world along, wrapping at either end.
+## Steps to the next BUILT world along, wrapping at either end.
 ##
-## Every world can be looked at, locked or not -- the point of the selector is to
-## show what the game holds, and a locked world that cannot even be seen teaches
-## the player nothing about what they are working towards.
+## Every world that exists can be looked at, locked or not -- the point of the
+## selector is to show what the game holds, and a locked world that cannot even
+## be seen teaches the player nothing about what they are working towards. A
+## world that does not exist yet teaches them less than nothing, so those are not
+## in the walk at all.
 func _step_browse_world(step: int) -> void:
-	_browse_world = posmod(
-		_browse_world - 1 + step, LevelManager.WORLD_COUNT) + 1
+	var worlds := LevelManager.built_worlds()
+	if worlds.is_empty():
+		return
+
+	var at := maxi(worlds.find(_browse_world), 0)
+	_browse_world = worlds[posmod(at + step, worlds.size())]
 
 	# Chapters are per world, so reading into a new one starts at its beginning
 	# rather than keeping a position that meant something in the last one.
-	_browse_chapter = LevelManager.CHAPTERS[0]
+	_browse_chapter = _first_built_chapter(_browse_world)
 	_refresh_selector()
 
 
 func _browse_chapter_at(index: int) -> void:
-	_browse_chapter = LevelManager.CHAPTERS[index]
+	var built := LevelManager.built_chapters(_browse_world)
+	if index < 0 or index >= built.size():
+		return
+	_browse_chapter = built[index]
 	_refresh_selector()
+
+
+## The easiest chapter a world actually has, or "" for a world with nothing in
+## it -- which the selector should never be looking at, but which costs one line
+## to survive.
+func _first_built_chapter(world: int) -> String:
+	var built := LevelManager.built_chapters(world)
+	return built[0] if not built.is_empty() else ""
 
 
 ## Redraws the whole selector for wherever it is now looking.
@@ -352,12 +373,18 @@ func _refresh_selector() -> void:
 	_chapter_difficulty.text = \
 		"" if chapter_name == _browse_chapter else _browse_chapter
 
+	# Nothing to page to in a game with one world in it, and an arrow that only
+	# ever brings you back where you started is worse than no arrow.
+	var many_worlds := LevelManager.built_worlds().size() > 1
+	_world_prev.visible = many_worlds
+	_world_next.visible = many_worlds
+
 	_chapter_track.show_world(_browse_world, _browse_chapter)
 	_build_level_grid()
 
 
-## A full set of tiles is always drawn, so the ten levels a chapter is meant to
-## hold are visible even while most of them are still to be built.
+## One tile per level the set actually holds -- see
+## [method LevelManager.slots_in].
 ##
 ## A tile carries its number and its name and nothing else. The best time and the
 ## reason a locked level was locked used to ride along underneath, which turned
@@ -366,7 +393,7 @@ func _refresh_selector() -> void:
 func _build_level_grid() -> void:
 	_clear(_popup_grid)
 
-	for index in LevelManager.LEVELS_PER_SET:
+	for index in LevelManager.slots_in(_browse_world, _browse_chapter):
 		var button := _clone(_level_template)
 		var path := LevelManager.level_at(_browse_world, _browse_chapter, index)
 		var playable := not path.is_empty() \

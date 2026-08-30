@@ -36,6 +36,12 @@ func _ready() -> void:
 	if stick != null:
 		stick.disable()
 
+	# The camera drag goes the same way, and takes its reset button off the
+	# screen before this panel fades up over it.
+	var camera_control := get_tree().get_first_node_in_group("camera_control") as CameraDrag
+	if camera_control != null:
+		camera_control.disable()
+
 	_panel.modulate.a = 0.0
 	create_tween().tween_property(_panel, "modulate:a", 1.0, fade_duration)
 

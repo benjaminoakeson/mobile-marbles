@@ -1,9 +1,15 @@
 [gd_scene format=3 uid="uid://odyo2cun2tc"]
 
 [ext_resource type="PhysicsMaterial" uid="uid://simkr1kes125" path="res://materials/physics_materials/player.tres" id="1_dqkch"]
-[ext_resource type="Material" path="res://materials/marble/solid/solid_black.tres" id="3_dqkch"]
+[ext_resource type="Material" uid="uid://lnqnqxghbg6q" path="res://materials/marble/animated/animated_nebula.tres" id="3_fjrip"]
 [ext_resource type="Script" uid="uid://cmiaw7a2vi83j" path="res://scripts/ball_audio.gd" id="4_fjrip"]
 [ext_resource type="Script" uid="uid://c10m1v1y5x1du" path="res://scripts/player.gd" id="5_player"]
+[ext_resource type="Material" uid="uid://bsparkburst01" path="res://materials/spark_burst.tres" id="6_sparkburst"]
+[ext_resource type="QuadMesh" uid="uid://bsparkpiece01" path="res://materials/spark_piece.tres" id="7_sparkpiece"]
+[ext_resource type="Script" uid="uid://kiljtrbej78d" path="res://scripts/spark_trail.gd" id="8_sparktrail"]
+[ext_resource type="Material" uid="uid://bshardburst1" path="res://materials/impact_burst.tres" id="9_shardburst"]
+[ext_resource type="PrismMesh" uid="uid://bshardpiece1" path="res://materials/impact_shard.tres" id="10_shardpiece"]
+[ext_resource type="Script" uid="uid://ccocw06xqri33" path="res://scripts/impact_burst.gd" id="11_impactburst"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_6x1ae"]
 
@@ -29,13 +35,41 @@ script = ExtResource("5_player")
 shape = SubResource("SphereShape3D_6x1ae")
 
 [node name="PlayerMesh" type="MeshInstance3D" parent="PlayerCollider" unique_id=1846725698]
-material_override = ExtResource("3_dqkch")
+material_override = ExtResource("3_fjrip")
 cast_shadow = 0
 mesh = SubResource("SphereMesh_dpmpi")
 
 [node name="ShadowCaster" type="MeshInstance3D" parent="PlayerCollider" unique_id=754492296]
 cast_shadow = 3
 mesh = SubResource("SphereMesh_6t5aa")
+
+[node name="Sparks" type="GPUParticles3D" parent="." unique_id=1584350480]
+cast_shadow = 0
+emitting = false
+amount = 15
+lifetime = 0.3
+explosiveness = 0.04
+randomness = 0.5
+fixed_fps = 0
+transform_align = 3
+process_material = ExtResource("6_sparkburst")
+draw_pass_1 = ExtResource("7_sparkpiece")
+script = ExtResource("8_sparktrail")
+quiet_speed = 10.0
+full_speed = 15.0
+
+[node name="Impact" type="GPUParticles3D" parent="." unique_id=1584350481]
+cast_shadow = 0
+emitting = false
+amount = 26
+lifetime = 0.85
+one_shot = true
+explosiveness = 1.0
+randomness = 0.35
+fixed_fps = 0
+process_material = ExtResource("9_shardburst")
+draw_pass_1 = ExtResource("10_shardpiece")
+script = ExtResource("11_impactburst")
 
 [node name="BallAudio" type="AudioStreamPlayer" parent="." unique_id=1091740662]
 script = ExtResource("4_fjrip")

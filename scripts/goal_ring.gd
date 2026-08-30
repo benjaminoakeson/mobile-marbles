@@ -1,18 +1,39 @@
-extends AnimatableBody3D
+extends StaticBody3D
+## The goal: a ring stood on its edge, planted in the ground, with a pane of
+## glass across the middle that the player has to smash through to win.
+##
+## The rim is solid, so the ball has to go through the hole rather than at the
+## ring; the glass is a [DestructibleSurface] cut round, which already breaks
+## from whichever side it is struck, so the goal is open both ways with nothing
+## here to say so.
+##
+## StaticBody3D rather than AnimatableBody3D: a nested animatable body under the
+## level body brings the `sync_to_physics` trap with it if that level is ever
+## moved. Same reason the destructible surfaces are static.
 
-## Fires once the ball has been caught and thrown. The level is over by then.
+## Fires once the ball is through and on its way out. The level is over by then.
 signal level_completed
 
-@export var throw_force := 15.0
-@export var snap_duration := 0.25 # How fast the ball vacuums to the center
-
 # --- Level Finished Settings ---
-## Drag on the airborne ball. Gravity is off during the celebration, so this is
-## the only thing that stops it -- it coasts up about (throw impulse / mass) /
-## this many metres before settling.
-@export var float_damping := 4.0
+## The least the ball may leave the ring at, in metres a second.
+##
+## A FLOOR, not a speed. Whatever the ball arrived carrying is what it leaves
+## with; this only catches the goal that was barely broken into, so a ball that
+## trickled through still gets clear of the ring instead of stalling in it.
+@export var minimum_exit_speed := 5.0
 
-## Seconds between the throw and the menu appearing, so the throw is seen first.
+## Drag on the coasting ball. Gravity is off from the moment it comes through, so
+## this is the only thing that stops it: it carries on about `exit speed / this`
+## metres before settling, which is what makes a fast goal pay -- at the ring's
+## own 0.7, coming through at five metres a second runs about seven metres and
+## coming through at fifteen runs about twenty.
+##
+## Angular drag is set to match, so the spin winds down with the roll rather than
+## leaving a marble turning on the spot.
+@export var coast_damping := 4.0
+
+## Seconds between coming through and the menu appearing, so the ball is seen
+## clear of the ring first.
 @export var menu_delay := 1.5
 
 @export var level_complete_scene: PackedScene = preload("res://scenes/UI/level_complete.tscn")
@@ -50,23 +71,34 @@ signal level_completed
 @export var all_gems_multiplier := 3.0
 # ---------------
 
-# --- Breathing Animation Settings ---
-## How fast the ring breathes in and out.
-@export var breath_speed := 2.0
-## How much the ring grows and shrinks (0.05 = 5% bigger and smaller).
-@export var breath_amount := 0.1
-
-var _time_passed := 0.0
-# ------------------------------------
+# --- Smash Reaction ---
+## How far the ring kicks out when the glass goes, and how long it takes to
+## settle back.
+##
+## This replaced a breathing idle. A ring that grows and shrinks around a pane
+## that cannot opens a rind of daylight at the rim on every breath -- and a
+## reaction to the smash is worth more than an idle anyway.
+@export var punch_scale := 1.18
+@export var punch_time := 0.45
+# ----------------------
 
 var _is_triggered := false
 
-@onready var trigger_area: Area3D = $TriggerArea
 @onready var ring: MeshInstance3D = $Ring
+@onready var _glass: DestructibleSurface = $Glass
+@onready var _ring_collider: CollisionShape3D = $RingCollider
 @onready var _confetti: GPUParticles3D = get_node_or_null("Confetti") as GPUParticles3D
 
 
-func _process(delta: float) -> void:
+func _ready() -> void:
+	# The rim is solid, and its collider is cut from the very mesh being drawn, so
+	# the ring can be resized in the inspector without a hand-baked shape left
+	# behind at the old size. Concave is what the level's own geometry uses.
+	if _ring_collider.shape == null and ring.mesh != null:
+		_ring_collider.shape = ring.mesh.create_trimesh_shape()
+
+
+func _process(_delta: float) -> void:
 	# The clock runs on frames, so the frame is where it has to be stopped. The
 	# `body_entered` signal this used to listen on fires inside the physics
 	# flush, part way through a frame that has not added its own delta yet, and
@@ -76,48 +108,48 @@ func _process(delta: float) -> void:
 	# The overlap itself still only changes on a physics tick -- that is where
 	# bodies move -- so this does not catch the ball any sooner. What it fixes is
 	# WHICH reading of the clock gets banked.
-	_check_for_ball()
-
-	# Keep track of time passing
-	_time_passed += delta
-	
-	# Math.sin() goes back and forth between -1.0 and 1.0 smoothly over time.
-	# We multiply it by our amount (e.g., 0.05) to get a small scale offset.
-	var scale_offset := sin(_time_passed * breath_speed) * breath_amount
-	
-	# Apply the new scale ONLY to the visual mesh (1.0 is the base size)
-	ring.scale = Vector3.ONE * (1.0 + scale_offset)
+	_check_for_smash()
 
 
-## Looks for the ball sitting in the ring, once a frame.
-func _check_for_ball() -> void:
-	if _is_triggered:
+## Looks for the glass gone, once a frame.
+##
+## The glass decides in the physics tick, but it is read here for the reason the
+## overlap used to be: a level banked mid-flush reads a clock a frame behind the
+## one the player is watching, and now that the time is kept to the millisecond
+## that gap shows. Waiting for the frame does not let the ball through any later
+## -- the glass is already broken and the ball already through it.
+func _check_for_smash() -> void:
+	if _is_triggered or _glass == null or not _glass.is_broken():
 		return
 
-	for body in trigger_area.get_overlapping_bodies():
-		if body is RigidBody3D and body.is_in_group("player"):
-			_catch(body)
-			return
+	var ball := get_tree().get_first_node_in_group("player") as RigidBody3D
+	if ball != null:
+		_catch(ball)
 
 
 func _catch(body: RigidBody3D) -> void:
 	_is_triggered = true
 
-	# Stop the clock HERE, on contact. Banking the level happens after the ball
-	# has been vacuumed in and thrown, and charging the player for that quarter
-	# of a second of cutscene would be daylight robbery.
+	# Stop the clock HERE, on the break. Banking the level happens after the ball
+	# has coasted clear, and charging the player for that bit of cutscene would be
+	# daylight robbery.
 	GameState.stop_timing()
 
-	Audio.play(Audio.FANFARE)
-	_spray_confetti()
+	# Which way the ball was going as it came through. Read before anything is
+	# done to the body, because everything that follows is aimed along it.
+	var heading := _heading_of(body)
 
-	# Stop the level dead. Everything from here -- the vacuum, the throw, the
-	# confetti -- is aimed at where things stand right now, so the ground must
-	# not move again. Taking the stick away only stops NEW input; the tilt would
-	# still ease back towards flat and the pivot would still chase the ball.
-	var tilt := get_tree().get_first_node_in_group("level_tilt")
-	if tilt != null and tilt.has_method("freeze"):
-		tilt.freeze()
+	Audio.play(Audio.FANFARE)
+	_spray_confetti(heading)
+	_punch_ring()
+
+	# Let go of gravity and put it back to straight down. Everything from here --
+	# the nudge, the confetti -- is aimed at where things stand right now, and a
+	# lean still easing back towards level would drag the ball off that line.
+	# Taking the stick away only stops NEW input.
+	var steering := get_tree().get_first_node_in_group("level_body")
+	if steering != null and steering.has_method("freeze"):
+		steering.freeze()
 
 	# The stick goes too, so it neither steers a frozen level nor draws over the
 	# menu later.
@@ -125,42 +157,86 @@ func _catch(body: RigidBody3D) -> void:
 	if stick != null:
 		stick.disable()
 
-	_grab_and_throw(body)
+	# And the camera drag with it, so the victory orbit cannot be wrestled off
+	# course from behind the menu.
+	var camera_control := get_tree().get_first_node_in_group("camera_control") as CameraDrag
+	if camera_control != null:
+		camera_control.disable()
+
+	_send_off(body, heading)
 
 
-## One burst of confetti out of the ring, with its own pop on top of the
-## fanfare.
+## The way the ball was travelling as it came through the glass.
 ##
-## Fired the instant the ball touches, so the celebration is already going while
-## the ball is vacuumed in and thrown, rather than starting after it.
-func _spray_confetti() -> void:
+## Falls back to the way the ring faces, pointed away from wherever the ball is,
+## for the case that should not happen: a goal opened by a ball that is barely
+## moving. Sending it nowhere would leave it sitting in the ring.
+func _heading_of(player: RigidBody3D) -> Vector3:
+	var travelling := player.linear_velocity
+	if travelling.length_squared() > 0.01:
+		return travelling.normalized()
+
+	var through := ring.global_transform.basis.y.normalized()
+	return through if through.dot(player.global_position - global_position) >= 0.0 else -through
+
+
+## One burst of confetti out of the ring, thrown the way the ball went, with its
+## own pop on top of the fanfare.
+##
+## Fired the instant the glass goes, so the celebration is already going while
+## the ball is still coasting out, rather than starting after it.
+func _spray_confetti(heading: Vector3) -> void:
 	if _confetti == null:
 		return
+
+	# The burst is built around the emitter's own up, so standing that on the
+	# heading sends the paper out after the ball. Aimed in world space rather
+	# than by turning the goal, which the ring and the glass are hung off.
+	var up := heading.normalized()
+	var side := up.cross(Vector3.UP)
+	if side.length_squared() < 0.0001:
+		side = up.cross(Vector3.RIGHT)
+	side = side.normalized()
+	_confetti.global_transform = Transform3D(
+			Basis(side, up, side.cross(up)), _confetti.global_position)
 
 	Audio.play(Audio.CONFETTI)
 	_confetti.restart()
 
 
-func _grab_and_throw(player: RigidBody3D) -> void:
-	player.set_deferred("freeze", true)
-
+## The ring's own answer to the glass going: a kick outward that settles back.
+func _punch_ring() -> void:
 	var tween := create_tween()
-	tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(player, "global_position", global_position, snap_duration)
-	tween.tween_callback(_throw_player.bind(player))
+	tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(ring, "scale", Vector3.ONE * punch_scale, punch_time * 0.35)
+	tween.tween_property(ring, "scale", Vector3.ONE, punch_time * 0.65)
 
 
-func _throw_player(player: RigidBody3D) -> void:
-	player.freeze = false
-	player.linear_velocity = Vector3.ZERO
-	player.angular_velocity = Vector3.ZERO
+## Sends the ball on out the far side and lets it run down to a stop.
+##
+## Everything it arrived with goes with it. A goal taken flat out should look
+## taken flat out: the ball bursts out the far side still carrying its speed and
+## runs a long way down before the drag settles it, while a goal crept into
+## barely clears the ring. The glass has already taken its cut on the way through
+## -- see [member DestructibleSurface.shatter_momentum_kept] -- and that shave is
+## the whole price of the goal.
+##
+## The spin is left alone, because a marble that stops turning the instant it
+## wins looks switched off.
+func _send_off(player: RigidBody3D, heading: Vector3) -> void:
+	# Pointed along the way it was already going, which is the heading read
+	# before anything was done to the body. Redirecting rather than leaving the
+	# velocity untouched costs nothing -- the two are the same direction -- and
+	# it keeps a ball that clipped the rim on its way through flying straight.
+	var carried := maxf(player.linear_velocity.length(), minimum_exit_speed)
+	player.linear_velocity = heading * carried
 
-	# Cut gravity and pile on drag so the ball coasts upward and hangs there,
-	# rather than arcing back down through the level behind the menu.
+	# Gravity off and drag piled on, so the ball carries on the way it was going
+	# and settles in the open rather than arcing back down through the level
+	# behind the menu.
 	player.gravity_scale = 0.0
-	player.linear_damp = float_damping
-
-	player.apply_central_impulse(Vector3.UP * throw_force)
+	player.linear_damp = coast_damping
+	player.angular_damp = coast_damping
 
 	var camera := get_tree().get_first_node_in_group("camera_rig") as CameraFollow
 	if camera != null:
@@ -178,8 +254,8 @@ func _throw_player(player: RigidBody3D) -> void:
 
 ## Whatever is left of the time score at the moment the ball reached the ring.
 ##
-## Reads the clock frozen on contact, so the vacuum-and-throw costs nothing, and
-## the clock itself only started when the player first steered.
+## Reads the clock frozen on the break, so coasting out costs nothing, and the
+## clock itself only started when the player first steered.
 func _time_award() -> int:
 	if slow_time <= 0.0:
 		return 0

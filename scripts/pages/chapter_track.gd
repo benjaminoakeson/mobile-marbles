@@ -57,12 +57,14 @@ func _ready() -> void:
 ## Points the track at a world and marks one chapter as the one being looked at.
 func show_world(world: int, selected_chapter: String) -> void:
 	_world = world
-	_selected = maxi(LevelManager.chapter_index(selected_chapter), 0)
+	# Counted among the chapters this world actually HAS, not among the six the
+	# game plans for, because that is what the dots below are drawn from.
+	_selected = maxi(LevelManager.built_chapter_index(world, selected_chapter), 0)
 	queue_redraw()
 
 
 func _draw() -> void:
-	var count: int = LevelManager.CHAPTERS.size()
+	var count: int = LevelManager.built_chapters(_world).size()
 	if count == 0:
 		return
 
@@ -110,7 +112,7 @@ func _gui_input(event: InputEvent) -> void:
 ## each end, so the first and last dots are inset rather than hard against the
 ## edges where a ring would be clipped.
 func _dot_at(index: int) -> Vector2:
-	var count: int = LevelManager.CHAPTERS.size()
+	var count: int = maxi(LevelManager.built_chapters(_world).size(), 1)
 	var step := size.x / float(count)
 	return Vector2(step * (float(index) + 0.5), size.y * 0.5)
 
@@ -120,7 +122,7 @@ func _nearest_dot(at: Vector2) -> int:
 	var best := -1
 	var best_distance := TAP_RADIUS
 
-	for i in LevelManager.CHAPTERS.size():
+	for i in LevelManager.built_chapters(_world).size():
 		var distance := at.distance_to(_dot_at(i))
 		if distance <= best_distance:
 			best = i
@@ -133,7 +135,7 @@ func _colour_for(index: int) -> Color:
 	if _is_done(index):
 		return DONE_COLOUR
 
-	var chapter: String = LevelManager.CHAPTERS[index]
+	var chapter: String = _chapter_at(index)
 	if GameState.is_set_unlocked(_world, chapter):
 		return OPEN_COLOUR
 
@@ -144,5 +146,12 @@ func _colour_for(index: int) -> Color:
 ## finishes a chapter and opens the next, so it is what the road is drawn from --
 ## free play through every level in it does not join the dots up.
 func _is_done(index: int) -> bool:
-	var chapter: String = LevelManager.CHAPTERS[index]
-	return GameState.is_challenge_complete(_world, chapter)
+	return GameState.is_challenge_complete(_world, _chapter_at(index))
+
+
+## The chapter a dot stands for, or "" for a dot that is not there. Every read
+## goes through here so a world part way through being built cannot index off
+## the end of its own list.
+func _chapter_at(index: int) -> String:
+	var built := LevelManager.built_chapters(_world)
+	return built[index] if index >= 0 and index < built.size() else ""

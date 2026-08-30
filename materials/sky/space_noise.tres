@@ -1,0 +1,12 @@
+[gd_resource type="NoiseTexture3D" format=3 uid="uid://bspacenoise01"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_space"]
+noise_type = 0
+seed = 7
+frequency = 0.035
+fractal_lacunarity = 2.15
+fractal_gain = 0.52
+
+[resource]
+noise = SubResource("FastNoiseLite_space")
+seamless = true

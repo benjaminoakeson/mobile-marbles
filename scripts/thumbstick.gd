@@ -4,6 +4,12 @@ extends Control
 ## On-screen dynamic thumbstick, drawn from primitives so it needs no art assets.
 ## `value` is clamped to unit length: +X is right, +Y is up the screen.
 
+## Controls that get first refusal on a touch landing inside them. The stick
+## reads raw touches in `_input`, which Godot runs before it hands the event to
+## the UI, so a button sitting over the stick's box -- the camera reset, in the
+## bottom corner -- would otherwise be swallowed whole and never see the press.
+const BLOCKER_GROUP := "blocks_thumbstick"
+
 @export var knob_travel := 250.0 
 @export var knob_radius := 90.0
 @export var dead_zone := 0.1
@@ -21,7 +27,8 @@ var _global_base_pos := Vector2.ZERO
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:
-			if _touch_index == -1 and get_global_rect().has_point(event.position):
+			if _touch_index == -1 and get_global_rect().has_point(event.position) \
+					and not _blocked_at(event.position):
 				_touch_index = event.index
 				_is_active = true
 				_global_base_pos = event.position
@@ -39,6 +46,16 @@ func disable() -> void:
 	_release()
 	set_process_input(false)
 	hide()
+
+
+## Whether a control that outranks the stick is sitting under this point.
+func _blocked_at(pos: Vector2) -> bool:
+	for node in get_tree().get_nodes_in_group(BLOCKER_GROUP):
+		var control := node as Control
+		if control != null and control.is_visible_in_tree() \
+				and control.get_global_rect().has_point(pos):
+			return true
+	return false
 
 
 func _move_knob(pos: Vector2) -> void:

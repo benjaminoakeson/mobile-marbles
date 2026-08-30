@@ -56,6 +56,26 @@ corner_radius_bottom_left = 120
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
 
+; The record stamp: a hard gold rule around a see-through middle, so it reads as
+; something pressed onto the panel rather than another chip laid on it. Sized by
+; the node's own offsets, not by its text, because the script measures the box to
+; place it beside the total.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stamp"]
+content_margin_left = 20.0
+content_margin_top = 12.0
+content_margin_right = 20.0
+content_margin_bottom = 14.0
+bg_color = Color(0.09019608, 0.10980392, 0.12941177, 0.44)
+border_width_left = 7
+border_width_top = 7
+border_width_right = 7
+border_width_bottom = 7
+border_color = Color(1, 0.84313726, 0.42745098, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_chip"]
 content_margin_left = 44.0
 content_margin_top = 20.0
@@ -121,6 +141,40 @@ theme_override_constants/outline_size = 18
 theme_override_font_sizes/font_size = 130
 text = "0"
 horizontal_alignment = 1
+
+; Stamped beside the finished total when the run beats the record, then left
+; pulsing. Hidden until then, and placed by the script -- where "beside" is
+; depends on how wide the number turned out, so it cannot be authored here.
+;
+; The box hugs its text -- the script pins it to that before measuring, so the
+; offsets here are only what the editor draws -- and the type size is therefore
+; what decides whether the stamp clears the number rather than landing on top of
+; it. At 38 the box comes to 257 wide, which leaves the full gap beside a
+; five-figure total, about the most the game pays out.
+[node name="RecordStamp" type="PanelContainer" parent="Panel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 0
+offset_left = 787.0
+offset_top = 725.0
+offset_right = 1044.0
+offset_bottom = 853.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
+
+[node name="RecordLabel" type="Label" parent="Panel/RecordStamp"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.84313726, 0.42745098, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.70196080)
+theme_override_constants/line_spacing = -4
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 38
+text = "NEW
+HIGHSCORE"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 ; Deliberately NOT in a container: it is flown across the screen by hand, and a
 ; container would drag it back into place every frame.

@@ -1,0 +1,9 @@
+[gd_resource type="PhysicsMaterial" format=3]
+
+; What the shards land like: slippery enough to scatter and skid, with just
+; enough bounce to chatter rather than settle where they fall. Nowhere near ice,
+; which never stops.
+
+[resource]
+friction = 0.25
+bounce = 0.2

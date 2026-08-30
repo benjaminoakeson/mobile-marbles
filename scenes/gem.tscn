@@ -136,6 +136,7 @@ material = ExtResource("7_hgwl1")
 
 [node name="Burst" type="GPUParticles3D" parent="." unique_id=630144824]
 emitting = false
+local_coords = true
 amount = 16
 lifetime = 0.9
 one_shot = true

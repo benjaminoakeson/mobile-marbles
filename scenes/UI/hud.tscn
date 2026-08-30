@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://jp8kmqb6wji0" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/time_ring.gd" id="2_time_ring"]
+[ext_resource type="PackedScene" path="res://scenes/UI/camera_control.tscn" id="3_camera_control"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 content_margin_left = 28.0
@@ -141,3 +142,8 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 60
 text = "0.00s"
 horizontal_alignment = 1
+
+; --- Camera: drags above the stick swing the view, and the button in the corner
+; hands it back to the automatic shot. Lives on the HUD rather than in each
+; level so no level can be built without it.
+[node name="CameraControl" parent="." instance=ExtResource("3_camera_control")]

@@ -29,6 +29,10 @@ const LEVELS_PER_SET := 10
 ## they are not free text -- renaming one here orphans everything ever cleared in
 ## it. The player-facing name comes from `CHAPTER_NAMES` instead, which is safe
 ## to change whenever.
+##
+## They deliberately do NOT track the folders the scenes live in. Those are
+## `chapter1`, `chapter2`, `chapter3`; these are the difficulties, and the two
+## are free to drift apart because only `CATALOG` joins them.
 const CHAPTERS := [
 	"Super Easy",
 	"Easy",
@@ -44,10 +48,16 @@ const CHAPTERS := [
 ## a list shorter than `CHAPTERS`, falls back to the difficulty itself, so a
 ## chapter is never nameless while a world is still being written.
 const CHAPTER_NAMES := {
+	# World 2 has one chapter so far. A world with no entry, or a list shorter
+	# than the chapters it has built, falls back to the difficulty -- so this can
+	# stay one name long until the next chapter turns up.
+	2: [
+		"New Horizons",
+	],
 	1: [
-		"Rolling Meadow",
-		"Garden Path",
-		"Hedge Maze",
+		"Simple Beginnings",
+		"Getting Holey",
+		"Start Movin'",
 		"Timber Yard",
 		"The Long Fall",
 		"Meadow's End",
@@ -61,24 +71,31 @@ const CHAPTER_NAMES := {
 const CATALOG := {
 	1: {
 		"Super Easy": [
-			"res://scenes/levels/world_1/super_easy/1-1-se.tscn",
-			"res://scenes/levels/world_1/super_easy/1-2-se.tscn",
-			"res://scenes/levels/world_1/super_easy/1-3-se.tscn",
-			"res://scenes/levels/world_1/super_easy/1-4-se.tscn",
-			"res://scenes/levels/world_1/super_easy/1-5-se.tscn",
+			"res://scenes/levels/world_1/chapter1/1-1.tscn",
+			"res://scenes/levels/world_1/chapter1/1-2.tscn",
+			"res://scenes/levels/world_1/chapter1/1-3.tscn",
+			"res://scenes/levels/world_1/chapter1/1-4.tscn",
+			"res://scenes/levels/world_1/chapter1/1-5.tscn",
 		],
 		"Easy": [
-			"res://scenes/levels/world_1/easy/1-1-e.tscn",
-			"res://scenes/levels/world_1/easy/1-2-e.tscn",
-			"res://scenes/levels/world_1/easy/1-3-e.tscn",
-			"res://scenes/levels/world_1/easy/1-4-e.tscn",
-			"res://scenes/levels/world_1/easy/1-5-e.tscn",
-			"res://scenes/levels/world_1/easy/1-6-e.tscn",
-			"res://scenes/levels/world_1/easy/1-7-e.tscn",
-			"res://scenes/levels/world_1/easy/1-8-e.tscn",
-			"res://scenes/levels/world_1/easy/1-9-e.tscn",
-			"res://scenes/levels/world_1/easy/1-10-e.tscn",
-		]
+			"res://scenes/levels/world_1/chapter2/1-1.tscn",
+			"res://scenes/levels/world_1/chapter2/1-2.tscn",
+			"res://scenes/levels/world_1/chapter2/1-3.tscn",
+			"res://scenes/levels/world_1/chapter2/1-4.tscn",
+			"res://scenes/levels/world_1/chapter2/1-5.tscn",
+		],
+		"Medium": [
+			"res://scenes/levels/world_1/chapter3/1-1.tscn",
+			"res://scenes/levels/world_1/chapter3/1-2.tscn",
+			"res://scenes/levels/world_1/chapter3/1-3.tscn",
+			"res://scenes/levels/world_1/chapter3/1-4.tscn",
+			"res://scenes/levels/world_1/chapter3/1-5.tscn",
+		],
+	},
+	2: {
+		"Super Easy": [
+			"res://scenes/levels/world_2/chapter1/1-1.tscn",
+		],
 	},
 }
 
@@ -88,21 +105,30 @@ const CATALOG := {
 ## and it is the only place a level is named. A level with nothing here falls
 ## back to its slot number, so a newly dropped level is never nameless.
 const NAMES := {
-	"res://scenes/levels/world_1/super_easy/1-1-se.tscn": "First Roll",
-	"res://scenes/levels/world_1/super_easy/1-2-se.tscn": "First Turn",
-	"res://scenes/levels/world_1/super_easy/1-3-se.tscn": "Round About",
-	"res://scenes/levels/world_1/super_easy/1-4-se.tscn": "Tubaloob",
-	"res://scenes/levels/world_1/super_easy/1-5-se.tscn": "Take it around town",
-	"res://scenes/levels/world_1/easy/1-1-e.tscn": "One Long Shot",
-	"res://scenes/levels/world_1/easy/1-2-e.tscn": "Crank Right",
-	"res://scenes/levels/world_1/easy/1-3-e.tscn": "Split Decision",
-	"res://scenes/levels/world_1/easy/1-4-e.tscn": "Hole Trap",
-	"res://scenes/levels/world_1/easy/1-5-e.tscn": "Speed Trap",
-	"res://scenes/levels/world_1/easy/1-6-e.tscn": "Hide and Seek",
-	"res://scenes/levels/world_1/easy/1-7-e.tscn": "Switchback Central",
-	"res://scenes/levels/world_1/easy/1-8-e.tscn": "U-Turn",
-	"res://scenes/levels/world_1/easy/1-9-e.tscn": "The Gauntlet",
-	"res://scenes/levels/world_1/easy/1-10-e.tscn": "Think Thonker",
+	"res://scenes/levels/world_1/chapter1/1-1.tscn": "First Roll",
+	"res://scenes/levels/world_1/chapter1/1-2.tscn": "First Turn",
+	"res://scenes/levels/world_1/chapter1/1-3.tscn": "Round About",
+	"res://scenes/levels/world_1/chapter1/1-4.tscn": "In The Hole",
+	"res://scenes/levels/world_1/chapter1/1-5.tscn": "Take it around town",
+	"res://scenes/levels/world_1/chapter2/1-1.tscn": "Sneeky Snake",
+	"res://scenes/levels/world_1/chapter2/1-2.tscn": "Half Pipe",
+	"res://scenes/levels/world_1/chapter2/1-3.tscn": "Split Decision",
+	"res://scenes/levels/world_1/chapter2/1-4.tscn": "Hole Trap",
+	"res://scenes/levels/world_1/chapter2/1-5.tscn": "Full Steam Ahead",
+	"res://scenes/levels/world_1/chapter3/1-1.tscn": "Switchbacks",
+	"res://scenes/levels/world_1/chapter3/1-2.tscn": "Rollercoaster Ride",
+	"res://scenes/levels/world_1/chapter3/1-3.tscn": "Triangle Twist",
+	"res://scenes/levels/world_1/chapter3/1-4.tscn": "Liftoff",
+	"res://scenes/levels/world_1/chapter3/1-5.tscn": "Smashn' Glass",
+
+	# World 2, one level in so far. Placeholder name in the style of the rest.
+	"res://scenes/levels/world_2/chapter1/1-1.tscn": "Second Wind",
+
+	# Names waiting on levels that are not built yet. Kept here so they are not
+	# lost; move one up into the list above as its level appears.
+	#
+	#   Easy 6-10 ... Hide and Seek, Switchback Central, U-Turn, The Gauntlet,
+	#                 Think Thonker
 }
 
 ## What the player last picked in the menu. Written by the level page, read when
@@ -125,6 +151,50 @@ static func set_id(world: int, chapter: String) -> String:
 ## chapter that is not one of `CHAPTERS`.
 static func chapter_index(chapter: String) -> int:
 	return CHAPTERS.find(chapter)
+
+
+## The worlds with anything built in them, lowest first.
+##
+## What the menus are drawn from, rather than `WORLD_COUNT`. That constant is
+## how many worlds the game is PLANNED to have; this is how many it has. Showing
+## the plan means nine empty worlds to page past, which teaches the player
+## nothing except that most of the game is missing.
+static func built_worlds() -> Array:
+	var worlds: Array = CATALOG.keys()
+	worlds.sort()
+	return worlds.filter(func(world): return not built_chapters(world).is_empty())
+
+
+## The chapters of a world with anything built in them, in `CHAPTERS` order --
+## easiest first, the order they unlock in.
+##
+## An empty chapter is not shown at all. A chapter with levels in it is, whether
+## or not the player has unlocked it: a locked chapter they can see is something
+## to work towards, where one that is missing entirely is not.
+static func built_chapters(world: int) -> Array:
+	var chapters: Dictionary = CATALOG.get(world, {})
+	var built: Array = []
+	for chapter in CHAPTERS:
+		if not chapters.get(chapter, []).is_empty():
+			built.append(chapter)
+	return built
+
+
+## Where a chapter sits among the BUILT chapters of its world, counting from 0,
+## or -1 if that world has not been built out that far. This is the index the
+## menus count in; `chapter_index()` counts in the full plan.
+static func built_chapter_index(world: int, chapter: String) -> int:
+	return built_chapters(world).find(chapter)
+
+
+## How many level slots a set shows: exactly as many as it holds.
+##
+## Sets used to draw a full `LEVELS_PER_SET` of tiles with the unbuilt ones
+## greyed, which was the right call while a set was a row of gaps waiting to be
+## filled. A finished set has no gaps, and five real levels read better than five
+## real ones and five reminders that ten was the plan.
+static func slots_in(world: int, chapter: String) -> int:
+	return levels_in(world, chapter).size()
 
 
 ## What a chapter is called in this world. Falls back to its difficulty, so an

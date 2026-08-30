@@ -1,0 +1,19 @@
+[gd_resource type="Environment" format=3 uid="uid://bspaceenv001"]
+
+[ext_resource type="Material" uid="uid://bspacesky001" path="res://materials/sky/space_sky.tres" id="1_skymat"]
+
+[sub_resource type="Sky" id="Sky_space"]
+sky_material = ExtResource("1_skymat")
+process_mode = 2
+radiance_size = 2
+
+[resource]
+background_mode = 2
+sky = SubResource("Sky_space")
+ambient_light_source = 3
+ambient_light_color = Color(0.36, 0.39, 0.56, 1)
+ambient_light_sky_contribution = 0.65
+ambient_light_energy = 1.6
+reflected_light_source = 2
+glow_enabled = true
+glow_bloom = 0.05

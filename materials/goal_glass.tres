@@ -1,0 +1,38 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://cco6sxf2qnxsl"]
+
+[ext_resource type="Shader" uid="uid://5du75012t5o3" path="res://materials/goal_glass.gdshader" id="1_glass"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_glass")
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/light_square = Color(0.94207865, 0.96379787, 0.9999997, 1)
+shader_parameter/dark_square = Color(0, 0, 0, 1)
+shader_parameter/square_size = 0.29999999329441
+shader_parameter/pattern_strength = 0.999999977648
+shader_parameter/polish = 0.999999977648
+shader_parameter/sheen = 0.07999999821184
+shader_parameter/base_alpha = 0.0999999977648
+shader_parameter/edge_alpha = 0.999999977648
+shader_parameter/edge_sharpness = 3.0
+shader_parameter/shine_opacity = 0.999999977648
+shader_parameter/shine_ceiling = 1.1
+shader_parameter/square_alpha = 0.499999988824
+shader_parameter/sky_colour = Color(0.9, 0.95, 1, 1)
+shader_parameter/ground_colour = Color(0.03, 0.035, 0.05, 1)
+shader_parameter/reflectivity = 0.0999999977648
+shader_parameter/horizon_colour = Color(1, 0.99, 0.95, 1)
+shader_parameter/horizon_strength = 0.45
+shader_parameter/horizon_width = 0.08
+shader_parameter/horizon_height = 0.42
+shader_parameter/sun_towards = Vector3(-0.3, 0.42, 0.86)
+shader_parameter/sun_strength = 1.5
+shader_parameter/sun_tightness = 5.0
+shader_parameter/face_on_reflection = 0.12
+shader_parameter/ripple_strength = 0.14499999675896
+shader_parameter/ripple_scale = 9.10000012815032
+shader_parameter/glint_colour = Color(0.85, 0.95, 1, 1)
+shader_parameter/glint_strength = 0.58999998681232
+shader_parameter/glint_speed = 0.10999999754128
+shader_parameter/glint_span = 3.00000004470359
+shader_parameter/glint_width = 0.18999999575312

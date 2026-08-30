@@ -1,0 +1,47 @@
+[gd_scene format=3 uid="uid://bwind0one0001"]
+
+[ext_resource type="Script" uid="uid://dvyn81skbnkhm" path="res://scripts/wind_zone.gd" id="1_windzone"]
+[ext_resource type="QuadMesh" uid="uid://bwindwisp001" path="res://materials/wind_wisp.tres" id="3_windwisp"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wind"]
+size = Vector3(6, 4, 12)
+
+[sub_resource type="Gradient" id="Gradient_wisp"]
+offsets = PackedFloat32Array(0, 0.18, 0.72, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 0.62, 1, 1, 1, 0.5, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_wisp"]
+gradient = SubResource("Gradient_wisp")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_l8tg2"]
+emission_shape = 3
+emission_box_extents = Vector3(3, 2, 6)
+direction = Vector3(0, 0, -1)
+spread = 7.0
+initial_velocity_min = 7.2
+initial_velocity_max = 11.25
+gravity = Vector3(0, 0, 0)
+scale_min = 0.5
+scale_max = 1.2
+color_ramp = SubResource("GradientTexture1D_wisp")
+anim_offset_max = 1.0
+
+[node name="WindZone" type="Area3D" unique_id=1996998207 groups=["wind_zone"]]
+collision_layer = 0
+collision_mask = 4
+script = ExtResource("1_windzone")
+
+[node name="Shape" type="CollisionShape3D" parent="." unique_id=1158277300]
+shape = SubResource("BoxShape3D_wind")
+
+[node name="Wisps" type="GPUParticles3D" parent="." unique_id=236747835]
+cast_shadow = 0
+amount = 144
+lifetime = 1.5333333333333332
+randomness = 0.25
+fixed_fps = 0
+visibility_aabb = AABB(-7, -6, -10, 14, 12, 20)
+local_coords = true
+transform_align = 3
+process_material = SubResource("ParticleProcessMaterial_l8tg2")
+draw_pass_1 = ExtResource("3_windwisp")

@@ -1,0 +1,15 @@
+[gd_resource type="QuadMesh" format=3 uid="uid://bsparkpiece01"]
+
+[ext_resource type="Texture2D" uid="uid://bsparktex0001" path="res://materials/textures/spark/spark.tres" id="1_spark"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_spark"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_spark")
+disable_receive_shadows = true
+
+[resource]
+material = SubResource("StandardMaterial3D_spark")
+size = Vector2(0.085, 0.5)

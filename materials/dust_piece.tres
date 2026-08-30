@@ -1,0 +1,16 @@
+[gd_resource type="QuadMesh" format=3 uid="uid://d13nm0t7im7ll"]
+
+[ext_resource type="Texture2D" uid="uid://cik3x0d2xawp2" path="res://materials/textures/dust/puff.tres" id="1_puff"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dust"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_puff")
+disable_receive_shadows = true
+billboard_mode = 1
+billboard_keep_scale = true
+
+[resource]
+material = SubResource("StandardMaterial3D_dust")
+size = Vector2(0.58, 0.58)

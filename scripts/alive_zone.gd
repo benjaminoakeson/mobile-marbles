@@ -65,11 +65,17 @@ func _respawn(player: RigidBody3D) -> void:
 	# A ball that fell a long way may have been put to sleep on the way down.
 	player.sleeping = false
 
-	# The tilt pivot is about to jump right across the level to the spawn. Under
-	# a held stick that would swing the geometry into the ball and bat it away,
-	# so put the level flat and back at rest first.
+	# The stick may still be held over from the fall. Let go of the lean before
+	# the ball is put back, or it starts its new life already rolling.
 	if _level != null and _level.has_method("reset_to_rest"):
 		_level.reset_to_rest()
+
+	# Anything the ball smashed on the way down goes back, or a level with a
+	# breakable floor over the only route through it is unfinishable from the
+	# second life onwards. A slab set not to come back stays broken.
+	for surface in get_tree().get_nodes_in_group("destructible"):
+		if surface.has_method("restore") and surface.get("restores_on_respawn"):
+			surface.restore()
 
 	GameState.lose_life()
 
@@ -80,7 +86,7 @@ func _respawn(player: RigidBody3D) -> void:
 		camera.reset_to_start()
 
 
-## Walks up from the spawn point to whatever is driving the level's tilt.
+## Walks up from the spawn point to whatever is steering the level.
 func _find_tilting_level(from: Node) -> Node3D:
 	var node := from.get_parent()
 	while node != null:
@@ -90,14 +96,12 @@ func _find_tilting_level(from: Node) -> Node3D:
 	return null
 
 
-## Where the spawn point sits with the level untilted.
+## Where the spawn point sits, read through the level's rest transform.
 ##
-## A spawn point parented to the level cannot be read straight off its live
-## global position: the level swings about the ball, so that position depends on
-## where the ball happened to be when it fell. Reading it through the level's
-## rest transform gives the same answer every time -- and because the tilt is a
-## rotation *about* the ball, dropping the ball exactly there leaves it there
-## even while the stick is still held over.
+## The level holds still now, so this is the spawn point's own global position by
+## another name. It is still read the long way round because the level is the
+## thing that owns where its points are, and a level that is one day animated
+## would put the spawn somewhere else by the time the ball fell off.
 func _spawn_position() -> Vector3:
 	if _level == null:
 		return _spawn.global_position

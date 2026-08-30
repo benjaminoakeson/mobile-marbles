@@ -1,0 +1,63 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/camera_drag.gd" id="1_drag"]
+[ext_resource type="Script" path="res://scripts/reset_camera_icon.gd" id="2_icon"]
+
+; Matches the HUD's panels: the same dark translucent ground, rounded all the
+; way off. The radius is half the button's 160px box, which is what makes it a
+; circle -- change one and the other has to follow.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reset"]
+bg_color = Color(0.09019608, 0.10980392, 0.12941177, 0.61176471)
+corner_radius_top_left = 80
+corner_radius_top_right = 80
+corner_radius_bottom_right = 80
+corner_radius_bottom_left = 80
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reset_pressed"]
+bg_color = Color(0.20392157, 0.23921569, 0.27450982, 0.78431374)
+corner_radius_top_left = 80
+corner_radius_top_right = 80
+corner_radius_bottom_right = 80
+corner_radius_bottom_left = 80
+
+[node name="CameraControl" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_drag")
+
+; In the group so the thumbstick lets presses through to it -- the stick's box
+; is large enough to reach into this corner. See `Thumbstick.BLOCKER_GROUP`.
+[node name="ResetCameraButton" type="Button" parent="." groups=["blocks_thumbstick"]]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 160)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -208.0
+offset_top = -208.0
+offset_right = -48.0
+offset_bottom = -48.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_reset")
+theme_override_styles/hover = SubResource("StyleBoxFlat_reset")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_reset_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_reset")
+
+[node name="Icon" type="Control" parent="ResetCameraButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_icon")

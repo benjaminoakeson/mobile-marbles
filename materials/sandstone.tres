@@ -1,0 +1,7 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://b2ivsf4r4nl8"]
+
+[ext_resource type="Texture2D" uid="uid://bmwasrc74h6ua" path="res://materials/textures/sand/Sandstone.png" id="1_d044j"]
+
+[resource]
+albedo_texture = ExtResource("1_d044j")
+uv1_triplanar = true

@@ -1,0 +1,27 @@
+[gd_resource type="PrismMesh" format=3 uid="uid://bshardpiece1"]
+
+[ext_resource type="Shader" uid="uid://dti15rk6qbdn6" path="res://materials/impact_shard.gdshader" id="1_shard"]
+
+; One splinter of glass. A wafer, the way the destructible panes cut theirs, and
+; culling is off for the same reason theirs is: with only the front face drawn a
+; shard vanishes every time it tumbles edge-over.
+;
+; The shader is what gives each shard its own tumble axis, its own rate and its
+; own proportions -- see impact_shard.gdshader. A StandardMaterial3D cannot, and
+; nor can the process material driving the burst.
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_shard"]
+render_priority = 0
+shader = ExtResource("1_shard")
+shader_parameter/glass_tint = Color(0.68, 0.85, 0.92, 0.55)
+shader_parameter/rim_tint = Color(1, 1, 1, 1)
+shader_parameter/rim_power = 3.0
+shader_parameter/rim_strength = 0.65
+shader_parameter/surface_roughness = 0.05
+shader_parameter/tumble_speed = 1.6
+shader_parameter/size_spread = 0.6
+shader_parameter/stretch = 0.55
+
+[resource]
+material = SubResource("ShaderMaterial_shard")
+size = Vector3(0.12, 0.16, 0.02)

@@ -25,6 +25,9 @@ const NEW_RECORD := preload("res://audio/HighScore.wav")
 
 ## One award landing on the victory panel's running total, and the heavier
 ## thump of a multiplier landing on it.
+## A destructible slab giving way under the ball.
+const BREAK := preload("res://audio/TrapWood.wav")
+
 const TALLY := preload("res://audio/Clink.wav")
 const MULTIPLIER := preload("res://audio/DoubleBonus.wav")
 const EXTRA_LIFE := preload("res://audio/ExtraBall.wav")
@@ -40,7 +43,7 @@ const MENU_MUSIC := "res://audio/music/ConesWorldTheme.mp3"
 ## the track below, so a new world is never silent while it is being built.
 const WORLD_MUSIC := {
 	1: "res://audio/music/NiceDay Theme.mp3",
-	2: "res://audio/music/BilliardWorldTheme.mp3",
+	2: "res://audio/music/CastleWorldTheme.mp3",
 	3: "res://audio/music/BrickWorldTheme.mp3",
 	4: "res://audio/music/CastleWorldTheme.mp3",
 	5: "res://audio/music/CheeseWorldTheme.mp3",
@@ -89,9 +92,14 @@ func _ready() -> void:
 
 ## Plays a one-shot. Each call takes the next voice round, so sounds that land
 ## together overlap instead of cutting one another off.
-func play(stream: AudioStream, volume_db := 0.0, pitch := 1.0) -> void:
+##
+## Returns how long the sound will be audible for, in seconds, so a caller with
+## something to say afterwards can hold off until this one has finished -- the
+## victory panel's record fanfare does exactly that. Ignore it freely; almost
+## every sound in the game is meant to overlap whatever else is going on.
+func play(stream: AudioStream, volume_db := 0.0, pitch := 1.0) -> float:
 	if stream == null:
-		return
+		return 0.0
 
 	var voice := _voices[_next_voice]
 	_next_voice = (_next_voice + 1) % _voices.size()
@@ -100,6 +108,10 @@ func play(stream: AudioStream, volume_db := 0.0, pitch := 1.0) -> void:
 	voice.volume_db = volume_db
 	voice.pitch_scale = pitch
 	voice.play()
+
+	# Pitched up, a sound is over sooner -- and what the caller is waiting on is
+	# how long it will be heard for, not how long it was recorded at.
+	return stream.get_length() / maxf(pitch, 0.01)
 
 
 ## Puts a track on, or leaves the one that is playing exactly where it is when

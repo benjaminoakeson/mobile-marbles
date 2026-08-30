@@ -27,6 +27,34 @@ extends CanvasLayer
 ## What a tap multiplies the pace of the rest of the tally by.
 @export var tap_speed_up := 5.0
 
+@export_group("Record Stamp")
+
+## A beat of quiet between the last award's sound finishing and the record
+## fanfare, so the news arrives on its own rather than on the tail of the
+## multiplier. The wait itself is however long that sound had left to run -- a
+## tap hurries the counting, but nothing can hurry a sound already playing.
+@export var record_gap := 0.12
+
+## How far past its resting size the stamp starts, so it comes down onto the
+## panel rather than fading up on it.
+@export var record_punch := 2.3
+
+## How long that landing takes.
+@export var record_slam := 0.26
+
+## How far off square the stamp sits once it has landed, in degrees. It winds in
+## from further round than this.
+@export var record_tilt_degrees := -7.0
+
+## The pulse it keeps up afterwards: how far it swells, and how quickly.
+@export var record_pulse := 0.05
+@export var record_pulse_speed := 5.0
+
+## The gap between the total's last digit and the stamp, and how close to the
+## panel's edge the stamp may be pushed by a very long number.
+@export var record_offset := 44.0
+@export var record_margin := 24.0
+
 @onready var _panel: Control = %Panel
 @onready var _next_button: Button = %NextLevelButton
 @onready var _menu_button: Button = %MenuButton
@@ -34,6 +62,7 @@ extends CanvasLayer
 @onready var _chip: Control = %AwardChip
 @onready var _chip_name: Label = %AwardName
 @onready var _chip_value: Label = %AwardValue
+@onready var _stamp: Control = %RecordStamp
 
 ## Where the chip sits before it flies. Read once the panel has been laid out,
 ## since the chip is moved about by hand afterwards.
@@ -55,6 +84,17 @@ var _speed := 1.0
 var _tallying := false
 var _has_next := false
 
+## When the last award sound will have died away, on the engine clock. The
+## record fanfare waits for this: the awards' sounds run far longer than the
+## counting they arrive with -- the multiplier's is nearly two seconds against a
+## count of about half of one, and a tap shortens the count further still -- so
+## playing the fanfare on the finished number lands it in the middle of them.
+var _award_sfx_until := 0.0
+
+## Set once the stamp has landed, from which point `_process` owns its scale.
+var _pulsing := false
+var _pulse_time := 0.0
+
 
 func _ready() -> void:
 	_menu_button.pressed.connect(_change_scene.bind(LevelManager.MENU))
@@ -74,6 +114,7 @@ func _ready() -> void:
 	_menu_button.hide()
 
 	_chip.hide()
+	_stamp.hide()
 	_total_label.text = "0"
 
 	_panel.modulate.a = 0.0
@@ -89,7 +130,9 @@ func _ready() -> void:
 	# Held back to here rather than played on open, so the news lands on the
 	# finished number instead of over the counting.
 	if GameState.beat_best:
+		await _let_awards_ring_out()
 		Audio.play(Audio.NEW_RECORD)
+		_stamp_record()
 
 	_reveal_buttons()
 
@@ -110,6 +153,12 @@ func _process(delta: float) -> void:
 	var throb := sin(_throb_time * 26.0) * 0.035 if counting else 0.0
 	_total_label.pivot_offset = _total_label.size * 0.5
 	_total_label.scale = Vector2.ONE * (1.0 + _impact + throb)
+
+	# The stamp breathes on its own clock, and only once it has finished landing
+	# -- until then the slam tween owns its scale and the two would fight.
+	if _pulsing:
+		_pulse_time += delta
+		_stamp.scale = Vector2.ONE * (1.0 + sin(_pulse_time * record_pulse_speed) * record_pulse)
 
 
 ## A tap hurries the rest of the tally. Handled as unhandled input so it only
@@ -144,7 +193,7 @@ func _play_points(award: Dictionary) -> void:
 
 	await _present(str(award.get("label", "")), "+" + GameState.format_gems(points))
 
-	Audio.play(Audio.TALLY)
+	_play_award_sfx(Audio.TALLY)
 	_impact = 0.14
 	await _count_to(_target + points)
 
@@ -158,7 +207,7 @@ func _play_multiplier(award: Dictionary) -> void:
 
 	await _present(str(award.get("label", "")), "x" + _trim_zeroes(factor))
 
-	Audio.play(Audio.MULTIPLIER)
+	_play_award_sfx(Audio.MULTIPLIER)
 	_impact = 0.34
 	await _count_to(int(round(_target * factor)))
 
@@ -205,6 +254,85 @@ func _count_to(value: int) -> void:
 		await get_tree().process_frame
 
 	_refresh_total()
+
+
+## Plays an award's sound and remembers when it will be over, so the record
+## fanfare can wait its turn. Only the awards go through here: everything else
+## the panel makes a noise about is meant to overlap.
+func _play_award_sfx(stream: AudioStream) -> void:
+	var ends_at := _clock() + Audio.play(stream)
+	_award_sfx_until = maxf(_award_sfx_until, ends_at)
+
+
+## Waits out whatever is left of the award sounds, plus a beat. Usually there is
+## something to wait for: the counting is over well before the multiplier's
+## sting has finished ringing.
+func _let_awards_ring_out() -> void:
+	var left := _award_sfx_until - _clock() + record_gap
+	if left <= 0.0:
+		return
+
+	await get_tree().create_timer(left).timeout
+
+
+## Brings the stamp down beside the total and leaves it pulsing there.
+func _stamp_record() -> void:
+	_place_stamp()
+
+	_stamp.pivot_offset = _stamp.size * 0.5
+	_stamp.scale = Vector2.ONE * record_punch
+	_stamp.modulate.a = 0.0
+
+	# Wound further round than it will end up, so it twists square as it lands.
+	_stamp.rotation = deg_to_rad(record_tilt_degrees - 16.0)
+	_stamp.show()
+
+	var slam := create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	slam.tween_property(_stamp, "scale", Vector2.ONE, record_slam)
+	slam.tween_property(_stamp, "rotation", deg_to_rad(record_tilt_degrees), record_slam)
+	slam.tween_property(_stamp, "modulate:a", 1.0, record_slam * 0.4)
+
+	# The total takes the hit as the stamp lands, the same way it does when an
+	# award flies into it.
+	_impact = 0.22
+
+	await slam.finished
+	_pulsing = true
+
+
+## Puts the stamp just past the last digit of the total.
+##
+## The total's label runs the full width of the screen and centres its text, so
+## the label's own rect says nothing about where the number ends -- that has to
+## be measured off the text. Done now rather than up front because the number is
+## only this wide once the counting has stopped.
+func _place_stamp() -> void:
+	# Pinned to what the text actually needs before anything is measured off it.
+	# The stamp has been hidden since the panel opened, so its box is still at
+	# whatever the scene authored, or part way through settling towards its
+	# contents -- either way it is not yet the width the placement below has to
+	# be worked out against.
+	_stamp.reset_size()
+
+	var font := _total_label.get_theme_font("font")
+	var font_size := _total_label.get_theme_font_size("font_size")
+	var text_width := font.get_string_size(
+			_total_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+
+	var centre := _total_label.get_global_rect().get_center()
+	var x := centre.x + text_width * 0.5 + record_offset
+
+	# A big enough score would push the stamp off the edge, so it stops short and
+	# overlaps the number instead of leaving the screen.
+	x = minf(x, _panel.size.x - _stamp.size.x - record_margin)
+
+	_stamp.global_position = Vector2(x, centre.y - _stamp.size.y * 0.5)
+
+
+## Seconds on a clock that keeps running whatever the tree is doing -- the panel
+## plays over a celebration that may have paused it.
+func _clock() -> float:
+	return Time.get_ticks_msec() / 1000.0
 
 
 func _refresh_total() -> void:

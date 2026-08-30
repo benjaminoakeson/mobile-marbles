@@ -1,7 +1,7 @@
 class_name MovingPart
 extends AnimatableBody3D
 
-## Base for anything that moves inside the tilting level -- spinners, lifts,
+## Base for anything that moves inside the level -- spinners, lifts,
 ## platforms on rails, whatever comes next.
 ##
 ## Moving a body by hand inside the level goes wrong in three ways, and this
@@ -38,7 +38,7 @@ func _ready() -> void:
 
 	_level = _find_level()
 	if _level == null:
-		push_warning("%s: no tilting level above it; motion will be measured in world space" % name)
+		push_warning("%s: no level body above it; motion will be measured in world space" % name)
 
 	_last_in_level = _transform_in_level()
 
@@ -62,8 +62,8 @@ func _advance(_delta: float) -> void:
 	pass
 
 
-## This part's placement measured against the level, so the level's own tilting
-## does not read as the part moving.
+## This part's placement measured against the level, so a level that is moved
+## or animated does not read as the part moving.
 func _transform_in_level() -> Transform3D:
 	if _level == null:
 		return global_transform
@@ -82,10 +82,8 @@ func _find_level() -> Node3D:
 ## Tells the solver how fast this surface is travelling, so friction can drag a
 ## ball along with it.
 ##
-## Measured against the level and then turned into world directions. The level's
-## own tilt is deliberately left out: it turns about the ball's own contact
-## point, so it barely moves the ground under the ball anyway, and folding it in
-## here would only feed the tilt's frame-to-frame swing into every rider.
+## Measured against the level and then turned into world directions, so what a
+## rider is told is the part's own travel and not the level's.
 func _publish_surface_velocity(now: Transform3D, delta: float) -> void:
 	if delta <= 0.0:
 		return

@@ -1,0 +1,20 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://bpadenergy001"]
+
+[ext_resource type="Shader" uid="uid://cooebfq65t55b" path="res://materials/pad_energy.gdshader" id="1_pad"]
+
+; The defaults here are the blue push. A pad sets its own colour and flow from
+; `boost` when it readies, on its own copy, so this resource is only ever what a
+; pad starts from and what shows in the inspector preview.
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_pad")
+shader_parameter/energy_colour = Color(0.25, 0.62, 1, 1)
+shader_parameter/flow = 1.0
+shader_parameter/bands = 3.0
+shader_parameter/pulse_speed = 0.9
+shader_parameter/chevron = -1.0
+shader_parameter/brightness = 2.6
+shader_parameter/fill = 0.16
+shader_parameter/band_sharpness = 3.0
+shader_parameter/edge_softness = 0.16

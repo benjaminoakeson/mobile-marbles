@@ -60,10 +60,17 @@ func _process(_delta: float) -> void:
 	_time_label.text = GameState.format_time(GameState.level_time)
 
 
-## Brings the row of marbles to `lives`, one at a time, so a life won or lost is
-## a marble arriving or leaving rather than the whole row being rebuilt.
+## Brings the row of marbles to the number of SPARE lives, one at a time, so a
+## life won or lost is a marble arriving or leaving rather than the whole row
+## being rebuilt.
+##
+## Spares, not lives: the one being played is not in the row, so what is on
+## screen is how many more goes are left after this one. An empty row means you
+## are on your last life, which is the moment the row most needs to say
+## something -- with the count itself shown, an empty row meant you were already
+## dead and had never been seen.
 func _on_lives_changed(lives: int) -> void:
-	var wanted := maxi(lives, 0)
+	var wanted := maxi(lives - 1, 0)
 
 	while _marbles.size() < wanted:
 		_add_marble(_marbles.size())

@@ -1,0 +1,28 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://b0jtstvkmflx3"]
+
+[ext_resource type="Shader" uid="uid://xonmsbhcy6vs" path="res://materials/goal_rim.gdshader" id="1_rim"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_rim")
+shader_parameter/base_colour = Color(0.11306744, 0.12664917, 0.17190722, 1)
+shader_parameter/deep_colour = Color(0.02, 0.025, 0.04, 1)
+shader_parameter/roundness = 0.6
+shader_parameter/metallic = 0.25
+shader_parameter/roughness = 0.32
+shader_parameter/specular = 0.7
+shader_parameter/edge_colour = Color(1, 1, 1, 1)
+shader_parameter/edge_strength = 0.5
+shader_parameter/edge_sharpness = 3.5
+shader_parameter/sparkle_colour = Color(1, 0.97, 0.88, 1)
+shader_parameter/sparkle_strength = 3.0
+shader_parameter/sparkle_cells = Vector2(90, 5)
+shader_parameter/sparkle_size = 0.2
+shader_parameter/sparkle_speed = 0.95000001415614
+shader_parameter/sparkle_rarity = 14.0
+shader_parameter/sparkle_depth = 0.035
+shader_parameter/wind_colour = Color(1, 1, 1, 1)
+shader_parameter/wind_strength = 0.10999999754128
+shader_parameter/wind_speed = 0.7999999821184
+shader_parameter/wind_focus = 4.0000000447036
+shader_parameter/wind_lifts_sparkles = 3.5000000521542
