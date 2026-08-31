@@ -4,6 +4,8 @@
 [ext_resource type="PackedScene" path="res://scenes/UI/pages/shop_page.tscn" id="2_shop"]
 [ext_resource type="PackedScene" path="res://scenes/UI/pages/levels_page.tscn" id="3_levels"]
 [ext_resource type="PackedScene" path="res://scenes/UI/pages/marble_page.tscn" id="4_marble"]
+[ext_resource type="PackedScene" path="res://scenes/UI/profile.tscn" id="5_profile"]
+[ext_resource type="Material" uid="uid://ccdmgewvmbcrx" path="res://materials/gems/emerald_shader.tres" id="6_emerald"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab"]
 bg_color = Color(0.13333334, 0.15294118, 0.17254902, 1)
@@ -16,6 +18,43 @@ border_width_top = 4
 border_color = Color(0.2, 0.22, 0.24, 1)
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
+
+; The gem in the corner: the same emerald the levels are full of, cut the same
+; way and turning the same way, so the number beside it needs no label saying
+; what it counts.
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_gem"]
+sky_top_color = Color(0.5019608, 0.53333336, 0.56078434, 1)
+sky_horizon_color = Color(0.5019608, 0.53333336, 0.56078434, 1)
+ground_horizon_color = Color(0.5019608, 0.53333336, 0.56078434, 1)
+ground_bottom_color = Color(0.5019608, 0.53333336, 0.56078434, 1)
+
+[sub_resource type="Sky" id="Sky_gem"]
+sky_material = SubResource("ProceduralSkyMaterial_gem")
+
+[sub_resource type="Environment" id="Environment_gem"]
+background_mode = 3
+sky = SubResource("Sky_gem")
+ambient_light_source = 3
+reflected_light_source = 2
+
+; A six-sided bipyramid -- a sphere cut down to almost nothing is the cheapest
+; way to a gem, and the shader does the facets over the top of it anyway.
+[sub_resource type="SphereMesh" id="SphereMesh_gem"]
+radius = 0.2
+height = 0.52
+radial_segments = 6
+rings = 1
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gems"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0.13333334, 0.15294118, 0.17254902, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_nav"]
 
@@ -38,11 +77,15 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.09019608, 0.10980392, 0.12941177, 1)
 
+; Started below the strip along the top that the profile button and the gem count
+; sit in. Held clear here, once, rather than by every page in turn dodging two
+; things that are not theirs.
 [node name="Layout" type="VBoxContainer" parent="." unique_id=1551404213]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = 158.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -120,3 +163,72 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 toggle_mode = true
 button_group = SubResource("ButtonGroup_nav")
 text = "Marble"
+
+; --- What the player has to spend. A child of the menu rather than of the shop
+; page, because a price is only worth reading next to the gems that have to pay
+; it: the marble page is where the wanting happens and the levels page is where
+; the earning does, and the count has to be on both.
+[node name="Gems" type="PanelContainer" parent="." unique_id=1584350600]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -270.0
+offset_top = 22.0
+offset_right = -40.0
+offset_bottom = 126.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_gems")
+
+[node name="Row" type="HBoxContainer" parent="Gems" unique_id=1584350601]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="GemView" type="SubViewportContainer" parent="Gems/Row" unique_id=1584350604]
+custom_minimum_size = Vector2(76, 76)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="Gems/Row/GemView" unique_id=1584350605]
+own_world_3d = true
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(76, 76)
+render_target_update_mode = 3
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Gems/Row/GemView/SubViewport" unique_id=1584350606]
+environment = SubResource("Environment_gem")
+
+[node name="Camera3D" type="Camera3D" parent="Gems/Row/GemView/SubViewport" unique_id=1584350607]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.5)
+projection = 1
+size = 0.62
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Gems/Row/GemView/SubViewport" unique_id=1584350608]
+transform = Transform3D(0.8660254, -0.25, 0.4330127, 0, 0.8660254, 0.5, -0.5, -0.4330127, 0.75, 0, 0, 0)
+
+[node name="Gem" type="MeshInstance3D" parent="Gems/Row/GemView/SubViewport" unique_id=1584350609]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 0.9659258, 0.25881904, 0, -0.25881904, 0.9659258, 0, 0, 0)
+mesh = SubResource("SphereMesh_gem")
+surface_material_override/0 = ExtResource("6_emerald")
+
+[node name="GemValue" type="Label" parent="Gems/Row" unique_id=1584350603]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 44
+text = "0"
+vertical_alignment = 1
+
+; --- The profile button, and the settings behind it. Last in the tree so it
+; draws over the pages, and a child of the menu rather than of any one page so
+; it is there whichever tab is open -- the same reasoning as the bar of tabs.
+[node name="Profile" parent="." instance=ExtResource("5_profile")]

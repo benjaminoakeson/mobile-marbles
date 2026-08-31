@@ -1,0 +1,7 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dajkqo4l1hmm8"]
+
+[ext_resource type="Texture2D" uid="uid://xkmlgwpteoc7" path="res://materials/textures/sand/EgyptianTempleNormal.png" id="1_6aloo"]
+
+[resource]
+albedo_texture = ExtResource("1_6aloo")
+uv1_triplanar = true

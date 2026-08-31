@@ -46,6 +46,11 @@ uniform float cloud_threshold : hint_range(0.0, 0.95) = 0.54;
 uniform float cloud_softness : hint_range(0.01, 0.8) = 0.26;
 uniform float cloud_density : hint_range(0.0, 4.0) = 1.6;
 uniform float nebula_glow : hint_range(0.0, 4.0) = 1.5;
+// A breath in and out of the whole cloud: how often, and how much of the gas
+// comes and goes with it. What makes a fire look like it is burning rather than
+// merely lit.
+uniform float pulse_speed : hint_range(0.0, 4.0) = 0.0;
+uniform float pulse_amount : hint_range(0.0, 1.0) = 0.0;
 // How far a second noise field drags the first one around before it is read.
 // This is what frays the clouds into wisps instead of blobs.
 uniform float warp_amount : hint_range(0.0, 1.0) = 0.45;
@@ -57,6 +62,10 @@ uniform vec3 spiral_axis = vec3(0.2, 1.0, 0.1);
 uniform float spiral_turns : hint_range(0.0, 3.0) = 0.8;
 // A slow churn so the gas is never quite still. Keep it low -- fast is cheap.
 uniform float drift_speed : hint_range(0.0, 0.5) = 0.03;
+// Turns a second the whole field is wound round the axis. The churn above is
+// the gas moving within itself; this is the cloud as a body turning, which is
+// what a whirlpool or a galaxy needs and a fire does not.
+uniform float spin_speed : hint_range(-1.0, 1.0) = 0.0;
 
 group_uniforms Stars;
 uniform vec4 star_colour : source_color = vec4(1.0, 0.95, 0.88, 1.0);
@@ -116,6 +125,9 @@ void fragment() {
 
 	vec3 axis = normalize(spiral_axis);
 	float drift = TIME * drift_speed;
+	float spin = TIME * spin_speed * TAU;
+	// One at rest, so a skin that does not breathe is left exactly as it was.
+	float pulse = 1.0 + sin(TIME * pulse_speed) * pulse_amount;
 
 	// Break the sampling positions up per pixel. Twenty even steps through soft
 	// gas leaves visible rings; a little jitter trades those for a faint grain
@@ -131,7 +143,7 @@ void fragment() {
 		float r = length(unit_q);
 
 		// Wind the arms in towards the core.
-		vec3 sp = twist(unit_q, axis, spiral_turns * TAU * (1.0 - clamp(r, 0.0, 1.0)));
+		vec3 sp = twist(unit_q, axis, spiral_turns * TAU * (1.0 - clamp(r, 0.0, 1.0)) + spin);
 
 		vec3 uvw = sp * cloud_scale * 0.5 + vec3(0.5) + vec3(drift, drift * 0.6, -drift * 0.4);
 
@@ -155,7 +167,7 @@ void fragment() {
 		float shell = 1.0 - smoothstep(0.70, 1.0, r);
 		gas_amount *= shell * mix(0.55, 1.0, 1.0 - clamp(r, 0.0, 1.0));
 
-		float density = clamp(gas_amount * cloud_density / float(STEPS) * 6.0, 0.0, 1.0);
+		float density = clamp(gas_amount * cloud_density * pulse / float(STEPS) * 6.0, 0.0, 1.0);
 
 		// Colour by DEPTH, not by density. Keying the hue off how much gas is at
 		// this point looked like one flat violet, because the density hardly ever

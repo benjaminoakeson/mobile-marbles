@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" path="res://materials/ui/chevron_right.svg" id="4_chevron_right"]
 [ext_resource type="Texture2D" path="res://materials/ui/crown.svg" id="5_crown"]
 [ext_resource type="Script" path="res://scripts/pages/chapter_track.gd" id="6_track"]
+[ext_resource type="Script" uid="uid://f8gnpiiy2ing" path="res://scripts/drag_scroll.gd" id="7_scroll"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tile"]
 bg_color = Color(0.20392157, 0.5019608, 0.24705882, 1)
@@ -571,6 +572,7 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
+script = ExtResource("7_scroll")
 
 [node name="PopupGrid" type="GridContainer" parent="Popup/Panel/Layout/Scroll"]
 unique_name_in_owner = true

@@ -4,7 +4,7 @@
 
 [node name="Camera" type="Node3D" unique_id=499086097 groups=["camera_rig"]]
 script = ExtResource("1_cvpoc")
-tilt_pitch_degrees = 12.0
+turn_speed_min = 2.0
 
 [node name="CameraSpring" type="SpringArm3D" parent="." unique_id=1084264038]
 transform = Transform3D(1, 0, 0, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, 0, 0, 0)

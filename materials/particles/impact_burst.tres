@@ -1,11 +1,5 @@
 [gd_resource type="ParticleProcessMaterial" format=3 uid="uid://bshardburst1"]
 
-; No `angular_velocity` here on purpose. It randomises how fast and which way a
-; particle spins, but only ever about ONE axis, so a whole burst turns in the
-; same plane and reads as paper rather than glass. The shards do their own
-; tumbling instead, each about an axis of its own -- see impact_shard.gdshader.
-;
-
 [sub_resource type="Gradient" id="Gradient_shatter"]
 offsets = PackedFloat32Array(0, 0.7, 1)
 colors = PackedColorArray(1, 1, 1, 1, 0.92, 0.97, 1, 0.85, 0.8, 0.9, 1, 0)

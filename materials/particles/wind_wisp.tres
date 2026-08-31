@@ -1,6 +1,6 @@
 [gd_resource type="QuadMesh" format=3 uid="uid://bwindwisp001"]
 
-[ext_resource type="Shader" uid="uid://dcxnr21utm6lb" path="res://materials/wind_wisp.gdshader" id="1_wisp"]
+[ext_resource type="Shader" uid="uid://dcxnr21utm6lb" path="res://materials/shaders/wind_wisp.gdshader" id="1_wisp"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_wisp"]
 render_priority = 0

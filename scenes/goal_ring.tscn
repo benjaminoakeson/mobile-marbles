@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://dff8ndsvoi5a4"]
 
 [ext_resource type="Script" uid="uid://cit8rqsqmss8a" path="res://scripts/goal_ring.gd" id="1_f27q5"]
-[ext_resource type="Material" uid="uid://bvyk3cj8w6465" path="res://materials/confetti_burst.tres" id="3_0qpjr"]
-[ext_resource type="QuadMesh" uid="uid://bvyk3cj8w6466" path="res://materials/confetti_piece.tres" id="4_u7dg5"]
+[ext_resource type="Material" uid="uid://bvyk3cj8w6465" path="res://materials/particles/confetti_burst.tres" id="3_0qpjr"]
+[ext_resource type="QuadMesh" uid="uid://bvyk3cj8w6466" path="res://materials/particles/confetti_piece.tres" id="4_u7dg5"]
 [ext_resource type="PackedScene" path="res://scenes/surfaces/destructible_surface.tscn" id="5_glass"]
 [ext_resource type="Material" uid="uid://cco6sxf2qnxsl" path="res://materials/goal_glass.tres" id="6_pane"]
 [ext_resource type="Material" uid="uid://b0jtstvkmflx3" path="res://materials/goal_rim.tres" id="7_rim"]
@@ -29,7 +29,6 @@ transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -0.25, 0)
 shape = 1
 size = Vector3(2.1, 0.07, 2.1)
 surface_material = ExtResource("6_pane")
-colour = null
 break_impulse = 10.0
 spokes = 9
 rings = 4

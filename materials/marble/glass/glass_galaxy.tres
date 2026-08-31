@@ -1,0 +1,50 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" uid="uid://l2p86a77edcv" path="res://materials/marble/marble_shaders/glass_marble.gdshader" id="1_shader"]
+[ext_resource type="NoiseTexture3D" uid="uid://2xwfub1a47re" path="res://materials/marble/marble_shaders/marble_noise.tres" id="2_noise"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/glass_tint = Color(0.05, 0.04, 0.11, 1)
+shader_parameter/glass_opacity = 0.4
+shader_parameter/surface_roughness = 0.02
+shader_parameter/rim_tint = Color(1, 1, 1, 1)
+shader_parameter/rim_power = 3.5
+shader_parameter/rim_strength = 0.35
+shader_parameter/vein_colour = Color(0.1, 0.45, 1, 1)
+shader_parameter/vein_edge_colour = Color(0.4, 0.88, 1, 1)
+shader_parameter/vein_axis = Vector3(0, 1, 0)
+shader_parameter/vein_breadth = 0.5
+shader_parameter/vein_thickness = 0.28
+shader_parameter/vein_softness = 0.35
+shader_parameter/vein_density = 0
+shader_parameter/vein_glow = 0.8
+shader_parameter/vein_count = 1
+shader_parameter/vein_twist = 0
+shader_parameter/vein_offset = 0
+shader_parameter/organic_noise = ExtResource("2_noise")
+shader_parameter/fold_amount = 0.18
+shader_parameter/fold_scale = 0.9
+shader_parameter/drift_speed = 0
+shader_parameter/core_colour = Color(1, 1, 1, 1)
+shader_parameter/core_radius = 0.4
+shader_parameter/core_softness = 0.4
+shader_parameter/core_mottle = 0
+shader_parameter/core_density = 0
+shader_parameter/shell_colour = Color(0.55, 0.18, 0.85, 1)
+shader_parameter/shell_radius = 0.66
+shader_parameter/shell_thickness = 0.32
+shader_parameter/shell_mottle = 1
+shader_parameter/shell_density = 0.7
+shader_parameter/band_colour = Color(0.9, 0.15, 0.2, 1)
+shader_parameter/band_alt_colour = Color(0.15, 0.3, 0.9, 1)
+shader_parameter/band_count = 3
+shader_parameter/band_width = 0.35
+shader_parameter/band_wander = 0.3
+shader_parameter/band_density = 0
+shader_parameter/fleck_colour = Color(1, 1, 1, 1)
+shader_parameter/fleck_scale = 20
+shader_parameter/fleck_threshold = 0.86
+shader_parameter/fleck_density = 3
+shader_parameter/marble_radius = 0.5

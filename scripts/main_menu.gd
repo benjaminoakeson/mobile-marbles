@@ -14,6 +14,13 @@ static var _open_page := 1
 
 @onready var _pages: Array[Control] = [%ShopPage, %LevelsPage, %MarblePage]
 @onready var _tabs: Array[Button] = [%ShopTab, %LevelsTab, %MarbleTab]
+@onready var _gems: Label = %GemValue
+@onready var _gem: Node3D = %Gem
+
+## How fast the gem in the corner turns, in degrees a second. The same slow turn
+## the ones in the levels have, so the counter reads as a gem rather than as an
+## icon of one.
+const GEM_SPIN := 45.0
 
 
 func _ready() -> void:
@@ -27,7 +34,20 @@ func _ready() -> void:
 	for index in _tabs.size():
 		_tabs[index].pressed.connect(_open_page_at.bind(index))
 
+	GameState.bank_changed.connect(_show_gems)
+	_show_gems(GameState.bank)
+
 	_open_page_at(_open_page)
+
+
+func _process(delta: float) -> void:
+	_gem.rotate_y(deg_to_rad(GEM_SPIN) * delta)
+
+
+## The count in the corner. Followed rather than read once: gems are spent in the
+## shop while this is on screen, and the number has to come down as they go.
+func _show_gems(bank: int) -> void:
+	_gems.text = GameState.format_gems(bank)
 
 
 func _open_page_at(index: int) -> void:

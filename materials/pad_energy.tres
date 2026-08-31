@@ -1,6 +1,6 @@
 [gd_resource type="ShaderMaterial" format=3 uid="uid://bpadenergy001"]
 
-[ext_resource type="Shader" uid="uid://cooebfq65t55b" path="res://materials/pad_energy.gdshader" id="1_pad"]
+[ext_resource type="Shader" uid="uid://cooebfq65t55b" path="res://materials/shaders/pad_energy.gdshader" id="1_pad"]
 
 ; The defaults here are the blue push. A pad sets its own colour and flow from
 ; `boost` when it readies, on its own copy, so this resource is only ever what a

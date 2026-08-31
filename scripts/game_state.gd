@@ -22,6 +22,26 @@ signal run_ended
 ## the marble on the page changes under the picker as it is tapped.
 signal marble_skin_changed(skin_id: String)
 
+## A marble has been bought. The shop repaints the tile and the picker gains a
+## marble to choose from.
+signal owned_skins_changed
+
+## The shop has put fresh stock out.
+signal shop_changed
+
+## The stick has been swapped between its gated and free forms mid-level. Carries
+## the new setting so a stick already on screen can change under the thumb.
+signal stick_gated_changed(gated: bool)
+
+## The player has changed which hand they hold the phone in. Carries the new
+## setting, so the buttons in the bottom corners can change sides where they
+## stand rather than at the next level.
+signal handedness_changed(left_handed: bool)
+
+## Either volume has moved. Carries nothing: there are only two, and whatever is
+## listening is going to set them both anyway.
+signal audio_levels_changed
+
 ## A level has been loaded and is about to be played. What it is worth hearing
 ## about is which world it belongs to, so the music can match.
 signal level_started(level_path: String)
@@ -120,9 +140,71 @@ var challenges_done := {}
 ## own gem tally resets with the level; this never does.
 var bank := 0
 
-## Which marble the player is wearing, as a `MarbleSkins` id. Purely cosmetic --
-## nothing is gated on it and every skin is always available.
+## Which marble the player is wearing, as a `MarbleSkins` id. Purely cosmetic:
+## nothing about a level is gated on it. What IS gated is which marbles can be
+## worn -- see [member owned_skins].
 var marble_skin := MarbleSkins.DEFAULT
+
+## Which marbles have been bought, as a set of `MarbleSkins` ids.
+##
+## A set rather than a list because the only question ever asked of it is whether
+## one particular marble is the player's. The default is in it from the start:
+## the game has to open with something on the ball.
+var owned_skins := {MarbleSkins.DEFAULT: true}
+
+## How many marbles the shop has out at once.
+const SHOP_SLOTS := 3
+
+## And how long it keeps them out, in seconds.
+const SHOP_REFRESH_SECONDS := 600
+
+## What the shop currently has out, as `MarbleSkins` ids.
+var shop_offer: Array[String] = []
+
+## When it next changes them, as a wall-clock time in seconds since 1970.
+##
+## Wall clock rather than a timer, and saved, because the wait is meant to run
+## while the game is SHUT. A player who closes the game with two minutes left on
+## the clock should come back in ten to new stock, not to the same three marbles
+## with two minutes still to go.
+var shop_refresh_at := 0
+
+## What the stick should be at the START of a level.
+##
+## Kept apart from [member stick_gated], which is what the stick is right now:
+## the swap button moves that one every time it is tapped, and something has to
+## remember what the player actually meant. LAST_USED is that memory being taken
+## at its word -- carry on with whatever the last level was left on.
+enum StickPreference { FREE, GATED, LAST_USED }
+
+## Which of those the player has asked for. LAST_USED to begin with, because a
+## player who has never opened the settings has only ever expressed a preference
+## by tapping the swap button, and that is exactly what this honours.
+var stick_preference := StickPreference.LAST_USED
+
+## Whether the thumbstick steers through its eight-lane gate, or runs free the
+## way an analogue stick does.
+##
+## A control preference rather than a difficulty setting: the two are the same
+## physics and the same level, and neither is worth more points. It lives here so
+## it is remembered between levels and between sessions, and so the button that
+## swaps it does not have to be the thing that owns it.
+var stick_gated := true
+
+## Which hand the phone is held in. The stick is dynamic and turns up wherever a
+## thumb lands, so this moves only the two buttons in the bottom corners -- and
+## those are the whole of it, because a button under the steering thumb is a
+## button that gets hit by mistake.
+var left_handed := false
+
+## The two mixes, each from silent to as loud as the game was built to be.
+##
+## They are a SCALE on what `default_bus_layout.tres` sets, not a replacement for
+## it: the music is authored eight decibels under the effects, and a player
+## pulling both sliders to the top should get the mix as it was meant to sound
+## rather than a flat one.
+var music_volume := 1.0
+var sfx_volume := 1.0
 
 ## Dev override: every world and chapter reads as open, whatever has actually
 ## been finished. Set from the levels page's dev tools and cleared by resetting.
@@ -167,6 +249,10 @@ func start_level(level_path: String) -> void:
 	# Armed, not running. The clock waits for the player -- see `begin_timing()`.
 	_timing = false
 	_timer_started = false
+
+	# Before anything on screen has had a chance to read the stick: a level opens
+	# on whatever the player asked for, not on whatever the last one ended as.
+	_apply_stick_preference()
 
 	_enter_set(level_path)
 
@@ -611,6 +697,98 @@ static func format_gems(value: int) -> String:
 	return "-" + grouped if value < 0 else grouped
 
 
+func owns_skin(skin_id: String) -> bool:
+	return owned_skins.has(MarbleSkins.resolve(skin_id))
+
+
+## Buys one, and says whether it went through.
+##
+## Everything it can refuse is checked here rather than trusted to the shop:
+## a marble already owned, and one that cannot be afforded. The shop greys those
+## tiles out anyway, but a price is the sort of thing that must be enforced where
+## the gems actually live.
+func buy_skin(skin_id: String) -> bool:
+	var id := MarbleSkins.resolve(skin_id)
+	if owns_skin(id):
+		return false
+
+	var price := MarbleSkins.price_for(id)
+	if price > bank:
+		return false
+
+	bank -= price
+	owned_skins[id] = true
+
+	bank_changed.emit(bank)
+	owned_skins_changed.emit()
+
+	# Straight to disk. Gems spent and a marble gained is exactly the kind of
+	# thing a player would be furious to lose to a crash.
+	save_progress()
+	return true
+
+
+## The marbles the shop has out.
+##
+## The restock happens HERE, when the shelf is looked at, rather than on a timer
+## running in the shop page. A timer only runs while the game does, and the whole
+## point of the ten minutes is that it passes while the game is shut.
+func shop_skins() -> Array[String]:
+	if shop_offer.is_empty() or _now() >= shop_refresh_at:
+		_restock_shop()
+
+	return shop_offer
+
+
+## How long the current stock has left, in seconds.
+func shop_seconds_left() -> int:
+	return maxi(shop_refresh_at - _now(), 0)
+
+
+func _restock_shop() -> void:
+	shop_offer = _pick_stock()
+	shop_refresh_at = _now() + SHOP_REFRESH_SECONDS
+
+	shop_changed.emit()
+	save_progress()
+
+
+## Three marbles the player does not already own.
+##
+## One of each kind first, so there is always something affordable on the shelf
+## beside the things that are not -- a shop that rolled three animated marbles
+## would be showing a player with eight hundred gems nothing they could buy.
+## Then whatever is left over, wherever it comes from, for the case where a kind
+## has been bought out.
+func _pick_stock() -> Array[String]:
+	var picked: Array[String] = []
+
+	for family: String in MarbleSkins.FAMILIES:
+		var choices := MarbleSkins.ids().filter(func(id: String) -> bool:
+			return MarbleSkins.family_for(id) == family and not owns_skin(id))
+
+		if not choices.is_empty():
+			picked.append(choices.pick_random())
+
+		if picked.size() == SHOP_SLOTS:
+			return picked
+
+	var rest := MarbleSkins.ids().filter(func(id: String) -> bool:
+		return not owns_skin(id) and not picked.has(id))
+	rest.shuffle()
+
+	while picked.size() < SHOP_SLOTS and not rest.is_empty():
+		picked.append(rest.pop_back())
+
+	return picked
+
+
+## The wall clock, in whole seconds. The shop is the only thing in the game that
+## cares what time it is rather than how long something took.
+func _now() -> int:
+	return int(Time.get_unix_time_from_system())
+
+
 ## Picks a marble. Saved straight away: a skin chosen and then never followed by
 ## a finished level would otherwise be forgotten on quit, and picking one is the
 ## sort of thing a player expects to stick the moment they do it.
@@ -624,6 +802,91 @@ func select_marble_skin(skin_id: String) -> void:
 	save_progress()
 
 
+## Swaps the stick between gated and free, and says so at once: the swap is meant
+## to be felt in the same roll it is asked for, not at the next level.
+func toggle_stick_gate() -> void:
+	set_stick_gated(not stick_gated)
+
+
+func set_stick_gated(gated: bool) -> void:
+	if gated == stick_gated:
+		return
+
+	stick_gated = gated
+	stick_gated_changed.emit(stick_gated)
+
+	# Saved on the spot, for the same reason picking a marble is: it is a setting
+	# the player expects to stick from the moment they touch it, and a session
+	# that ends in a quit rather than a finished level would otherwise lose it.
+	save_progress()
+
+
+## Puts the stick back to what the player asked levels to start on. LAST_USED
+## asks for nothing, which is the point of it.
+func _apply_stick_preference() -> void:
+	match stick_preference:
+		StickPreference.FREE:
+			_set_stick_gated_quietly(false)
+		StickPreference.GATED:
+			_set_stick_gated_quietly(true)
+
+
+## Moves the stick without writing to disk. A level opening is not the player
+## changing their mind -- the preference is the record, and `stick_gated` is only
+## ever the note of where the last swap left it.
+func _set_stick_gated_quietly(gated: bool) -> void:
+	if gated == stick_gated:
+		return
+
+	stick_gated = gated
+	stick_gated_changed.emit(stick_gated)
+
+
+## Takes a [enum StickPreference] value. Typed as a plain int so the settings
+## sheet can hand over a button's place in its row without casting.
+func set_stick_preference(preference: int) -> void:
+	if preference == stick_preference:
+		return
+
+	stick_preference = preference
+
+	# Asked for and answered at once: a player picking "free" in the settings
+	# means the stick under their thumb, not the one two levels from now.
+	_apply_stick_preference()
+	save_progress()
+
+
+func set_left_handed(left: bool) -> void:
+	if left == left_handed:
+		return
+
+	left_handed = left
+	handedness_changed.emit(left_handed)
+	save_progress()
+
+
+func set_music_volume(level: float) -> void:
+	_set_volumes(level, sfx_volume)
+
+
+func set_sfx_volume(level: float) -> void:
+	_set_volumes(music_volume, level)
+
+
+func _set_volumes(music: float, sfx: float) -> void:
+	var wanted_music := clampf(music, 0.0, 1.0)
+	var wanted_sfx := clampf(sfx, 0.0, 1.0)
+	if is_equal_approx(wanted_music, music_volume) and is_equal_approx(wanted_sfx, sfx_volume):
+		return
+
+	music_volume = wanted_music
+	sfx_volume = wanted_sfx
+	audio_levels_changed.emit()
+
+	# Not saved here. A slider being dragged is dozens of these a second, and the
+	# panel writes it once when the finger comes off -- see `ProfilePanel`.
+
+
 func save_progress() -> void:
 	var file := ConfigFile.new()
 	file.set_value("run", "lives", lives)
@@ -634,6 +897,14 @@ func save_progress() -> void:
 	file.set_value("progress", "cleared", cleared_levels)
 	file.set_value("progress", "challenges", challenges_done)
 	file.set_value("marble", "skin", marble_skin)
+	file.set_value("marble", "owned", owned_skins.keys())
+	file.set_value("shop", "offer", shop_offer)
+	file.set_value("shop", "refresh_at", shop_refresh_at)
+	file.set_value("controls", "stick_gated", stick_gated)
+	file.set_value("controls", "stick_preference", stick_preference)
+	file.set_value("controls", "left_handed", left_handed)
+	file.set_value("audio", "music", music_volume)
+	file.set_value("audio", "sfx", sfx_volume)
 	file.set_value("dev", "unlock_all", dev_unlock_all)
 
 	var result := file.save(SAVE_PATH)
@@ -660,6 +931,28 @@ func load_progress() -> void:
 	# Resolved on the way in, so a save naming a skin that no longer exists comes
 	# back as the default instead of as a marble with no material at all.
 	marble_skin = MarbleSkins.resolve(file.get_value("marble", "skin", MarbleSkins.DEFAULT))
+
+	# Skins the catalogue no longer knows about are dropped on the way in, the
+	# same as the worn one is resolved. The marble being worn is always owned,
+	# whatever the save says: a save written before the shop existed has a skin
+	# in it that was picked freely, and taking it off the player now would be a
+	# theft they never agreed to.
+	owned_skins = {MarbleSkins.DEFAULT: true, marble_skin: true}
+	for id: String in file.get_value("marble", "owned", []) as Array:
+		if MarbleSkins.has(id):
+			owned_skins[id] = true
+
+	# Only marbles the catalogue no longer knows are dropped. One already bought
+	# stays where it is: the three on show are what this stretch of ten minutes
+	# is offering, and taking a sold tile away would leave a hole in the shelf.
+	shop_offer.assign((file.get_value("shop", "offer", []) as Array).filter(
+			func(id: String) -> bool: return MarbleSkins.has(id)))
+	shop_refresh_at = file.get_value("shop", "refresh_at", 0)
+	stick_gated = file.get_value("controls", "stick_gated", true)
+	stick_preference = file.get_value("controls", "stick_preference", StickPreference.LAST_USED)
+	left_handed = file.get_value("controls", "left_handed", false)
+	music_volume = clampf(file.get_value("audio", "music", 1.0), 0.0, 1.0)
+	sfx_volume = clampf(file.get_value("audio", "sfx", 1.0), 0.0, 1.0)
 	dev_unlock_all = file.get_value("dev", "unlock_all", false)
 
 	# Saves written before challenge runs existed kept one running count
@@ -708,6 +1001,12 @@ func dev_reset_progress() -> void:
 	bank = 0
 	dev_unlock_all = false
 	marble_skin = MarbleSkins.DEFAULT
+	owned_skins = {MarbleSkins.DEFAULT: true}
+
+	# Cleared rather than rolled again: the next look at the shelf restocks it,
+	# and doing it here would put stock out that nobody has asked to see.
+	shop_offer.clear()
+	shop_refresh_at = 0
 
 	_run_over = false
 	run_mode = Mode.FREE
@@ -715,6 +1014,8 @@ func dev_reset_progress() -> void:
 
 	bank_changed.emit(bank)
 	marble_skin_changed.emit(marble_skin)
+	owned_skins_changed.emit()
+	shop_changed.emit()
 	save_progress()
 
 

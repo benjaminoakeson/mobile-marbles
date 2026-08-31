@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://materials/marble/marble_shaders/smoke_marble.gdshader" id="1_shader"]
+[ext_resource type="NoiseTexture3D" uid="uid://2xwfub1a47re" path="res://materials/marble/marble_shaders/marble_noise.tres" id="2_noise"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/smoke_noise = ExtResource("2_noise")

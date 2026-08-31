@@ -60,6 +60,15 @@ const DEFAULT_LEVEL_MUSIC := "res://audio/music/Thump Theme.mp3"
 ## what a fistful of gems taken at once should sound like anyway.
 const VOICES := 8
 
+## What `default_bus_layout.tres` sets each bus to, read once before anything
+## here has touched them.
+##
+## The player's sliders are a scale ON these rather than a replacement for them:
+## the mix is authored with the music well under the effects, and both sliders at
+## the top has to mean the game as it was built to sound.
+var _music_baseline := 0.0
+var _sfx_baseline := 0.0
+
 var _music: AudioStreamPlayer
 var _voices: Array[AudioStreamPlayer] = []
 var _next_voice := 0
@@ -86,6 +95,14 @@ func _ready() -> void:
 
 	# The level itself does not have to ask for its music: starting one is
 	# already announced, and which world it belongs to is enough to know.
+	_music_baseline = _bus_volume(MUSIC_BUS)
+	_sfx_baseline = _bus_volume(SFX_BUS)
+
+	# GameState is the autoload before this one, so its save is already loaded
+	# and these are the player's own levels rather than the defaults.
+	GameState.audio_levels_changed.connect(_apply_levels)
+	_apply_levels()
+
 	GameState.level_started.connect(_on_level_started)
 	GameState.extra_life_earned.connect(_on_extra_life_earned)
 
@@ -157,6 +174,33 @@ func music_for_level(level_path: String) -> String:
 		return _music_path
 
 	return WORLD_MUSIC.get(place.world, DEFAULT_LEVEL_MUSIC)
+
+
+## Puts the player's two levels onto the buses.
+func _apply_levels() -> void:
+	_set_level(MUSIC_BUS, _music_baseline, GameState.music_volume)
+	_set_level(SFX_BUS, _sfx_baseline, GameState.sfx_volume)
+
+
+## A slider is linear in how loud a thing SEEMS; a bus is in decibels. The
+## conversion is what makes the bottom half of the slider do as much work as the
+## top half, rather than everything happening in the last few pixels.
+##
+## Nothing is ever turned down to true silence in decibels -- it has no bottom --
+## so a slider at zero mutes the bus outright instead.
+func _set_level(bus: String, baseline_db: float, level: float) -> void:
+	var index := AudioServer.get_bus_index(bus)
+	if index < 0:
+		push_warning("Audio: no '%s' bus to set" % bus)
+		return
+
+	AudioServer.set_bus_mute(index, level <= 0.001)
+	AudioServer.set_bus_volume_db(index, baseline_db + linear_to_db(maxf(level, 0.001)))
+
+
+func _bus_volume(bus: String) -> float:
+	var index := AudioServer.get_bus_index(bus)
+	return AudioServer.get_bus_volume_db(index) if index >= 0 else 0.0
 
 
 ## Gives every button under a menu its click, so no button has to remember to

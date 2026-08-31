@@ -61,12 +61,21 @@ func _ready() -> void:
 	_reset_button.pressed.connect(_on_reset_pressed)
 	Audio.wire_clicks(_reset_button)
 
+	# The corner the stick swap is not in -- the two are a pair, and they change
+	# sides together. See [HandCorner].
+	GameState.handedness_changed.connect(_on_handedness_changed)
+	_on_handedness_changed(GameState.left_handed)
+
 	# Nothing to reset until the player has moved the camera themselves.
 	_reset_button.hide()
 	_reset_button.modulate.a = 0.0
 
 	if _camera != null:
 		_camera.manual_yaw_changed.connect(_on_manual_yaw_changed)
+
+
+func _on_handedness_changed(left_handed: bool) -> void:
+	HandCorner.place(_reset_button, left_handed)
 
 
 ## Drops any drag in progress and stops listening. Called when the level ends,

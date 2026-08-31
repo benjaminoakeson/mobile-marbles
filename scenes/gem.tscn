@@ -7,7 +7,7 @@
 [ext_resource type="Material" uid="uid://cv753ugf5x3u4" path="res://materials/gems/topaz_shader.tres" id="5_xtt15"]
 [ext_resource type="Material" uid="uid://dul4yd1xk4q5d" path="res://materials/gems/amethyst_shader.tres" id="6_raabq"]
 [ext_resource type="Material" uid="uid://cc0lo4nokpgp2" path="res://materials/gems/diamond_shader.tres" id="7_hgwl1"]
-[ext_resource type="Material" uid="uid://bgemburst0001" path="res://materials/gem_burst.tres" id="8_ultim"]
+[ext_resource type="Material" uid="uid://bgemburst0001" path="res://materials/particles/gem_burst.tres" id="8_ultim"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_6x1ae"]
 radius = 0.1989905

@@ -39,6 +39,10 @@ var _tiles := {}
 func _ready() -> void:
 	GameState.marble_skin_changed.connect(_on_skin_changed)
 
+	# A marble bought in the shop should be here to wear the moment the player
+	# comes back to this page.
+	GameState.owned_skins_changed.connect(_build_picker)
+
 	_build_picker()
 	_show_skin(GameState.marble_skin)
 
@@ -52,10 +56,12 @@ func _build_picker() -> void:
 		child.queue_free()
 
 	# One heading and one grid per family, in catalogue order. A family with
-	# nothing in it is skipped rather than left as a heading over empty space.
+	# nothing in it is skipped rather than left as a heading over empty space --
+	# which is most of them until the shop has been visited, since only marbles
+	# the player has actually bought are offered here.
 	for family in MarbleSkins.FAMILIES:
-		var ids := MarbleSkins.ids().filter(
-			func(id: String) -> bool: return MarbleSkins.family_for(id) == family)
+		var ids := MarbleSkins.ids().filter(func(id: String) -> bool:
+			return MarbleSkins.family_for(id) == family and GameState.owns_skin(id))
 		if ids.is_empty():
 			continue
 

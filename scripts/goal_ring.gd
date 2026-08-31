@@ -231,6 +231,11 @@ func _send_off(player: RigidBody3D, heading: Vector3) -> void:
 	var carried := maxf(player.linear_velocity.length(), minimum_exit_speed)
 	player.linear_velocity = heading * carried
 
+	# The ball is nobody's to steer now, so its grip and its brake come off with
+	# the steering. Left on, they would haul the send-off up short.
+	if player is Player:
+		player.stop_driving()
+
 	# Gravity off and drag piled on, so the ball carries on the way it was going
 	# and settles in the open rather than arcing back down through the level
 	# behind the menu.

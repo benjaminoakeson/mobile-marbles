@@ -1,17 +1,88 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" uid="uid://e2af4a2ygewo" path="res://scripts/pages/shop_page.gd" id="1_shop"]
+[ext_resource type="Material" path="res://materials/marble/solid/solid_black.tres" id="2_marble"]
+[ext_resource type="Material" uid="uid://ccdmgewvmbcrx" path="res://materials/gems/emerald_shader.tres" id="3_emerald"]
+[ext_resource type="Material" uid="uid://c3ymayhdb5658" path="res://materials/gems/ruby_shader.tres" id="4_ruby"]
+[ext_resource type="Material" uid="uid://cc0lo4nokpgp2" path="res://materials/gems/diamond_shader.tres" id="5_diamond"]
+[ext_resource type="Material" path="res://materials/ui/life_marble.tres" id="6_life"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bank"]
-content_margin_left = 48.0
-content_margin_top = 32.0
-content_margin_right = 48.0
-content_margin_bottom = 32.0
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_shop"]
+sky_top_color = Color(0.6862745, 0.7019608, 0.72156864, 1)
+sky_horizon_color = Color(0.6862745, 0.7019608, 0.72156864, 1)
+ground_horizon_color = Color(0.6862745, 0.7019608, 0.72156864, 1)
+ground_bottom_color = Color(0.6862745, 0.7019608, 0.72156864, 1)
+
+[sub_resource type="Sky" id="Sky_shop"]
+sky_material = SubResource("ProceduralSkyMaterial_shop")
+
+[sub_resource type="Environment" id="Environment_shop"]
+background_mode = 3
+sky = SubResource("Sky_shop")
+ambient_light_source = 3
+reflected_light_source = 2
+
+; The gem the packs are drawn with: the same six-sided cut the counter in the
+; corner uses, so a pack of gems is made of the gem the player already knows.
+[sub_resource type="SphereMesh" id="SphereMesh_gem"]
+radius = 0.2
+height = 0.52
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_gem"]
+sky_top_color = Color(0.5019608, 0.53333336, 0.56078434, 1)
+sky_horizon_color = Color(0.5019608, 0.53333336, 0.56078434, 1)
+ground_horizon_color = Color(0.5019608, 0.53333336, 0.56078434, 1)
+ground_bottom_color = Color(0.5019608, 0.53333336, 0.56078434, 1)
+
+[sub_resource type="Sky" id="Sky_gem"]
+sky_material = SubResource("ProceduralSkyMaterial_gem")
+
+[sub_resource type="Environment" id="Environment_gem"]
+background_mode = 3
+sky = SubResource("Sky_gem")
+ambient_light_source = 3
+reflected_light_source = 2
+
+[sub_resource type="SphereMesh" id="SphereMesh_shop"]
+
+; The tile a marble on sale is shown in. Cloned per slot, so all three keep the
+; styling authored here rather than having it rebuilt in code.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tile"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
 bg_color = Color(0.13333334, 0.15294118, 0.17254902, 1)
-corner_radius_top_left = 32
-corner_radius_top_right = 32
-corner_radius_bottom_right = 32
-corner_radius_bottom_left = 32
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tile_pressed"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.19607843, 0.22352941, 0.2509804, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tile_off"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.11764706, 0.13333334, 0.14509805, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
 
 [node name="ShopPage" type="Control"]
 layout_mode = 3
@@ -31,15 +102,15 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_constants/margin_left = 60
-theme_override_constants/margin_top = 100
-theme_override_constants/margin_right = 60
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 28
 theme_override_constants/margin_bottom = 60
 
 [node name="Layout" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/separation = 48
+theme_override_constants/separation = 32
 
 [node name="Title" type="Label" parent="Margin/Layout"]
 layout_mode = 2
@@ -49,40 +120,535 @@ theme_override_font_sizes/font_size = 86
 text = "SHOP"
 horizontal_alignment = 1
 
-[node name="BankPanel" type="PanelContainer" parent="Margin/Layout"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_bank")
-
-[node name="Stack" type="VBoxContainer" parent="Margin/Layout/BankPanel"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 8
-
-[node name="BankName" type="Label" parent="Margin/Layout/BankPanel/Stack"]
+; How long the three on show have left. Counted down from the clock rather than
+; from a timer -- see GameState.shop_refresh_at.
+[node name="Restock" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
 theme_override_font_sizes/font_size = 40
-text = "GEMS BANKED"
+text = "NEW STOCK IN 10:00"
 horizontal_alignment = 1
 
-[node name="BankValue" type="Label" parent="Margin/Layout/BankPanel/Stack"]
+[node name="Slots" type="HBoxContainer" parent="Margin/Layout"]
 unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 88
-text = "0"
-horizontal_alignment = 1
+theme_override_constants/separation = 16
+alignment = 1
 
-[node name="Placeholder" type="Label" parent="Margin/Layout"]
+; Shown in place of the slots once there is nothing left the player does not
+; already own.
+[node name="SoldOut" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
 theme_override_font_sizes/font_size = 52
-text = "Nothing for sale yet.
-Come back soon."
+text = "Every marble is yours.
+Nothing left to sell."
 horizontal_alignment = 1
 vertical_alignment = 1
+
+; --- The things bought with money rather than with gems. None of them is wired
+; to a store yet: they are here to be laid out and looked at, and they say so
+; when they are tapped. See shop_page.gd.
+[node name="Unlocks" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="NoAds" type="Button" parent="Margin/Layout/Unlocks"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_tile")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tile")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+
+[node name="Row" type="HBoxContainer" parent="Margin/Layout/Unlocks/NoAds"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Icon" type="Control" parent="Margin/Layout/Unlocks/NoAds/Row"]
+custom_minimum_size = Vector2(118, 104)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+
+[node name="Text" type="Label" parent="Margin/Layout/Unlocks/NoAds/Row/Icon"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 46
+text = "AD"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Cross" type="ColorRect" parent="Margin/Layout/Unlocks/NoAds/Row/Icon"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -52.0
+offset_top = -6.0
+offset_right = 52.0
+offset_bottom = 6.0
+grow_horizontal = 2
+grow_vertical = 2
+rotation = -0.62
+pivot_offset = Vector2(52, 6)
+mouse_filter = 2
+color = Color(0.88, 0.21, 0.21, 1)
+
+
+[node name="Stack" type="VBoxContainer" parent="Margin/Layout/Unlocks/NoAds/Row"]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Item" type="Label" parent="Margin/Layout/Unlocks/NoAds/Row/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 44
+text = "No Forced Ads"
+
+[node name="Cost" type="Label" parent="Margin/Layout/Unlocks/NoAds/Row/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
+theme_override_font_sizes/font_size = 52
+text = "$3.99"
+
+[node name="InfiniteLives" type="Button" parent="Margin/Layout/Unlocks"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_tile")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tile")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+
+[node name="Row" type="HBoxContainer" parent="Margin/Layout/Unlocks/InfiniteLives"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Icon" type="HBoxContainer" parent="Margin/Layout/Unlocks/InfiniteLives/Row"]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Life" type="ColorRect" parent="Margin/Layout/Unlocks/InfiniteLives/Row/Icon"]
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+material = ExtResource("6_life")
+color = Color(1, 1, 1, 1)
+
+[node name="Forever" type="Label" parent="Margin/Layout/Unlocks/InfiniteLives/Row/Icon"]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 60
+text = "∞"
+vertical_alignment = 1
+
+
+[node name="Stack" type="VBoxContainer" parent="Margin/Layout/Unlocks/InfiniteLives/Row"]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Item" type="Label" parent="Margin/Layout/Unlocks/InfiniteLives/Row/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 44
+text = "Infinite Lives"
+
+[node name="Cost" type="Label" parent="Margin/Layout/Unlocks/InfiniteLives/Row/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
+theme_override_font_sizes/font_size = 52
+text = "$4.99"
+
+[node name="Packs" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="PackSmall" type="Button" parent="Margin/Layout/Packs"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 280)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_tile")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tile")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+
+[node name="Stack" type="VBoxContainer" parent="Margin/Layout/Packs/PackSmall"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+; Three of them, leaning on each other. Drawn once and then left alone -- an
+; icon has nothing to animate, and a viewport that redraws for ever to show the
+; same picture is a cost with nothing on the other side of it.
+[node name="Gems" type="SubViewportContainer" parent="Margin/Layout/Packs/PackSmall/Stack"]
+custom_minimum_size = Vector2(160, 104)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="Margin/Layout/Packs/PackSmall/Stack/Gems"]
+own_world_3d = true
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(160, 104)
+render_target_update_mode = 1
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Margin/Layout/Packs/PackSmall/Stack/Gems/SubViewport"]
+environment = SubResource("Environment_gem")
+
+[node name="Camera3D" type="Camera3D" parent="Margin/Layout/Packs/PackSmall/Stack/Gems/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.5)
+projection = 1
+size = 0.56
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Margin/Layout/Packs/PackSmall/Stack/Gems/SubViewport"]
+transform = Transform3D(0.8660254, -0.25, 0.4330127, 0, 0.8660254, 0.5, -0.5, -0.4330127, 0.75, 0, 0, 0)
+
+[node name="GemBack" type="MeshInstance3D" parent="Margin/Layout/Packs/PackSmall/Stack/Gems/SubViewport"]
+transform = Transform3D(0.79, 0, -0.431, 0, 0.9, 0, 0.431, 0, 0.79, -0.18, 0.07, -0.2)
+mesh = SubResource("SphereMesh_gem")
+surface_material_override/0 = ExtResource("3_emerald")
+
+[node name="GemSide" type="MeshInstance3D" parent="Margin/Layout/Packs/PackSmall/Stack/Gems/SubViewport"]
+transform = Transform3D(0.845, 0, 0.309, 0, 0.9, 0, -0.309, 0, 0.845, 0.18, 0.07, -0.15)
+mesh = SubResource("SphereMesh_gem")
+surface_material_override/0 = ExtResource("3_emerald")
+
+[node name="GemFront" type="MeshInstance3D" parent="Margin/Layout/Packs/PackSmall/Stack/Gems/SubViewport"]
+transform = Transform3D(0.989, 0, -0.149, 0, 1, 0, 0.149, 0, 0.989, 0, -0.07, 0.12)
+mesh = SubResource("SphereMesh_gem")
+surface_material_override/0 = ExtResource("3_emerald")
+
+[node name="Amount" type="Label" parent="Margin/Layout/Packs/PackSmall/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.3372549, 0.8862745, 0.5137255, 1)
+theme_override_font_sizes/font_size = 46
+text = "5,000"
+horizontal_alignment = 1
+
+[node name="Cost" type="Label" parent="Margin/Layout/Packs/PackSmall/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 56
+text = "$0.99"
+horizontal_alignment = 1
+
+[node name="PackMedium" type="Button" parent="Margin/Layout/Packs"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 280)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_tile")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tile")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+
+[node name="Stack" type="VBoxContainer" parent="Margin/Layout/Packs/PackMedium"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+; Three of them, leaning on each other. Drawn once and then left alone -- an
+; icon has nothing to animate, and a viewport that redraws for ever to show the
+; same picture is a cost with nothing on the other side of it.
+[node name="Gems" type="SubViewportContainer" parent="Margin/Layout/Packs/PackMedium/Stack"]
+custom_minimum_size = Vector2(160, 104)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="Margin/Layout/Packs/PackMedium/Stack/Gems"]
+own_world_3d = true
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(160, 104)
+render_target_update_mode = 1
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Margin/Layout/Packs/PackMedium/Stack/Gems/SubViewport"]
+environment = SubResource("Environment_gem")
+
+[node name="Camera3D" type="Camera3D" parent="Margin/Layout/Packs/PackMedium/Stack/Gems/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.5)
+projection = 1
+size = 0.56
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Margin/Layout/Packs/PackMedium/Stack/Gems/SubViewport"]
+transform = Transform3D(0.8660254, -0.25, 0.4330127, 0, 0.8660254, 0.5, -0.5, -0.4330127, 0.75, 0, 0, 0)
+
+[node name="GemBack" type="MeshInstance3D" parent="Margin/Layout/Packs/PackMedium/Stack/Gems/SubViewport"]
+transform = Transform3D(0.79, 0, -0.431, 0, 0.9, 0, 0.431, 0, 0.79, -0.18, 0.07, -0.2)
+mesh = SubResource("SphereMesh_gem")
+surface_material_override/0 = ExtResource("4_ruby")
+
+[node name="GemSide" type="MeshInstance3D" parent="Margin/Layout/Packs/PackMedium/Stack/Gems/SubViewport"]
+transform = Transform3D(0.845, 0, 0.309, 0, 0.9, 0, -0.309, 0, 0.845, 0.18, 0.07, -0.15)
+mesh = SubResource("SphereMesh_gem")
+surface_material_override/0 = ExtResource("4_ruby")
+
+[node name="GemFront" type="MeshInstance3D" parent="Margin/Layout/Packs/PackMedium/Stack/Gems/SubViewport"]
+transform = Transform3D(0.989, 0, -0.149, 0, 1, 0, 0.149, 0, 0.989, 0, -0.07, 0.12)
+mesh = SubResource("SphereMesh_gem")
+surface_material_override/0 = ExtResource("4_ruby")
+
+[node name="Amount" type="Label" parent="Margin/Layout/Packs/PackMedium/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.9137255, 0.42352942, 0.40784314, 1)
+theme_override_font_sizes/font_size = 46
+text = "20,000"
+horizontal_alignment = 1
+
+[node name="Cost" type="Label" parent="Margin/Layout/Packs/PackMedium/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 56
+text = "$2.99"
+horizontal_alignment = 1
+
+[node name="PackLarge" type="Button" parent="Margin/Layout/Packs"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 280)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_tile")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tile")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+
+[node name="Stack" type="VBoxContainer" parent="Margin/Layout/Packs/PackLarge"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+; Three of them, leaning on each other. Drawn once and then left alone -- an
+; icon has nothing to animate, and a viewport that redraws for ever to show the
+; same picture is a cost with nothing on the other side of it.
+[node name="Gems" type="SubViewportContainer" parent="Margin/Layout/Packs/PackLarge/Stack"]
+custom_minimum_size = Vector2(160, 104)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="Margin/Layout/Packs/PackLarge/Stack/Gems"]
+own_world_3d = true
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(160, 104)
+render_target_update_mode = 1
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Margin/Layout/Packs/PackLarge/Stack/Gems/SubViewport"]
+environment = SubResource("Environment_gem")
+
+[node name="Camera3D" type="Camera3D" parent="Margin/Layout/Packs/PackLarge/Stack/Gems/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.5)
+projection = 1
+size = 0.56
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Margin/Layout/Packs/PackLarge/Stack/Gems/SubViewport"]
+transform = Transform3D(0.8660254, -0.25, 0.4330127, 0, 0.8660254, 0.5, -0.5, -0.4330127, 0.75, 0, 0, 0)
+
+[node name="GemBack" type="MeshInstance3D" parent="Margin/Layout/Packs/PackLarge/Stack/Gems/SubViewport"]
+transform = Transform3D(0.79, 0, -0.431, 0, 0.9, 0, 0.431, 0, 0.79, -0.18, 0.07, -0.2)
+mesh = SubResource("SphereMesh_gem")
+surface_material_override/0 = ExtResource("5_diamond")
+
+[node name="GemSide" type="MeshInstance3D" parent="Margin/Layout/Packs/PackLarge/Stack/Gems/SubViewport"]
+transform = Transform3D(0.845, 0, 0.309, 0, 0.9, 0, -0.309, 0, 0.845, 0.18, 0.07, -0.15)
+mesh = SubResource("SphereMesh_gem")
+surface_material_override/0 = ExtResource("5_diamond")
+
+[node name="GemFront" type="MeshInstance3D" parent="Margin/Layout/Packs/PackLarge/Stack/Gems/SubViewport"]
+transform = Transform3D(0.989, 0, -0.149, 0, 1, 0, 0.149, 0, 0.989, 0, -0.07, 0.12)
+mesh = SubResource("SphereMesh_gem")
+surface_material_override/0 = ExtResource("5_diamond")
+
+[node name="Amount" type="Label" parent="Margin/Layout/Packs/PackLarge/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.8352941, 0.8862745, 0.9411765, 1)
+theme_override_font_sizes/font_size = 46
+text = "100,000"
+horizontal_alignment = 1
+
+[node name="Cost" type="Label" parent="Margin/Layout/Packs/PackLarge/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 56
+text = "$9.99"
+horizontal_alignment = 1
+
+; Said back to whoever taps something that cannot be bought yet, and taken away
+; again a moment later.
+[node name="Note" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.9, 0.75, 0.35, 1)
+theme_override_font_sizes/font_size = 36
+text = "Not on sale yet"
+horizontal_alignment = 1
+
+; What is left over goes below it all.
+[node name="Filler" type="Control" parent="Margin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+; One slot, cloned three times. The whole tile is the button: a marble, its name
+; and what it costs, all of it pressable.
+[node name="SlotTemplate" type="Button" parent="."]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 510)
+layout_mode = 1
+anchors_preset = 0
+offset_right = 300.0
+offset_bottom = 510.0
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_styles/normal = SubResource("StyleBoxFlat_tile")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tile")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tile_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_tile_off")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+
+; Centred, because the tile is taller than what is in it and content pinned to
+; the top of a tall tile reads as a mistake.
+[node name="Stack" type="VBoxContainer" parent="SlotTemplate"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 22
+alignment = 1
+
+; Square, and neither stretched nor squashed by the tile it sits in. The camera
+; inside frames a ball, and a ball in a tall thin window is a ball with its sides
+; cut off.
+[node name="View" type="SubViewportContainer" parent="SlotTemplate/Stack"]
+custom_minimum_size = Vector2(290, 290)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="SlotTemplate/Stack/View"]
+own_world_3d = true
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(290, 290)
+render_target_update_mode = 3
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="SlotTemplate/Stack/View/SubViewport"]
+environment = SubResource("Environment_shop")
+
+[node name="Camera3D" type="Camera3D" parent="SlotTemplate/Stack/View/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.2)
+projection = 1
+size = 1.25
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="SlotTemplate/Stack/View/SubViewport"]
+transform = Transform3D(0.8660254, -0.25, 0.4330127, 0, 0.8660254, 0.5, -0.5, -0.4330127, 0.75, 0, 0, 0)
+
+; The material here is only what shows in the editor; the page puts whatever is
+; on sale onto it -- see shop_page.gd.
+[node name="Marble" type="MeshInstance3D" parent="SlotTemplate/Stack/View/SubViewport"]
+mesh = SubResource("SphereMesh_shop")
+surface_material_override/0 = ExtResource("2_marble")
+
+[node name="SkinName" type="Label" parent="SlotTemplate/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 48
+text = "Marble"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Price" type="Label" parent="SlotTemplate/Stack"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
+theme_override_font_sizes/font_size = 56
+text = "750"
+horizontal_alignment = 1

@@ -1,0 +1,109 @@
+[gd_scene format=3 uid="uid://brdbcu8iqnk8n"]
+
+[ext_resource type="Environment" uid="uid://bdesertenv001" path="res://environments/desert.tres" id="1_hswcx"]
+[ext_resource type="PackedScene" path="res://scenes/thumbstick.tscn" id="2_rm6ij"]
+[ext_resource type="PackedScene" path="res://scenes/UI/hud.tscn" id="3_hjyi8"]
+[ext_resource type="PackedScene" uid="uid://brgmkpo6nfamg" path="res://scenes/camera.tscn" id="4_odep3"]
+[ext_resource type="PackedScene" uid="uid://odyo2cun2tc" path="res://scenes/player.tscn" id="5_hpvad"]
+[ext_resource type="Script" uid="uid://f0unaaq2y4xp" path="res://scripts/gravity_tilt.gd" id="6_e1glc"]
+[ext_resource type="PackedScene" uid="uid://b3lsg1wjkkrr2" path="res://scenes/spawnpoint.tscn" id="7_3fw67"]
+[ext_resource type="PackedScene" uid="uid://dff8ndsvoi5a4" path="res://scenes/goal_ring.tscn" id="8_8h82p"]
+[ext_resource type="PackedScene" uid="uid://dvnbcmtvmjsm1" path="res://scenes/gem.tscn" id="9_2qnqy"]
+[ext_resource type="Material" uid="uid://b2ivsf4r4nl8" path="res://materials/sandstone.tres" id="10_e3cuh"]
+[ext_resource type="Script" uid="uid://b1h4mv4b1mlb6" path="res://scripts/alive_zone.gd" id="11_7jtft"]
+[ext_resource type="Texture2D" uid="uid://bmwasrc74h6ua" path="res://materials/textures/sand/Sandstone.png" id="11_rm6ij"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hjyi8"]
+albedo_texture = ExtResource("11_rm6ij")
+uv1_triplanar = true
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_agq18"]
+size = Vector3(81, 104, 111)
+
+[node name="1-1" type="Node3D" unique_id=1614486416]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1291218271]
+environment = ExtResource("1_hswcx")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=821745350]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1878954636]
+
+[node name="Thumbstick" parent="UI" unique_id=25466008 instance=ExtResource("2_rm6ij")]
+layout_mode = 3
+offset_left = -415.0
+offset_top = -415.0
+offset_right = 385.0
+offset_bottom = 385.0
+
+[node name="Hud" parent="UI" unique_id=566153290 instance=ExtResource("3_hjyi8")]
+
+[node name="Camera" parent="." unique_id=499086097 instance=ExtResource("4_odep3")]
+
+[node name="Player" parent="." unique_id=70575149 instance=ExtResource("5_hpvad")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="Level" type="StaticBody3D" parent="." unique_id=167280447]
+script = ExtResource("6_e1glc")
+thumbstick_path = NodePath("../UI/Thumbstick")
+
+[node name="Spawnpoint" parent="Level" unique_id=496010059 instance=ExtResource("7_3fw67")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="GoalRing" parent="Level" unique_id=325633537 instance=ExtResource("8_8h82p")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5458431, 1, -52.027752)
+slow_time = 24.0
+
+[node name="Gems" type="Node3D" parent="Level" unique_id=51730275]
+
+[node name="Gem" parent="Level/Gems" unique_id=473422485 instance=ExtResource("9_2qnqy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -3)
+
+[node name="CSGCombiner3D" type="CSGCombiner3D" parent="." unique_id=1967459598]
+
+[node name="CSGBox3D" type="CSGBox3D" parent="CSGCombiner3D" unique_id=1692865151]
+transform = Transform3D(1, 0, 0, 0, 0.9659258, 0.25881904, 0, -0.25881904, 0.9659258, 0, 0, -7)
+flip_faces = true
+size = Vector3(4, 4, 22)
+material = ExtResource("10_e3cuh")
+
+[node name="CSGBox3D2" type="CSGBox3D" parent="CSGCombiner3D" unique_id=103869921]
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0, -2.5, -42)
+flip_faces = true
+size = Vector3(9, 5, 50)
+material = ExtResource("10_e3cuh")
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="CSGCombiner3D/CSGBox3D2" unique_id=1033153549]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.999998, 0)
+operation = 2
+size = Vector3(9, 5, 50)
+material = ExtResource("10_e3cuh")
+
+[node name="CSGBox3D4" type="CSGBox3D" parent="CSGCombiner3D" unique_id=691063532]
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0, -4.5109844, -19.999998)
+flip_faces = true
+size = Vector3(9, 1, 6)
+material = ExtResource("10_e3cuh")
+
+[node name="CSGBox3D5" type="CSGBox3D" parent="CSGCombiner3D" unique_id=1644034733]
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0, -4.499998, -31.499998)
+flip_faces = true
+size = Vector3(2, 1, 17)
+material = SubResource("StandardMaterial3D_hjyi8")
+
+[node name="CSGBox3D6" type="CSGBox3D" parent="CSGCombiner3D" unique_id=1997777885]
+transform = Transform3D(1, 0, 0, 0, 1.0000001, 0, 0, 0, 1.0000001, 0, -4.499998, -48.5)
+flip_faces = true
+size = Vector3(6, 1, 17)
+material = SubResource("StandardMaterial3D_hjyi8")
+
+[node name="AliveZone" type="Area3D" parent="." unique_id=414637776]
+collision_layer = 16
+collision_mask = 4
+script = ExtResource("11_7jtft")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AliveZone" unique_id=614242323]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -12.5, -38.5)
+shape = SubResource("BoxShape3D_agq18")

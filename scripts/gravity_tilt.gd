@@ -25,8 +25,15 @@ extends StaticBody3D
 ## asking it the same questions.
 
 ## Which way the stick leans the pull, at full stick, in degrees off straight
-## down. The old tilt limit, and the same number: this is the angle the floor
-## used to be turned by, now applied to gravity instead.
+## down. This is the angle the floor used to be turned by, now applied to
+## gravity instead.
+##
+## It is the ball's acceleration, and its top speed on a long straight, in a
+## single number: the pull along the floor is `g * sin(this)`. It is also, for
+## the same reason, HOW TWITCHY THE BALL IS -- every degree here is felt on every
+## touch of the stick, not just on the long straights -- which is why it was
+## tried steeper and put back. Raise it and the levels get faster and harder to
+## place the ball on at once; the brake is what buys handling, not this.
 @export var max_lean_degrees := 20.0
 
 ## How quickly the pull follows the stick.
@@ -34,6 +41,9 @@ extends StaticBody3D
 
 ## And the ceiling on that, in degrees a second, so slamming the stick over
 ## swings the pull rather than snapping it.
+##
+## It is the other half of how twitchy the stick feels: the lean angle is how
+## hard a push pulls, this is how quickly a push arrives.
 @export var max_lean_rate_degrees := 150.0
 
 @export var thumbstick_path: NodePath
@@ -107,12 +117,7 @@ func _physics_process(delta: float) -> void:
 ## the player sends the ball away from the player whichever way the shot has
 ## swung round to.
 func _pull() -> Vector3:
-	var downhill := Vector3(_lean.x, 0.0, -_lean.y)
-
-	var camera := get_viewport().get_camera_3d()
-	if camera != null:
-		downhill = Basis(Vector3.UP, camera.global_transform.basis.get_euler().y) * downhill
-
+	var downhill := _downhill()
 	var amount := downhill.length()
 	if amount < 0.001:
 		return Vector3.DOWN
@@ -122,6 +127,32 @@ func _pull() -> Vector3:
 	# under it used to give.
 	var angle := deg_to_rad(max_lean_degrees) * minf(amount, 1.0)
 	return Vector3.DOWN * cos(angle) + downhill.normalized() * sin(angle)
+
+
+## Where the lean is pointing, in world space, on the flat: a horizontal vector
+## no longer than one, and empty with the stick centred.
+##
+## The pull is built out of this and so is the ball's grip, which is the point of
+## handing it out rather than keeping it inside [method _pull]. A brake that
+## pulled anywhere but along the lean would fight the steering instead of
+## sharpening it.
+func _downhill() -> Vector3:
+	var downhill := Vector3(_lean.x, 0.0, -_lean.y)
+
+	var camera := get_viewport().get_camera_3d()
+	if camera != null:
+		downhill = Basis(Vector3.UP, camera.global_transform.basis.get_euler().y) * downhill
+
+	return downhill.limit_length(1.0)
+
+
+## What the stick is asking for, for anything that has to answer to it directly
+## rather than through gravity. Same direction as the lean, same strength, and
+## empty the moment the level stops being steered.
+func steer_direction() -> Vector3:
+	if _frozen:
+		return Vector3.ZERO
+	return _downhill()
 
 
 func _set_gravity(direction: Vector3) -> void:

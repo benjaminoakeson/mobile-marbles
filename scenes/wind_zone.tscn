@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bwind0one0001"]
 
 [ext_resource type="Script" uid="uid://dvyn81skbnkhm" path="res://scripts/wind_zone.gd" id="1_windzone"]
-[ext_resource type="QuadMesh" uid="uid://bwindwisp001" path="res://materials/wind_wisp.tres" id="3_windwisp"]
+[ext_resource type="QuadMesh" uid="uid://bwindwisp001" path="res://materials/particles/wind_wisp.tres" id="3_windwisp"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_wind"]
 size = Vector3(6, 4, 12)

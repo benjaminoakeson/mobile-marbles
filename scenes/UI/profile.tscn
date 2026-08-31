@@ -1,0 +1,161 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/profile.gd" id="1_profile"]
+[ext_resource type="Script" path="res://scripts/profile_icon.gd" id="2_icon"]
+
+; The same round dark ground as the buttons in the corners of the HUD. The
+; radius is half the button's 160px box, which is what makes it a circle --
+; change one and the other has to follow.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_profile"]
+bg_color = Color(0.09019608, 0.10980392, 0.12941177, 0.61176471)
+corner_radius_top_left = 80
+corner_radius_top_right = 80
+corner_radius_bottom_right = 80
+corner_radius_bottom_left = 80
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_profile_pressed"]
+bg_color = Color(0.20392157, 0.23921569, 0.27450982, 0.78431374)
+corner_radius_top_left = 80
+corner_radius_top_right = 80
+corner_radius_bottom_right = 80
+corner_radius_bottom_left = 80
+
+; Everything off the sheet, dimmed. A button rather than a panel because it is
+; also the way out: a tap anywhere on it shuts the sheet.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_backdrop"]
+bg_color = Color(0.03137255, 0.039215688, 0.047058824, 0.72156864)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sheet"]
+content_margin_left = 46.0
+content_margin_top = 40.0
+content_margin_right = 46.0
+content_margin_bottom = 46.0
+bg_color = Color(0.13333334, 0.15294118, 0.17254902, 1)
+corner_radius_top_left = 34
+corner_radius_top_right = 34
+corner_radius_bottom_right = 34
+corner_radius_bottom_left = 34
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_close"]
+
+[node name="Profile" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_profile")
+
+; Top left, clear of the pages' own content, and on the menu rather than on any
+; page so it is there whichever tab is open.
+[node name="ProfileButton" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(132, 132)
+layout_mode = 1
+anchors_preset = 0
+offset_left = 40.0
+offset_top = 16.0
+offset_right = 172.0
+offset_bottom = 148.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_profile")
+theme_override_styles/hover = SubResource("StyleBoxFlat_profile")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_profile_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_profile")
+
+[node name="Icon" type="Control" parent="ProfileButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_icon")
+
+; --- The settings themselves. Hidden until the button is tapped. ---
+[node name="Sheet" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Backdrop" type="Button" parent="Sheet"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_backdrop")
+theme_override_styles/hover = SubResource("StyleBoxFlat_backdrop")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_backdrop")
+theme_override_styles/focus = SubResource("StyleBoxFlat_backdrop")
+
+; Centred and held to a readable width rather than filling the screen: the rows
+; are a thumb's width tall and a line of them across a tablet would be a mile.
+[node name="Panel" type="PanelContainer" parent="Sheet"]
+custom_minimum_size = Vector2(900, 0)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -450.0
+offset_top = -420.0
+offset_right = 450.0
+offset_bottom = 420.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_sheet")
+
+[node name="Layout" type="VBoxContainer" parent="Sheet/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Header" type="HBoxContainer" parent="Sheet/Panel/Layout"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Sheet/Panel/Layout/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 56
+text = "PROFILE"
+
+[node name="CloseButton" type="Button" parent="Sheet/Panel/Layout/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 52
+theme_override_styles/normal = SubResource("StyleBoxEmpty_close")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_close")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_close")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_close")
+text = "✕"
+
+[node name="Stats" type="Label" parent="Sheet/Panel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.63529414, 0.6784314, 0.6509804, 1)
+theme_override_font_sizes/font_size = 30
+text = "0 gems banked"
+
+; The rows are built by the script -- see `profile.gd`. Authoring four captions,
+; five buttons and two sliders by hand would be the same thing said twice, and
+; the order they are added in is the order they read in.
+[node name="Rows" type="VBoxContainer" parent="Sheet/Panel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3

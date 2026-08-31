@@ -52,15 +52,12 @@ const CHAPTER_NAMES := {
 	# than the chapters it has built, falls back to the difficulty -- so this can
 	# stay one name long until the next chapter turns up.
 	2: [
-		"New Horizons",
+		"Temple Entrance",
 	],
 	1: [
 		"Simple Beginnings",
 		"Getting Holey",
 		"Start Movin'",
-		"Timber Yard",
-		"The Long Fall",
-		"Meadow's End",
 	],
 }
 
@@ -93,8 +90,15 @@ const CATALOG := {
 		],
 	},
 	2: {
+		# The last three are named with underscores rather than the hyphen the
+		# rest of the game uses. That is only what they were saved as; the play
+		# order is this list, not the filenames.
 		"Super Easy": [
 			"res://scenes/levels/world_2/chapter1/1-1.tscn",
+			"res://scenes/levels/world_2/chapter1/1-2.tscn",
+			"res://scenes/levels/world_2/chapter1/1_3.tscn",
+			"res://scenes/levels/world_2/chapter1/1_4.tscn",
+			"res://scenes/levels/world_2/chapter1/1_5.tscn",
 		],
 	},
 }
@@ -121,8 +125,15 @@ const NAMES := {
 	"res://scenes/levels/world_1/chapter3/1-4.tscn": "Liftoff",
 	"res://scenes/levels/world_1/chapter3/1-5.tscn": "Smashn' Glass",
 
-	# World 2, one level in so far. Placeholder name in the style of the rest.
-	"res://scenes/levels/world_2/chapter1/1-1.tscn": "Second Wind",
+	# World 2, first set, named off what each one is built around: a long
+	# extruded run, a course stacked out of blocks, five spinners, and the set's
+	# one speed pad. Names are only ever read from here, so they cost nothing to
+	# change.
+	"res://scenes/levels/world_2/chapter1/1-1.tscn": "Sand Mixer",
+	"res://scenes/levels/world_2/chapter1/1-2.tscn": "Speed and Precision",
+	"res://scenes/levels/world_2/chapter1/1_3.tscn": "Pyramid Towers",
+	"res://scenes/levels/world_2/chapter1/1_4.tscn": "Watch Out",
+	"res://scenes/levels/world_2/chapter1/1_5.tscn": "Curvy Path",
 
 	# Names waiting on levels that are not built yet. Kept here so they are not
 	# lost; move one up into the list above as its level appears.

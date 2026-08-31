@@ -1,6 +1,6 @@
 [gd_resource type="ShaderMaterial" format=3 uid="uid://b0jtstvkmflx3"]
 
-[ext_resource type="Shader" uid="uid://xonmsbhcy6vs" path="res://materials/goal_rim.gdshader" id="1_rim"]
+[ext_resource type="Shader" uid="uid://xonmsbhcy6vs" path="res://materials/shaders/goal_rim.gdshader" id="1_rim"]
 
 [resource]
 render_priority = 0

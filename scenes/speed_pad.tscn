@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bspeedpad0001"]
 
 [ext_resource type="Script" uid="uid://g5lsmhuqg0eb" path="res://scripts/speed_pad.gd" id="1_pad"]
-[ext_resource type="Shader" uid="uid://cooebfq65t55b" path="res://materials/pad_energy.gdshader" id="2_e8ku0"]
+[ext_resource type="Shader" uid="uid://cooebfq65t55b" path="res://materials/shaders/pad_energy.gdshader" id="2_e8ku0"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_pad"]
 size = Vector3(4, 1.4, 4)
