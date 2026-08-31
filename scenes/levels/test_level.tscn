@@ -14,7 +14,7 @@
 [ext_resource type="Script" uid="uid://b1h4mv4b1mlb6" path="res://scripts/alive_zone.gd" id="11_jmx14"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_fqldq"]
-size = Vector3(68, 34, 83)
+size = Vector3(60, 34, 60)
 
 [node name="TestLevel" type="Node3D" unique_id=924034932]
 
@@ -49,7 +49,7 @@ thumbstick_path = NodePath("../UI/Thumbstick")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
 [node name="GoalRing" parent="AnimatableBody3D" unique_id=325633537 instance=ExtResource("5_080hp")]
-transform = Transform3D(0.9999998, 0, 0, 0, 1, 0, 0, 0, 0.9999998, 0, 0, 0)
+transform = Transform3D(0.99999976, 0, 0, 0, 1, 0, 0, 0, 0.99999976, 0, 0, 0)
 
 [node name="Gems" type="Node3D" parent="AnimatableBody3D" unique_id=1452687535]
 
@@ -76,5 +76,5 @@ script = ExtResource("11_jmx14")
 spawn_path = NodePath("../AnimatableBody3D/Spawnpoint")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="AliveZone" unique_id=1996503419]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.5, -22.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, -1.5, -22.5)
 shape = SubResource("BoxShape3D_fqldq")
