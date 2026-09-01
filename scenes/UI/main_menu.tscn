@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/UI/pages/levels_page.tscn" id="3_levels"]
 [ext_resource type="PackedScene" path="res://scenes/UI/pages/marble_page.tscn" id="4_marble"]
 [ext_resource type="PackedScene" path="res://scenes/UI/profile.tscn" id="5_profile"]
+[ext_resource type="PackedScene" path="res://scenes/UI/award_popup.tscn" id="9_award"]
 [ext_resource type="Material" uid="uid://ccdmgewvmbcrx" path="res://materials/gems/emerald_shader.tres" id="6_emerald"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab"]
@@ -232,3 +233,7 @@ vertical_alignment = 1
 ; draws over the pages, and a child of the menu rather than of any one page so
 ; it is there whichever tab is open -- the same reasoning as the bar of tabs.
 [node name="Profile" parent="." instance=ExtResource("5_profile")]
+
+[node name="AwardPopup" parent="." instance=ExtResource("9_award")]
+unique_name_in_owner = true
+visible = false

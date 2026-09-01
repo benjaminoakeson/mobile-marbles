@@ -73,6 +73,7 @@ extends CanvasLayer
 
 @onready var _panel: Control = %Panel
 @onready var _next_button: Button = %NextLevelButton
+@onready var _retry_button: Button = %RetryButton
 @onready var _menu_button: Button = %MenuButton
 @onready var _total_label: Label = %TotalValue
 @onready var _award_list: VBoxContainer = %AwardList
@@ -99,20 +100,36 @@ var _pulse_time := 0.0
 
 
 func _ready() -> void:
+	var level_path := _current_level_path()
+
 	_menu_button.pressed.connect(_change_scene.bind(LevelManager.MENU))
 
+	# Taking the level again is a plain reload of it, which is why this goes
+	# through `_change_scene` like the other two rather than through
+	# `GameState.restart_level()`. That one is for a FALL: it costs a life and
+	# rolls the bank back to where the attempt found it. This level was beaten
+	# and banked -- charging for a second go at a crown that was missed would be
+	# taking back something already won.
+	_retry_button.pressed.connect(_change_scene.bind(level_path))
+
 	# The last level -- and the scratch test level -- have nowhere to go next.
-	var next_path := LevelManager.next_after(_current_level_path())
+	var next_path := LevelManager.next_after(level_path)
 	_has_next = not next_path.is_empty()
 	if _has_next:
 		_next_button.pressed.connect(_change_scene.bind(next_path))
+	else:
+		# Left on screen rather than hidden, because the other two are tucked
+		# BEHIND it: hiding it strands a half-height tab and a square peering out
+		# from under nothing. Dead, and it looks dead -- see the disabled style.
+		_next_button.disabled = true
 
 	Audio.wire_clicks(self)
 
-	# Both buttons stay away until the crowns have landed. A tap anywhere hurries
+	# All three stay away until the crowns have landed. A tap anywhere hurries
 	# them along, and a button sitting under that tap would swallow it and send
 	# the player to the next level instead.
 	_next_button.hide()
+	_retry_button.hide()
 	_menu_button.hide()
 	_stamp.hide()
 
@@ -365,14 +382,11 @@ func _trim_zeroes(value: float) -> String:
 	return "%.1f" % value
 
 
+## All three together, as one shape. They overlap, so fading them in one at a
+## time would show each of them through the last one on its way up.
 func _reveal_buttons() -> void:
-	if _has_next:
-		_next_button.show()
-	_menu_button.show()
-
-	for button: Button in [_next_button, _menu_button]:
-		if not button.visible:
-			continue
+	for button: Button in [_next_button, _retry_button, _menu_button]:
+		button.show()
 		button.modulate.a = 0.0
 		create_tween().tween_property(button, "modulate:a", 1.0, 0.25)
 
@@ -383,13 +397,16 @@ func _current_level_path() -> String:
 
 
 func _change_scene(scene_path: String) -> void:
-	# A fat finger can land on both buttons before the swap happens, so shut the
-	# overlay down before asking for the next scene.
-	_next_button.disabled = true
+	# A fat finger can land on two of these before the swap happens -- they touch
+	# -- so shut the overlay down before asking for the next scene.
+	_retry_button.disabled = true
 	_menu_button.disabled = true
+	_next_button.disabled = true
 
 	var result := get_tree().change_scene_to_file(scene_path)
 	if result != OK:
 		push_error("LevelComplete: could not load '%s' (error %d)" % [scene_path, result])
-		_next_button.disabled = false
+		_retry_button.disabled = false
 		_menu_button.disabled = false
+		# Only back on if it had somewhere to go in the first place.
+		_next_button.disabled = not _has_next

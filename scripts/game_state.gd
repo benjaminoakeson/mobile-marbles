@@ -26,6 +26,11 @@ signal marble_skin_changed(skin_id: String)
 ## marble to choose from.
 signal owned_skins_changed
 
+## An award has been won. Carries nothing: it is won mid-level, where there is
+## nothing to show for it, and the menu reads the queue when it next opens. See
+## [member awards_unclaimed].
+signal award_earned
+
 ## The shop has put fresh stock out.
 signal shop_changed
 
@@ -56,6 +61,19 @@ signal extra_life_earned
 ## Only ever emitted for a fall the run SURVIVES. A fall that spends the last
 ## life is a game over, and that screen owns what happens next.
 signal fell_out
+
+## The clock has run out. The level is NOT over: control goes, but the ball keeps
+## whatever it was carrying, and a goal reached on that momentum still counts.
+##
+## What listens is what has to stand down -- the steering, the stick -- and what
+## has to appear: the words saying so, and the two ways out. See
+## [method _time_out].
+signal time_ran_out
+
+## The level has been finished, however it was reached. Emitted before the crowns
+## and the bests are worked out, because what listens to this is the in-level
+## furniture that has to get off the screen before the victory panel lands on it.
+signal level_finished
 
 ## The dev tools have rewritten progress wholesale -- everything opened, or
 ## everything wiped. For whatever is on screen at the time to rebuild itself.
@@ -206,6 +224,19 @@ var bank := 0
 ## worn -- see [member owned_skins].
 var marble_skin := MarbleSkins.DEFAULT
 
+## Which awards have been won, as a set of `Awards` ids. Once in, never out: an
+## award is a record of something that was done, and a level replayed worse does
+## not undo it.
+var awards_earned := {}
+
+## The awards won but not yet shown to the player, oldest first.
+##
+## The marble is handed over the INSTANT the award is met, mid-level, and this is
+## only the queue of things still to be announced -- so a player who wins one and
+## closes the game before seeing the popup still owns the marble, and still gets
+## told the next time they open the menu. See [method claim_award].
+var awards_unclaimed: Array[String] = []
+
 ## Which marbles have been bought, as a set of `MarbleSkins` ids.
 ##
 ## A set rather than a list because the only question ever asked of it is whether
@@ -282,6 +313,12 @@ var dev_unlock_all := false
 
 var _timing := false
 var _timer_started := false
+
+## How long this level gives, and whether that has been used up. Both are per
+## attempt: a level taken again gets its whole clock back. See
+## [method _read_time_limit].
+var _time_limit := 0.0
+var _timed_out := false
 var _run_over := false
 
 ## Where the run stood when this attempt at the level began.
@@ -310,8 +347,13 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if _timing:
-		level_time += delta
+	if not _timing:
+		return
+
+	level_time += delta
+
+	if _time_limit > 0.0 and level_time >= _time_limit:
+		_time_out()
 
 
 ## Starts a fresh attempt at a level.
@@ -332,6 +374,12 @@ func start_level(level_path: String) -> void:
 
 	_timing = false
 	_timer_started = false
+	_timed_out = false
+
+	# Cleared here and read back in `_start_unless_held()`, which is deferred and
+	# so runs after every node in the level has readied. Read here instead and it
+	# would be a race with the goal ring that holds the number.
+	_time_limit = 0.0
 
 	# Before anything on screen has had a chance to read the stick: a level opens
 	# on whatever the player asked for, not on whatever the last one ended as.
@@ -370,8 +418,60 @@ func _start_unless_held() -> void:
 	# lives exactly one load.
 	_retrying = false
 
+	_time_limit = _read_time_limit()
+
 	if not is_intro_held():
 		begin_timing()
+
+
+## How long this level gives the player, read off its own goal ring.
+##
+## The ring is where every deadline in the game is tuned -- the time score, the
+## fast-time share -- so the limit is that same number rather than a second one
+## that could disagree with it. A level with no ring, or one with its timing
+## turned off, has no limit and simply counts up.
+func _read_time_limit() -> float:
+	var goal := get_tree().get_first_node_in_group("goal_ring") as GoalRing
+	if goal == null:
+		return 0.0
+
+	return maxf(goal.slow_time, 0.0)
+
+
+## The clock has run out.
+##
+## The level is NOT over. Control goes and the words go up, but the ball keeps
+## whatever it was carrying and a goal reached on that momentum counts in full --
+## `goal_ring.gd` is told nothing about any of this and needs to be told nothing.
+##
+## The clock is pinned exactly ON the limit rather than left a frame past it, and
+## that one line is what makes the clutch goal work: everything downstream reads
+## `level_time` and already does the right thing with it. The time award comes to
+## nothing, the fast-time bonus is long gone, and the best time banked is the
+## limit itself -- a goal after the buzzer scores what a goal on the buzzer would.
+func _time_out() -> void:
+	level_time = _time_limit
+	_timing = false
+	_timed_out = true
+
+	time_ran_out.emit()
+
+
+## Whether this level runs on a clock at all. False for a level with its timing
+## turned off, which counts up and never runs out.
+func has_time_limit() -> bool:
+	return _time_limit > 0.0
+
+
+## Seconds left on the clock, down to nothing. Meaningless where there is no
+## limit -- ask [method has_time_limit] first.
+func time_left() -> float:
+	return maxf(_time_limit - level_time, 0.0)
+
+
+## Whether the clock has run out on this attempt.
+func is_timed_out() -> bool:
+	return _timed_out
 
 
 ## Whether the camera may play its opening shot. Asked by the camera as it
@@ -530,7 +630,9 @@ func _restart_extra_life_climb() -> void:
 ## Starts the clock, once. Called the first time the player actually steers, so
 ## a level is not timed while they are still sizing it up.
 func begin_timing() -> void:
-	if _timer_started or _run_over:
+	# A clock that has already run out does not get started again by whatever
+	# was still waiting on the intro.
+	if _timer_started or _run_over or _timed_out:
 		return
 
 	_timer_started = true
@@ -631,6 +733,12 @@ func set_score(value: int) -> void:
 func finish_level(clear_points: int, was_fast: bool, all_gems: bool) -> void:
 	_timing = false
 
+	# Before anything is worked out, because what listens is the in-level
+	# furniture clearing off ahead of the victory panel -- including, when the
+	# ball rolled in after the buzzer, the timeout's own words and its two ways
+	# out. A goal is a goal however late it was, so none of that is left standing.
+	level_finished.emit()
+
 	add_score(clear_points)
 
 	if current_level.is_empty():
@@ -650,6 +758,11 @@ func finish_level(clear_points: int, was_fast: bool, all_gems: bool) -> void:
 	beat_best = beat_score or beat_time
 
 	_bank_progress()
+
+	# After the banking, not before: the challenge flag this run may just have
+	# set is written there, and one of the awards is watching for it.
+	_check_awards()
+
 	save_progress()
 
 
@@ -659,15 +772,15 @@ func finish_level(clear_points: int, was_fast: bool, all_gems: bool) -> void:
 ## GOLD is not among them: it is the chapter's challenge and is read off
 ## `challenges_done`, which `_bank_progress()` writes.
 ##
-## The green one asks for a level finished without taking a single gem, so a
-## level with no gems in it hands it over for nothing. That is the honest answer
-## to the question as asked, and a level with no gems has no diamond to give
-## either -- the two are the same edge of the same rule.
+## The green one asks for every gem in the level, so a level with no gems in it
+## hands it over for nothing. That is the honest answer to the question as asked,
+## and it is the same edge the diamond sits on -- the diamond is the green one
+## and the red one won together.
 func _award_crowns(was_fast: bool, all_gems: bool) -> void:
 	var had: int = crowns.get(current_level, 0)
 	var earned := had | Crowns.SILVER
 
-	if gem_score <= 0:
+	if all_gems:
 		earned |= Crowns.GREEN
 
 	if was_fast:
@@ -690,6 +803,101 @@ func _award_crowns(was_fast: bool, all_gems: bool) -> void:
 ## Every crown a level has given up.
 func crowns_for(level_path: String) -> int:
 	return crowns.get(level_path, 0)
+
+
+# --- Awards ---
+
+## Everything that has just been won, handed over on the spot.
+##
+## Called wherever the things awards are measured on can have moved -- the end of
+## a level, and the load of a save written before any of this existed. Cheap
+## enough to call freely: three awards, and the two that walk a world stop at the
+## first level that falls short.
+##
+## The marble goes into the player's hands HERE, not when the popup is claimed.
+## The popup is an announcement, and a player who wins an award and shuts the
+## game before seeing it has still won it.
+func _check_awards() -> void:
+	var won := false
+	var changed := false
+
+	for award_id: String in Awards.ORDER:
+		if not awards_earned.has(award_id):
+			if not _award_met(award_id):
+				continue
+
+			awards_earned[award_id] = true
+			awards_unclaimed.append(award_id)
+			won = true
+
+		# Reached for awards won long ago as well as ones won just now. An award
+		# is a promise of a marble, and a save holding the one without the other
+		# -- written before this award handed that skin over, or parted from it
+		# by a catalogue change -- is made good here rather than never. Checking
+		# costs a dictionary lookup; the alternative is a player who did the
+		# hardest thing in the game and cannot wear what they did it for.
+		var skin := Awards.skin_for(award_id)
+		if MarbleSkins.has(skin) and not owned_skins.has(skin):
+			owned_skins[skin] = true
+			changed = true
+
+	if not won and not changed:
+		return
+
+	owned_skins_changed.emit()
+
+	# Only for awards actually won. A marble quietly put back where it belonged
+	# is not something to announce.
+	if won:
+		award_earned.emit()
+
+	save_progress()
+
+
+## Whether one award's condition is met right now.
+##
+## The conditions live here rather than in the catalogue for the same reason the
+## crowns' do: `Awards` is what they ARE, and what it takes to win one is a fact
+## about the run, which is what this tracker holds.
+func _award_met(award_id: String) -> bool:
+	match award_id:
+		Awards.CROWNED:
+			return _world_crowned(1, 3)
+		Awards.CHALLENGER:
+			return not challenges_done.is_empty()
+		Awards.FLAWLESS:
+			return _world_crowned(1, Crowns.ORDER.size())
+
+	return false
+
+
+## Whether every level built for a world has given up at least `needed` crowns.
+##
+## A world with nothing built in it answers NO rather than yes. Walking an empty
+## list and finding no level short of the bar is true by vacancy, and it would
+## hand out the award for a world that does not exist yet.
+func _world_crowned(world: int, needed: int) -> bool:
+	var any := false
+
+	for chapter: String in LevelManager.built_chapters(world):
+		for path: String in LevelManager.levels_in(world, chapter):
+			any = true
+			if Crowns.count(crowns_for(path)) < needed:
+				return false
+
+	return any
+
+
+## The award the menu should be announcing, or "" when there is nothing waiting.
+func next_unclaimed_award() -> String:
+	return awards_unclaimed[0] if not awards_unclaimed.is_empty() else ""
+
+
+## The player has seen one. Nothing is handed over here -- the marble went in the
+## moment the award was won -- so this only takes it off the queue.
+func claim_award(award_id: String) -> void:
+	awards_unclaimed.erase(award_id)
+	save_progress()
 
 
 ## Marks the level off, and -- when this was the last level of a challenge run
@@ -960,8 +1168,18 @@ func is_world_unlocked(world: int) -> bool:
 	return true
 
 
-## Minutes and seconds, or just seconds under a minute, down to the hundredth.
-## Used by the HUD and the menus so a time always reads the same way.
+## Seconds down to the hundredth, and only ever seconds. Used by the HUD and the
+## menus so a time always reads the same way.
+##
+## It used to turn over to minutes at sixty. It does not now, because the clock
+## counts DOWN and a minute boundary in a countdown is a readout that changes
+## SHAPE while the player is watching it -- "1:00.25" one moment and "59.90s" the
+## next, four glyphs becoming three, the decimal point jumping sideways. A number
+## that has to be read at a glance mid-roll should not move about, and seconds
+## alone never do.
+##
+## Nothing here is worth setting a level to past a few hundred seconds, so the
+## width this gives up is width nothing was going to use.
 ##
 ## Only the display is rounded. `level_time` and every best time kept in
 ## `best_time` are full-precision floats, so two runs a millisecond apart are
@@ -970,15 +1188,7 @@ static func format_time(seconds: float) -> String:
 	if is_inf(seconds):
 		return "--"
 
-	# Rounded BEFORE the minute is decided. Asking the raw value whether it is
-	# under a minute, then rounding it, prints a time a hair short of the minute
-	# as "60.00s" instead of turning it over to "1:00.00".
-	var rounded := snappedf(seconds, 0.01)
-
-	if rounded < 60.0:
-		return "%.2fs" % rounded
-
-	return "%d:%05.2f" % [int(rounded) / 60, fmod(rounded, 60.0)]
+	return "%.2fs" % seconds
 
 
 ## A gem count with its thousands split up, so a full bank stays readable.
@@ -1086,8 +1296,11 @@ func _pick_stock() -> Array[String]:
 	# always the commonest tier still holding stock.
 	var stock := {}
 	for rarity: String in MarbleSkins.RARITIES:
+		# Award marbles are never stock, owned or not. They are the whole payment
+		# for the hardest things in the game, and one of them turning up on the
+		# shelf for gems would be the shop selling somebody else's trophy.
 		var left := MarbleSkins.ids_in(rarity).filter(func(id: String) -> bool:
-			return not owns_skin(id))
+			return not owns_skin(id) and not Awards.locks_skin(id))
 
 		if not left.is_empty():
 			stock[rarity] = left
@@ -1260,6 +1473,8 @@ func save_progress() -> void:
 	file.set_value("best", "crowns", crowns)
 	file.set_value("progress", "cleared", cleared_levels)
 	file.set_value("progress", "challenges", challenges_done)
+	file.set_value("awards", "earned", awards_earned.keys())
+	file.set_value("awards", "unclaimed", awards_unclaimed)
 	file.set_value("marble", "skin", marble_skin)
 	file.set_value("marble", "owned", owned_skins.keys())
 	file.set_value("shop", "offer", shop_offer)
@@ -1294,6 +1509,17 @@ func load_progress() -> void:
 	crowns = file.get_value("best", "crowns", {})
 	cleared_levels = file.get_value("progress", "cleared", {})
 	challenges_done = file.get_value("progress", "challenges", {})
+
+	# Awards the catalogue no longer knows are dropped on the way in, the same as
+	# skins are. An id that has been retired is not an award any more, and one
+	# left in the unclaimed queue would be a popup with nothing to show.
+	awards_earned = {}
+	for id: String in file.get_value("awards", "earned", []) as Array:
+		if Awards.has(id):
+			awards_earned[id] = true
+
+	awards_unclaimed.assign((file.get_value("awards", "unclaimed", []) as Array).filter(
+			func(id: String) -> bool: return Awards.has(id)))
 	# Resolved on the way in, so a save naming a skin that no longer exists comes
 	# back as the default instead of as a marble with no material at all.
 	marble_skin = MarbleSkins.resolve(file.get_value("marble", "skin", MarbleSkins.DEFAULT))
@@ -1331,6 +1557,12 @@ func load_progress() -> void:
 	var legacy: Dictionary = file.get_value("progress", "sets", {})
 	if not legacy.is_empty() and cleared_levels.is_empty():
 		_adopt_legacy_progress(legacy)
+
+	# Checked on the way in as well as at the end of a level, so a save that
+	# already meets one of these -- every save written before awards existed --
+	# is paid what it is owed rather than made to go and win the crowns again.
+	_check_awards()
+
 	lives_changed.emit(lives)
 	bank_changed.emit(bank)
 

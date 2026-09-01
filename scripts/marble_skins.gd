@@ -90,9 +90,17 @@ const PRICES := {
 }
 
 ## What the ball falls back to: a skin that was removed from the catalogue, a
-## save from before skins existed, or a first run. Matches the material
-## `player.tscn` is authored with, so the fallback never looks like a change.
-const DEFAULT := "solid_black"
+## save from before skins existed, or a first run.
+##
+## It is also the one marble every player owns without buying it, so it is the
+## marble the game is first seen in -- which is why it is the white one and not
+## the black. A black ball on a dark menu tile is a hole in the page, and a first
+## run should open on something that reads as a marble.
+##
+## Black is an ordinary Common now, bought like any other. Nobody loses it: a
+## save that already has it keeps it, and one that is WEARING it keeps wearing
+## it -- see `load_progress()`, which owns whatever the save says is worn.
+const DEFAULT := "solid_white"
 
 ## id -> the skin. The id is what goes in the save file, so it outlives both the
 ## display name and the path -- rename either and existing saves still resolve.

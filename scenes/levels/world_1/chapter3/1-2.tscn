@@ -74,6 +74,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
 [node name="GoalRing" parent="AnimatableBody3D" unique_id=325633537 instance=ExtResource("8_np00j")]
 transform = Transform3D(0.86602527, 0, -0.49999994, 0, 1, 0, 0.49999994, 0, 0.86602527, 0, -1.75, -28)
+fast_time = 25.0
 
 [node name="Gems" type="Node3D" parent="AnimatableBody3D" unique_id=1452687535]
 

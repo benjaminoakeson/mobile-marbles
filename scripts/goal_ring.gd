@@ -1,3 +1,4 @@
+class_name GoalRing
 extends StaticBody3D
 ## The goal: a ring stood on its edge, planted in the ground, with a pane of
 ## glass across the middle that the player has to smash through to win.
@@ -59,11 +60,18 @@ signal level_completed
 ## the clear score and gems still stand.
 @export var slow_time := 60.0
 
-## Finish inside this share of `slow_time` and the whole level is multiplied by
-## `fast_time_multiplier`. At the default 0.5 that is anything under thirty
-## seconds, so the bonus rides on the same per-level tuning as the time score
-## rather than needing a second number set on every level.
-@export var fast_time_share := 0.5
+## When the fast-time bonus closes, in SECONDS from the start of the clock.
+## Finish inside this and the whole level is multiplied by `fast_time_multiplier`.
+##
+## Set outright rather than as a share of `slow_time`, because what a level is
+## being tuned to is a time a player can actually roll it in -- a number in the
+## same units as the clock they are watching. As a share it moved every time the
+## buzzer was retuned, and getting a level to a two-and-a-bit second gold meant
+## working backwards through a fraction.
+##
+## Held to the buzzer when it is read -- see [method fast_deadline] -- so a value
+## longer than `slow_time` cannot quietly hand the bonus to every finish.
+@export var fast_time := 30.0
 
 ## What the whole level is multiplied by for a fast finish.
 @export var fast_time_multiplier := 2.0
@@ -323,22 +331,26 @@ func _award_total(awards: Array[Dictionary]) -> int:
 	return int(round(total))
 
 
-## When the fast-time bonus closes, in seconds from the start of the clock.
-## Zero for a level that is not offering one.
+## The fast-time deadline actually in force, in seconds. Zero for a level that is
+## not offering the bonus at all.
 ##
-## Worked out rather than set, so a level only ever tunes `slow_time` and the
-## fast window follows it. Public because the HUD draws this deadline -- see
-## `time_ring.gd`.
-func fast_time() -> float:
-	if slow_time <= 0.0 or fast_time_share <= 0.0:
+## This is where [member fast_time] is held to the buzzer. A fast time set longer
+## than the slow time would hand the bonus to every finish -- including one that
+## ran the clock out and rolled in on momentum -- so the two numbers are reconciled
+## in the one place that answers the question, rather than trusted to whoever
+## typed them.
+##
+## Public because the HUD draws this deadline; see `time_ring.gd`.
+func fast_deadline() -> float:
+	if slow_time <= 0.0 or fast_time <= 0.0:
 		return 0.0
 
-	return slow_time * fast_time_share
+	return minf(fast_time, slow_time)
 
 
 ## Whether the level was finished quickly enough to earn the fast-time bonus.
 func _was_fast() -> bool:
-	var deadline := fast_time()
+	var deadline := fast_deadline()
 	if deadline <= 0.0:
 		return false
 

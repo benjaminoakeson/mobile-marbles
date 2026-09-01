@@ -16,6 +16,7 @@ static var _open_page := 1
 @onready var _tabs: Array[Button] = [%ShopTab, %LevelsTab, %MarbleTab]
 @onready var _gems: Label = %GemValue
 @onready var _gem: Node3D = %Gem
+@onready var _award_popup: Control = %AwardPopup
 
 ## How fast the gem in the corner turns, in degrees a second. The same slow turn
 ## the ones in the levels have, so the counter reads as a gem rather than as an
@@ -38,6 +39,12 @@ func _ready() -> void:
 	_show_gems(GameState.bank)
 
 	_open_page_at(_open_page)
+
+	# Last, and over the top of whatever page was opened. An award is won in a
+	# level, where there is nothing to show for it, so this is where the player
+	# is told -- on the first menu they see afterwards, however they got here.
+	# The marble is already theirs; see `award_popup.gd`.
+	_award_popup.show_next()
 
 
 func _process(delta: float) -> void:

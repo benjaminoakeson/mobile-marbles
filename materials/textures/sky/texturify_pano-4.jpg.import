@@ -3,17 +3,16 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://j61o8c8vngca"
-path.s3tc="res://.godot/imported/texturify_pano-4.jpg-233a42c87fc30e29e799f891d6cf64d7.s3tc.ctex"
 path.etc2="res://.godot/imported/texturify_pano-4.jpg-233a42c87fc30e29e799f891d6cf64d7.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"imported_formats": ["etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://materials/textures/sky/texturify_pano-4.jpg"
-dest_files=["res://.godot/imported/texturify_pano-4.jpg-233a42c87fc30e29e799f891d6cf64d7.s3tc.ctex", "res://.godot/imported/texturify_pano-4.jpg-233a42c87fc30e29e799f891d6cf64d7.etc2.ctex"]
+dest_files=["res://.godot/imported/texturify_pano-4.jpg-233a42c87fc30e29e799f891d6cf64d7.etc2.ctex"]
 
 [params]
 

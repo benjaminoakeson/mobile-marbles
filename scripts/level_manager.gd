@@ -122,8 +122,8 @@ const NAMES := {
 	"res://scenes/levels/world_1/chapter3/1-1.tscn": "Switchbacks",
 	"res://scenes/levels/world_1/chapter3/1-2.tscn": "Risk It For The Reward?",
 	"res://scenes/levels/world_1/chapter3/1-3.tscn": "Draw Bridges",
-	"res://scenes/levels/world_1/chapter3/1-4.tscn": "Liftoff",
-	"res://scenes/levels/world_1/chapter3/1-5.tscn": "Smashn' Glass",
+	"res://scenes/levels/world_1/chapter3/1-4.tscn": "Spinny Disks",
+	"res://scenes/levels/world_1/chapter3/1-5.tscn": "Little Fall",
 
 	# World 2, first set, named off what each one is built around: a long
 	# extruded run, a course stacked out of blocks, five spinners, and the set's

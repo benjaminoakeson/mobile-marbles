@@ -38,22 +38,55 @@ corner_radius_top_right = 28
 corner_radius_bottom_right = 28
 corner_radius_bottom_left = 28
 
-; The corner radius is half the button's 240px box, which is what makes it round.
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_circle"]
-bg_color = Color(0.16078432, 0.18039216, 0.20392157, 0.92156863)
-corner_radius_top_left = 120
-corner_radius_top_right = 120
-corner_radius_bottom_right = 120
-corner_radius_bottom_left = 120
+; Retry. The box is Next Level's own 140 tall and only its last 20px are behind
+; Next Level, so 120 of it is out in the open and can be hit without aiming. The
+; overlap is down to what it takes to still read as tucked-under. Top corners
+; rounded and bottom ones not -- a tab tucked under a card has no bottom corners
+; to round -- and the content margins are lopsided, a fat one underneath holding
+; the word in the middle of the 120px strip that shows.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_retry"]
+content_margin_left = 20.0
+content_margin_top = 20.0
+content_margin_right = 20.0
+content_margin_bottom = 40.0
+bg_color = Color(0.41960785, 0.44705883, 0.47843137, 1)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
 shadow_color = Color(0, 0, 0, 0.35)
-shadow_size = 12
+shadow_size = 8
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_circle_pressed"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_retry_pressed"]
+content_margin_left = 20.0
+content_margin_top = 20.0
+content_margin_right = 20.0
+content_margin_bottom = 40.0
+bg_color = Color(0.27843138, 0.29803923, 0.32941177, 1)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+
+; The same trick the other way up, and the same 20px overlap: a 140 square whose
+; top 20 are behind Next Level, so the rounded corners and the room for the word
+; are both at the bottom. 140 is Next Level's height, which is what keeps the
+; three of them reading as one object -- and it is what makes this square.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_menu"]
+content_margin_left = 6.0
+content_margin_top = 30.0
+content_margin_right = 6.0
+content_margin_bottom = 10.0
+bg_color = Color(0.16078432, 0.18039216, 0.20392157, 0.92156863)
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_menu_pressed"]
+content_margin_left = 6.0
+content_margin_top = 30.0
+content_margin_right = 6.0
+content_margin_bottom = 10.0
 bg_color = Color(0.09019608, 0.10196079, 0.11764706, 0.95)
-corner_radius_top_left = 120
-corner_radius_top_right = 120
-corner_radius_bottom_right = 120
-corner_radius_bottom_left = 120
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
 
@@ -121,20 +154,30 @@ mouse_filter = 2
 
 ; No dimming behind this any more, so the title carries its own outline --
 ; otherwise it disappears the moment the marble drifts across it.
+;
+; One line, and the top of the box is what keeps it off the HUD. The HUD is NOT
+; hidden while this panel is up -- level_complete is a CanvasLayer added over the
+; level, not instead of it -- so the clock is still sitting in its 300px circle
+; at the top of the screen, y60 to y360. This starts at 400, and the line box
+; puts the ink lower still.
+;
+; The size is what it is because the word is long: at the 104 the two-line
+; version used, CONGRATULATIONS measures about 1020px against a 1080 screen and
+; the outline takes it to the edges. 90 brings it to roughly 880 and leaves the
+; margin the rest of the panel is drawn to.
 [node name="Title" type="Label" parent="Panel"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 240.0
-offset_bottom = 560.0
+offset_top = 400.0
+offset_bottom = 524.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.70196080)
 theme_override_constants/outline_size = 18
-theme_override_font_sizes/font_size = 104
-text = "LEVEL
-COMPLETE"
+theme_override_font_sizes/font_size = 90
+text = "CONGRATULATIONS"
 horizontal_alignment = 1
 
 ; --- What the level gave up: the crowns, the score, and where the score came
@@ -149,11 +192,14 @@ horizontal_alignment = 1
 ; the breakdown under the score is between nought and five rows tall depending on
 ; how the level went. Every box here takes its height from its contents, and the
 ; column stacks whatever that comes to.
+; Hung 50px under the title, which is where the title's box ends rather than
+; where the word does -- the line box carries the font's descent under the caps,
+; so the gap reads a little wider than 50 on screen.
 [node name="Stack" type="VBoxContainer" parent="Panel"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 690.0
+offset_top = 574.0
 offset_bottom = 1600.0
 grow_horizontal = 2
 mouse_filter = 2
@@ -330,6 +376,72 @@ text = "+125"
 horizontal_alignment = 2
 vertical_alignment = 1
 
+; --- The three ways out, stacked into one shape. Retry and Menu are authored
+; --- BEFORE Next Level and overlap it, so Next Level draws over both of them and
+; --- they read as cards tucked behind it -- one peering over the top, one out
+; --- from underneath. Sibling order IS the z-order here; move either of them
+; --- below Next Level in the tree and they land on top of it instead.
+
+; Next Level's own height, shoved up so 120 of its 140 clear the top edge -- a
+; target that can be hit without aiming, with just enough left tucked behind to
+; still read as tucked behind. Next Level's own shadow falls across that seam,
+; and is most of what sells the underlap now that the overlap itself is thin.
+[node name="RetryButton" type="Button" parent="Panel"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -170.0
+offset_top = -420.0
+offset_right = 170.0
+offset_bottom = -280.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.94, 0.95, 0.96, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 44
+theme_override_styles/normal = SubResource("StyleBoxFlat_retry")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_retry_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_retry")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_retry")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Retry Level"
+
+; Square, 140 a side -- which is Next Level's height, so it matches Retry -- hung
+; so 120 of it clears Next Level's bottom edge, the same as Retry clears the top.
+; It used to be a circle run off the bottom-left corner of the screen; it is
+; under Next Level now, on the same centre line, so the three are one object.
+[node name="MenuButton" type="Button" parent="Panel"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -70.0
+offset_top = -180.0
+offset_right = 70.0
+offset_bottom = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.9, 0.92, 0.94, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 44
+theme_override_styles/normal = SubResource("StyleBoxFlat_menu")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_menu_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_menu")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_menu")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Menu"
+
 [node name="NextLevelButton" type="Button" parent="Panel"]
 unique_name_in_owner = true
 layout_mode = 1
@@ -355,29 +467,3 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_primary")
 theme_override_styles/disabled = SubResource("StyleBoxFlat_disabled")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 text = "Next Level"
-
-; Tucked into the bottom-left corner and deliberately running off both edges, so
-; it reads as a way out rather than competing with Next Level. Its centre still
-; lands on screen at (60, 1860), so the label is not clipped.
-[node name="MenuButton" type="Button" parent="Panel"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = -60.0
-offset_top = -180.0
-offset_right = 180.0
-offset_bottom = 60.0
-grow_vertical = 0
-theme_override_colors/font_color = Color(0.9, 0.92, 0.94, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/font_disabled_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 40
-theme_override_styles/normal = SubResource("StyleBoxFlat_circle")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_circle_pressed")
-theme_override_styles/hover = SubResource("StyleBoxFlat_circle")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_disabled")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
-text = "Menu"

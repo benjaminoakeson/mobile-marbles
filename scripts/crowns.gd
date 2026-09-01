@@ -23,7 +23,7 @@ const DIAMOND := 16
 
 ## Left to right on the level page, easiest first. That order is also roughly the
 ## order a player earns them in: everyone gets the silver, the diamond asks for
-## every gem AND the fast time in the same run.
+## the green one's every gem AND the red one's fast time in the same run.
 const ORDER := [SILVER, GREEN, RED, GOLD, DIAMOND]
 
 ## What each crown is called. One name, used everywhere: shouted by the victory
@@ -33,7 +33,7 @@ const ORDER := [SILVER, GREEN, RED, GOLD, DIAMOND]
 ## needs.
 const NAMES := {
 	SILVER: "Level Finished",
-	GREEN: "No Gems",
+	GREEN: "All Gems",
 	RED: "Fast Time",
 	GOLD: "Challenge",
 	DIAMOND: "Perfect",
@@ -44,7 +44,7 @@ const NAMES := {
 ## since "what was that one for again?" is the same question.
 const ASKS := {
 	SILVER: "Reach the goal ring. However long it takes, however many tries.",
-	GREEN: "Reach the goal ring without picking up a single gem.",
+	GREEN: "Reach the goal ring having picked up every gem in the level.",
 	RED: "Reach the goal ring before the clock passes the red mark.",
 	GOLD: "Beat the level during a challenge run. The run itself does not have to survive.",
 	DIAMOND: "Take every gem in the level AND still beat the red mark, in the same run.",

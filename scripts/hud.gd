@@ -29,7 +29,7 @@ const MARBLE_POP := 0.22
 @onready var _time_label: Label = %TimeValue
 @onready var _next_life_label: Label = %NextLifeValue
 @onready var _lives_box: Control = %Lives
-@onready var _unlimited: Label = %Unlimited
+@onready var _time_out_label: Label = %TimeOut
 @onready var _next_life_row: Control = %NextLifeRow
 @onready var _fall_prompt: Label = %FallPrompt
 
@@ -50,6 +50,8 @@ func _ready() -> void:
 	GameState.lives_changed.connect(_on_lives_changed)
 	GameState.gem_progress_changed.connect(_on_gem_progress_changed)
 	GameState.fell_out.connect(_on_fell_out)
+	GameState.time_ran_out.connect(_on_time_ran_out)
+	GameState.level_finished.connect(_on_level_finished)
 
 	# Seeded by hand as well as connected: starting the level above emitted both
 	# of these before there was anything listening.
@@ -62,7 +64,13 @@ func _process(_delta: float) -> void:
 	# read on the frame and not the physics tick, because the clock itself counts
 	# frames -- a reading taken anywhere else is from a different moment than the
 	# one on screen.
-	_time_label.text = GameState.format_time(GameState.level_time)
+	#
+	# Counting DOWN where the level has a limit, because what the player needs off
+	# this number is how long they have left, not how long they have taken. A
+	# level with its timing turned off has no such number to show and counts up,
+	# which is also what it always did.
+	_time_label.text = GameState.format_time(
+			GameState.time_left() if GameState.has_time_limit() else GameState.level_time)
 
 
 ## The ball is gone and the camera is watching it go. All this adds is the line
@@ -70,6 +78,35 @@ func _process(_delta: float) -> void:
 func _on_fell_out() -> void:
 	_awaiting_restart = true
 	_fall_prompt.show()
+
+
+## The clock has run out. The level goes on without the player in it.
+##
+## The steering is frozen rather than the ball stopped: the lean levels off and
+## the pull goes back to plain gravity, so whatever the ball was carrying carries
+## it on -- which is the whole point. A ball a hair short of the ring at the
+## buzzer still gets there, and the goal counts it. See `gravity_tilt.freeze()`.
+##
+## The stick goes with it, because a stick still standing under the thumb would
+## be a stick that answers nothing.
+func _on_time_ran_out() -> void:
+	var steering := get_tree().get_first_node_in_group("level_body")
+	if steering != null and steering.has_method("freeze"):
+		steering.freeze()
+
+	var stick := get_tree().get_first_node_in_group("thumbstick")
+	if stick != null and stick.has_method("disable"):
+		stick.disable()
+
+	_time_out_label.show()
+
+
+## The level was finished -- including, sometimes, after the buzzer. Nothing the
+## timeout put on screen belongs over the victory panel.
+func _on_level_finished() -> void:
+	_time_out_label.hide()
+	_fall_prompt.hide()
+	_awaiting_restart = false
 
 
 ## The two taps the level itself answers: one that hurries the opening shot along,
@@ -115,13 +152,14 @@ func _unhandled_input(event: InputEvent) -> void:
 ## something -- with the count itself shown, an empty row meant you were already
 ## dead and had never been seen.
 ##
-## Play mode has no count to show. The marbles and the climb towards another life
-## both give way to a single infinity, which is the honest readout: there is
-## nothing here to run out of and nothing to earn.
+## Play mode has no count to show, and shows nothing. The marbles and the climb
+## towards another life both go, and nothing takes their place -- there used to
+## be an infinity sign standing in for them, but a corner saying "you cannot run
+## out" every second of every level is a corner spent on a thing the player
+## already knows.
 func _on_lives_changed(lives: int) -> void:
 	var unlimited := lives < 0
 
-	_unlimited.visible = unlimited
 	_lives_box.visible = not unlimited
 	_next_life_row.visible = not unlimited
 

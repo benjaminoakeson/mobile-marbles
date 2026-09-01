@@ -3,17 +3,16 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://v3gkuwqow0o0"
-path.s3tc="res://.godot/imported/CherryWoodNormal.png-23acabb5989611793a1cf6bf3b82d7a6.s3tc.ctex"
 path.etc2="res://.godot/imported/CherryWoodNormal.png-23acabb5989611793a1cf6bf3b82d7a6.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"imported_formats": ["etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://materials/textures/cherry_wood/CherryWoodNormal.png"
-dest_files=["res://.godot/imported/CherryWoodNormal.png-23acabb5989611793a1cf6bf3b82d7a6.s3tc.ctex", "res://.godot/imported/CherryWoodNormal.png-23acabb5989611793a1cf6bf3b82d7a6.etc2.ctex"]
+dest_files=["res://.godot/imported/CherryWoodNormal.png-23acabb5989611793a1cf6bf3b82d7a6.etc2.ctex"]
 
 [params]
 

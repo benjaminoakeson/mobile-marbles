@@ -1,0 +1,185 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/award_popup.gd" id="1_award"]
+[ext_resource type="Material" path="res://materials/marble/solid/solid_black.tres" id="2_marble"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_award"]
+sky_top_color = Color(0.6862745, 0.7019608, 0.72156864, 1)
+sky_horizon_color = Color(0.6862745, 0.7019608, 0.72156864, 1)
+ground_horizon_color = Color(0.6862745, 0.7019608, 0.72156864, 1)
+ground_bottom_color = Color(0.6862745, 0.7019608, 0.72156864, 1)
+
+[sub_resource type="Sky" id="Sky_award"]
+sky_material = SubResource("ProceduralSkyMaterial_award")
+
+[sub_resource type="Environment" id="Environment_award"]
+background_mode = 3
+sky = SubResource("Sky_award")
+ambient_light_source = 3
+reflected_light_source = 2
+
+[sub_resource type="SphereMesh" id="SphereMesh_award"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+content_margin_left = 48.0
+content_margin_top = 48.0
+content_margin_right = 48.0
+content_margin_bottom = 48.0
+bg_color = Color(0.62, 0.65, 0.68, 1)
+border_width_left = 8
+border_width_top = 8
+border_width_right = 8
+border_width_bottom = 8
+border_color = Color(0.34, 0.36, 0.37, 1)
+corner_radius_top_left = 44
+corner_radius_top_right = 44
+corner_radius_bottom_right = 44
+corner_radius_bottom_left = 44
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 24
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_claim"]
+content_margin_left = 60.0
+content_margin_top = 26.0
+content_margin_right = 60.0
+content_margin_bottom = 26.0
+bg_color = Color(0.09019608, 0.10980392, 0.12941177, 0.9019608)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_claim_pressed"]
+content_margin_left = 60.0
+content_margin_top = 26.0
+content_margin_right = 60.0
+content_margin_bottom = 26.0
+bg_color = Color(0.03, 0.04, 0.05, 0.95)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
+
+[node name="AwardPopup" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_award")
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6666667)
+
+[node name="Card" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -420.0
+offset_top = -560.0
+offset_right = 420.0
+offset_bottom = 560.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Stack" type="VBoxContainer" parent="Card"]
+layout_mode = 2
+theme_override_constants/separation = 26
+alignment = 1
+
+[node name="Banner" type="Label" parent="Card/Stack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 0.54901963)
+theme_override_font_sizes/font_size = 40
+text = "AWARD EARNED"
+horizontal_alignment = 1
+
+[node name="AwardName" type="Label" parent="Card/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.5019608)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 96
+text = "Crowned"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="View" type="SubViewportContainer" parent="Card/Stack"]
+custom_minimum_size = Vector2(380, 380)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="Card/Stack/View"]
+own_world_3d = true
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(380, 380)
+render_target_update_mode = 3
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Card/Stack/View/SubViewport"]
+environment = SubResource("Environment_award")
+
+[node name="Camera3D" type="Camera3D" parent="Card/Stack/View/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.2)
+projection = 1
+size = 1.25
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Card/Stack/View/SubViewport"]
+transform = Transform3D(0.8660254, -0.25, 0.4330127, 0, 0.8660254, 0.5, -0.5, -0.4330127, 0.75, 0, 0, 0)
+
+[node name="Marble" type="MeshInstance3D" parent="Card/Stack/View/SubViewport"]
+unique_name_in_owner = true
+mesh = SubResource("SphereMesh_award")
+surface_material_override/0 = ExtResource("2_marble")
+
+[node name="SkinName" type="Label" parent="Card/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.5019608)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 52
+text = "Green  ·  Common"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="AwardAsk" type="Label" parent="Card/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 0.6117647)
+theme_override_font_sizes/font_size = 40
+text = "Three crowns or more on every level in World 1."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="ClaimButton" type="Button" parent="Card/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 56
+theme_override_styles/normal = SubResource("StyleBoxFlat_claim")
+theme_override_styles/hover = SubResource("StyleBoxFlat_claim")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_claim_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Claim"

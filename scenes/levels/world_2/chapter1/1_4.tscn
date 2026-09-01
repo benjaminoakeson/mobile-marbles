@@ -197,7 +197,7 @@ mesh = SubResource("CylinderMesh_6x1ae")
 
 [node name="GoalRing" parent="Level/Spinny5" unique_id=325633537 instance=ExtResource("8_wllk1")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 8.77211, 2)
-slow_time = 30.0
+fast_time = 15.0
 
 [node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level" unique_id=251116044]
 shape = SubResource("ConcavePolygonShape3D_nj53l")

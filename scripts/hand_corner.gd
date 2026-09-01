@@ -1,19 +1,21 @@
 class_name HandCorner
 
-## Where the two in-level corner buttons sit, and the one place that decides it.
+## Where an in-level corner button sits, and the one place that decides it.
 ##
 ## The stick is dynamic -- it appears under whichever thumb lands in its box --
-## so handedness is not about the stick at all. It is about the two buttons: a
+## so handedness is not about the stick at all. It is about the corner button: a
 ## button on the same side as the steering thumb is a button caught by the heel
-## of it, mid-corner, at the worst possible moment. So they swap sides together
-## and stay out of the way.
+## of it, mid-corner, at the worst possible moment. So it takes the far corner
+## and stays out of the way.
 ##
-## Both buttons are the same size in the same corner and differ only in which
-## one, which is why this is shared rather than written twice with one sign
-## changed. See `stick_mode_button.gd` and `camera_drag.gd`.
+## There were two of these, the camera reset and the stick swap, one corner each.
+## The stick swap moved to the quick menu in the middle of the bottom edge -- see
+## `radial_menu.gd` -- where there is no near side to be on and nothing to place.
+## So the camera reset is the last caller; this stays shared rather than folded
+## into it because what it knows is the rule, not the button. See `camera_drag.gd`.
 
-## The gap to the screen edge, and the button's box, matching what the two
-## buttons are authored at.
+## The gap to the screen edge, and the button's box, matching what the corner
+## button is authored at.
 const MARGIN := 48.0
 const BOX := 160.0
 

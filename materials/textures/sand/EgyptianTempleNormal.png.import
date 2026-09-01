@@ -3,17 +3,16 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://xkmlgwpteoc7"
-path.s3tc="res://.godot/imported/EgyptianTempleNormal.png-b9b782f4ed9104b027d8d19b877410ce.s3tc.ctex"
 path.etc2="res://.godot/imported/EgyptianTempleNormal.png-b9b782f4ed9104b027d8d19b877410ce.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"imported_formats": ["etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://materials/textures/sand/EgyptianTempleNormal.png"
-dest_files=["res://.godot/imported/EgyptianTempleNormal.png-b9b782f4ed9104b027d8d19b877410ce.s3tc.ctex", "res://.godot/imported/EgyptianTempleNormal.png-b9b782f4ed9104b027d8d19b877410ce.etc2.ctex"]
+dest_files=["res://.godot/imported/EgyptianTempleNormal.png-b9b782f4ed9104b027d8d19b877410ce.etc2.ctex"]
 
 [params]
 

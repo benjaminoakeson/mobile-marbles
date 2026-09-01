@@ -208,6 +208,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 [node name="GoalRing" parent="Level" unique_id=325633537 instance=ExtResource("7_oqufb")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 82.5, -135)
 slow_time = 24.0
+fast_time = 12.0
 
 [node name="Gems" type="Node3D" parent="Level" unique_id=51730275]
 

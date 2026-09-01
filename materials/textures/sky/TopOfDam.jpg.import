@@ -3,17 +3,16 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://djoasunth3gbo"
-path.s3tc="res://.godot/imported/TopOfDam.jpg-e25f44b6a77268f44d7682f9856211e6.s3tc.ctex"
 path.etc2="res://.godot/imported/TopOfDam.jpg-e25f44b6a77268f44d7682f9856211e6.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"imported_formats": ["etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://materials/textures/sky/TopOfDam.jpg"
-dest_files=["res://.godot/imported/TopOfDam.jpg-e25f44b6a77268f44d7682f9856211e6.s3tc.ctex", "res://.godot/imported/TopOfDam.jpg-e25f44b6a77268f44d7682f9856211e6.etc2.ctex"]
+dest_files=["res://.godot/imported/TopOfDam.jpg-e25f44b6a77268f44d7682f9856211e6.etc2.ctex"]
 
 [params]
 

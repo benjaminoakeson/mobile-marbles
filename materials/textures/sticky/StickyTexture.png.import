@@ -3,17 +3,16 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bx53ytljye5lt"
-path.s3tc="res://.godot/imported/StickyTexture.png-96bbb3aadf8b969369929b654bff1866.s3tc.ctex"
 path.etc2="res://.godot/imported/StickyTexture.png-96bbb3aadf8b969369929b654bff1866.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"imported_formats": ["etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://materials/textures/sticky/StickyTexture.png"
-dest_files=["res://.godot/imported/StickyTexture.png-96bbb3aadf8b969369929b654bff1866.s3tc.ctex", "res://.godot/imported/StickyTexture.png-96bbb3aadf8b969369929b654bff1866.etc2.ctex"]
+dest_files=["res://.godot/imported/StickyTexture.png-96bbb3aadf8b969369929b654bff1866.etc2.ctex"]
 
 [params]
 
