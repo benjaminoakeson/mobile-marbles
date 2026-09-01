@@ -2,17 +2,16 @@ class_name Player
 extends RigidBody3D
 
 ## The ball: what holds it still before the level starts, and what lets the
-## player stop it once it has.
+## player stop it once the level is under way.
 ##
 ## Every level authors the ball half a metre above its floor, so play opens with
-## it dropping onto the stage. Where the ground under the spawn is not perfectly
-## flat -- and on several levels it is not -- the landing turns into a bounce and
-## then a slow creep downhill, all of it before a finger has touched the screen.
-## That is free ground, and free gems, on a clock that has not started yet.
+## it dropping onto the stage. It is held frozen up there while the camera takes
+## its turn around the level, and let go on the same signal that starts the
+## clock -- so the drop is the first thing that happens once the level is the
+## player's, and nothing rolls anywhere before it.
 ##
-## So the ball is pinned the instant it first touches down, and let go again by
-## the very input that starts the clock. The drop still happens; it is only the
-## landing that is made dead.
+## That hold used to be a pin on the first LANDING, let go by the first steer,
+## which is what left a ball creeping about on a level nobody had touched yet.
 ##
 ## STEERING, meanwhile, is not done here at all -- [GravityTilt] leans the whole
 ## space's gravity and the ball simply falls the way it is pushed. What IS done
@@ -27,7 +26,6 @@ extends RigidBody3D
 
 ## Cleared once the ball has been released, so a later bounce cannot pin it all
 ## over again mid-level.
-var _waiting := true
 
 ## How hard the ball can be dragged sideways out of a slide, in metres a second
 ## squared at full stick.
@@ -73,8 +71,20 @@ var _driving := true
 
 
 func _ready() -> void:
-	GameState.timing_started.connect(_release)
 	_wear_chosen_skin()
+
+	# Held until the level starts, which is the end of the camera's opening shot
+	# -- or the next frame, on a level with no opening shot to wait for. Asked
+	# rather than assumed, so a ball added to a level already under way is live
+	# at once rather than frozen for good.
+	if not GameState.is_timing_started():
+		freeze = true
+		GameState.timing_started.connect(_start_rolling, CONNECT_ONE_SHOT)
+
+
+## The level is the player's now.
+func _start_rolling() -> void:
+	freeze = false
 
 
 ## Puts the player's chosen marble on the ball.
@@ -86,33 +96,6 @@ func _wear_chosen_skin() -> void:
 	var skin_material := MarbleSkins.material_for(GameState.marble_skin)
 	if skin_material != null:
 		_mesh.material_override = skin_material
-
-
-func _physics_process(_delta: float) -> void:
-	if not _waiting or freeze:
-		return
-
-	# Pinned on first contact rather than at load: freezing it before the drop
-	# would leave the ball hanging in mid-air over the stage until the player
-	# moved, which reads as a bug rather than as a start.
-	#
-	# Needs `contact_monitor` with room for a contact, which player.tscn sets.
-	if get_contact_count() > 0:
-		_pin()
-
-
-## Kills the landing outright. The velocities go first: freezing keeps whatever
-## the body was carrying, and it would be handed straight back on release.
-func _pin() -> void:
-	linear_velocity = Vector3.ZERO
-	angular_velocity = Vector3.ZERO
-	freeze = true
-
-
-func _release() -> void:
-	_waiting = false
-	freeze = false
-	_driving = true
 
 
 ## Takes the player's hands off the ball for good, leaving it to whatever is
@@ -137,7 +120,7 @@ func stop_driving() -> void:
 ## against, and letting the player brake against thin air would cost the levels
 ## every arc they are built around.
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
-	if _waiting or freeze or not _driving:
+	if freeze or not _driving:
 		return
 
 	if _level == null:

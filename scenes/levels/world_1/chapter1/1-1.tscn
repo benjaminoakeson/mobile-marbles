@@ -74,15 +74,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
 [node name="GoalRing" parent="Level" unique_id=325633537 instance=ExtResource("7_e8ayp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -11)
-slow_time = 3.0
+slow_time = 5.0
 
 [node name="Gems" type="Node3D" parent="Level" unique_id=1818772817]
 
 [node name="Gem" parent="Level/Gems" unique_id=1177366807 instance=ExtResource("8_xticd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -7)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.5, -3)
 
 [node name="Gem2" parent="Level/Gems" unique_id=473422485 instance=ExtResource("8_xticd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.5, -7)
 
 [node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level" unique_id=2001283119]
 mesh = SubResource("ArrayMesh_dxffh")

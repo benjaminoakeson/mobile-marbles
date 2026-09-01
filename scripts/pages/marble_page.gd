@@ -8,16 +8,24 @@ extends Control
 ## levels page has with `LevelManager`.
 ##
 ## The dev tools used to live at the bottom of this page. They are on the levels
-## page now, next to Practice.
+## page now, next to the start button.
 
 ## How many tiles fit across the page.
 const COLUMNS := 3
 
-## Painted round the tile of the skin currently being worn. The tiles carry their
-## own colours, so the marker has to be something a colour cannot accidentally
-## look like -- a white ring is the one thing none of them can be.
+## Every tile is ringed in its tier's colour, so a glance down the page reads as
+## tiers even once the headings have scrolled off the top of it.
+const RARITY_BORDER_WIDTH := 6
+
+## Painted round the tile of the skin currently being worn: the same ring, more
+## than twice as thick and in white.
+##
+## White because the tile itself carries the skin's colour and cannot be trusted
+## not to look like whatever the marker is. Transcendent is white too, so up
+## there the worn tile is told by its width alone -- there is nothing in that
+## tier yet, and a ring this much thicker is not a subtle difference.
 const SELECTED_BORDER := Color(1, 1, 1, 1)
-const SELECTED_BORDER_WIDTH := 8
+const SELECTED_BORDER_WIDTH := 14
 
 ## A tile's colour is the skin's, so its label has to pick a side per tile --
 ## dark text on gold, light text on navy. Anything brighter than this counts as
@@ -28,7 +36,7 @@ const LIGHT_TEXT := Color(1, 1, 1, 1)
 
 @onready var _marble: MeshInstance3D = %Marble
 @onready var _skin_list: VBoxContainer = %SkinList
-@onready var _family_template: Label = %FamilyTemplate
+@onready var _rarity_template: Label = %RarityTemplate
 @onready var _skin_template: Button = %SkinTemplate
 
 ## Tile per skin id, so picking one can repaint just the two that changed rather
@@ -55,20 +63,24 @@ func _build_picker() -> void:
 		_skin_list.remove_child(child)
 		child.queue_free()
 
-	# One heading and one grid per family, in catalogue order. A family with
-	# nothing in it is skipped rather than left as a heading over empty space --
-	# which is most of them until the shop has been visited, since only marbles
-	# the player has actually bought are offered here.
-	for family in MarbleSkins.FAMILIES:
-		var ids := MarbleSkins.ids().filter(func(id: String) -> bool:
-			return MarbleSkins.family_for(id) == family and GameState.owns_skin(id))
+	# One heading and one grid per tier, commonest first. A tier with nothing in
+	# it is skipped rather than left as a heading over empty space -- which is
+	# most of them until the shop has been visited, since only marbles the player
+	# actually owns are offered here, and three of them hold nothing at all yet.
+	for rarity in MarbleSkins.RARITIES:
+		var ids := MarbleSkins.ids_in(rarity).filter(func(id: String) -> bool:
+			return GameState.owns_skin(id))
 		if ids.is_empty():
 			continue
 
-		var heading: Label = _family_template.duplicate()
+		var heading: Label = _rarity_template.duplicate()
 		heading.unique_name_in_owner = false
 		heading.visible = true
-		heading.text = family
+		heading.text = rarity
+
+		# The tier's own colour, which is the whole of the colour coding: the
+		# heading says which tier, and every tile under it is ringed to match.
+		heading.add_theme_color_override("font_color", MarbleSkins.colour_of(rarity))
 		_skin_list.add_child(heading)
 
 		var grid := GridContainer.new()
@@ -98,24 +110,25 @@ func _build_tile(id: String) -> Button:
 	return tile
 
 
-## Colours one tile in its own skin's colour, and rings it if it is the one being
-## worn.
+## Colours one tile in its own skin's colour, rings it in its tier's, and rings
+## it in white instead if it is the one being worn.
 ##
 ## The stylebox is duplicated per tile rather than shared: the template's is one
 ## resource, and recolouring it in place would repaint every tile at once.
 func _paint(tile: Button, id: String, selected: bool) -> void:
 	var tint := MarbleSkins.tint_for(id)
+	var ring := SELECTED_BORDER if selected else MarbleSkins.colour_for(id)
+	var width := SELECTED_BORDER_WIDTH if selected else RARITY_BORDER_WIDTH
 
 	for state: String in ["normal", "hover", "pressed"]:
 		var style: StyleBoxFlat = _skin_template.get_theme_stylebox(state).duplicate()
 		style.bg_color = tint.darkened(0.25) if state == "pressed" else tint
 
-		if selected:
-			style.border_width_left = SELECTED_BORDER_WIDTH
-			style.border_width_top = SELECTED_BORDER_WIDTH
-			style.border_width_right = SELECTED_BORDER_WIDTH
-			style.border_width_bottom = SELECTED_BORDER_WIDTH
-			style.border_color = SELECTED_BORDER
+		style.border_width_left = width
+		style.border_width_top = width
+		style.border_width_right = width
+		style.border_width_bottom = width
+		style.border_color = ring
 
 		tile.add_theme_stylebox_override(state, style)
 

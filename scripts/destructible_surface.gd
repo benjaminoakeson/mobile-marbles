@@ -163,12 +163,6 @@ var _tinted: Material = null
 ## One is a free pass; low numbers are a wall by another name.
 @export_range(0.0, 1.0) var shatter_momentum_kept := 0.9
 
-## Whether the pane comes back when the ball respawns. On by default, because a
-## broken floor the player fell through is otherwise gone for the rest of the
-## run -- which strands them if the level had no way round it. Turn it off for a
-## shortcut that is meant to be spent once.
-@export var restores_on_respawn := true
-
 @export_group("Web")
 
 ## Spokes thrown out from the strike, on top of the one that every corner of the
@@ -278,10 +272,6 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 
-	# Reached by group when the ball respawns, the way the level and the camera
-	# rig already are. See `alive_zone.gd`.
-	add_to_group("destructible")
-
 	_ball = get_tree().get_first_node_in_group("player") as RigidBody3D
 	if _ball == null:
 		push_warning("%s: no player in group 'player'; it will never break" % name)
@@ -384,30 +374,6 @@ func _blow_coming(delta: float) -> float:
 func shatter() -> void:
 	if not _broken:
 		_shatter(global_position + _face_normal() * size[_thin_axis()])
-
-
-## Puts the pane back whole, wipes the cracks off it and sweeps up what it threw.
-## Called on respawn -- see `restores_on_respawn`.
-func restore() -> void:
-	if not _broken and not _cracked:
-		return
-
-	_broken = false
-	_cracked = false
-	_hit_answered = false
-	_web.clear()
-
-	_shape.set_deferred("disabled", false)
-	_mesh.show()
-
-	if is_instance_valid(_crack_mesh):
-		_crack_mesh.queue_free()
-	_crack_mesh = null
-
-	for shard in _debris:
-		if is_instance_valid(shard):
-			shard.queue_free()
-	_debris.clear()
 
 
 func is_broken() -> bool:

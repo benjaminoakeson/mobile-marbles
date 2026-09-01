@@ -43,12 +43,17 @@ signal level_completed
 # Set per level: override these on the GoalRing inside each level scene.
 
 ## Points for reaching the ring at all, whatever the time.
-@export var clear_score := 2000
+##
+## In the same money as the gems, roughly: a level holds twenty-odd gems' worth,
+## and clearing it is worth a few levels of those. Set against the gems on
+## purpose -- a clear score in the thousands would bury them, and finding every
+## gem in a level should be worth reading on the tally.
+@export var clear_score := 125
 
 ## Points on offer for being quick. Worth its full value the instant the clock
 ## starts and ticking evenly down from there, so every second costs something --
 ## two runs a second apart never score the same.
-@export var time_score := 2000
+@export var time_score := 125
 
 ## When the time score runs out. Finish at or after this and it is worth nothing;
 ## the clear score and gems still stand.
@@ -252,7 +257,14 @@ func _send_off(player: RigidBody3D, heading: Vector3) -> void:
 
 	# The gems already scored as they were picked up, so only the difference is
 	# handed over -- that lands the running score exactly on the tally's total.
-	GameState.finish_level(_award_total(awards) - GameState.gem_score)
+	#
+	# The two facts alongside it are what the crowns are worked out from. Both
+	# are read HERE, before the panel goes up: the deadline is this ring's own
+	# tuning, and the gems have to be counted while the level is still standing.
+	GameState.finish_level(
+		_award_total(awards) - GameState.gem_score,
+		_was_fast(),
+		GameState.all_gems_collected())
 	level_completed.emit()
 	_show_menu()
 

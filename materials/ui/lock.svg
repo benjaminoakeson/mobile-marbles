@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Placeholder padlock for whatever the player has not opened yet. Swap the file, keep the name. -->
+  <path d="M20 31 V21 a12 12 0 0 1 24 0 V31" fill="none"
+        stroke="#D6DCE3" stroke-width="7" stroke-linecap="round"/>
+  <rect x="13" y="29" width="38" height="30" rx="8"
+        fill="#D6DCE3" stroke="#5A6169" stroke-width="3"/>
+  <circle cx="32" cy="41" r="5" fill="#3A4149"/>
+  <rect x="29.5" y="41" width="5" height="11" rx="2.5" fill="#3A4149"/>
+</svg>

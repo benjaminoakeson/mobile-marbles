@@ -28,6 +28,11 @@ const NEW_RECORD := preload("res://audio/HighScore.wav")
 ## A destructible slab giving way under the ball.
 const BREAK := preload("res://audio/TrapWood.wav")
 
+## The ball dropping into the world, played on the cut to a fall -- see
+## `alive_zone.gd`. It marks the level being handed back rather than the ball
+## arriving, which is why it lands on the way OUT.
+const BALL_APPEAR := preload("res://audio/BallAppear.wav")
+
 const TALLY := preload("res://audio/Clink.wav")
 const MULTIPLIER := preload("res://audio/DoubleBonus.wav")
 const EXTRA_LIFE := preload("res://audio/ExtraBall.wav")

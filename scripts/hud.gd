@@ -7,8 +7,13 @@ extends Control
 ## on the victory panel is where it actually means something -- see
 ## `level_complete.gd`.
 ##
-## Also what starts the level's clock, so tracking works however the level was
-## entered -- from the menus, or straight from the editor.
+## Also what registers the level with [GameState], so tracking works however the
+## level was entered -- from the menus, or straight from the editor. The clock
+## starts itself from there; this used to watch the stick for the first steer and
+## start it then.
+##
+## And when the ball goes over the edge, this is what asks for the level back:
+## the fall is watched by the camera, and the tap that ends it is taken here.
 
 const MARBLE_MATERIAL := preload("res://materials/ui/life_marble.tres")
 
@@ -24,11 +29,17 @@ const MARBLE_POP := 0.22
 @onready var _time_label: Label = %TimeValue
 @onready var _next_life_label: Label = %NextLifeValue
 @onready var _lives_box: Control = %Lives
-@onready var _stick: Thumbstick = get_tree().get_first_node_in_group("thumbstick") as Thumbstick
+@onready var _unlimited: Label = %Unlimited
+@onready var _next_life_row: Control = %NextLifeRow
+@onready var _fall_prompt: Label = %FallPrompt
 
 ## The marbles on screen, left to right. Their order in the tree is the reverse
 ## of this -- see `_add_marble()`.
 var _marbles: Array[Control] = []
+
+## Set while the ball is falling and the level is waiting to be taken again.
+## What makes a tap mean "again" rather than nothing at all.
+var _awaiting_restart := false
 
 
 func _ready() -> void:
@@ -38,6 +49,7 @@ func _ready() -> void:
 
 	GameState.lives_changed.connect(_on_lives_changed)
 	GameState.gem_progress_changed.connect(_on_gem_progress_changed)
+	GameState.fell_out.connect(_on_fell_out)
 
 	# Seeded by hand as well as connected: starting the level above emitted both
 	# of these before there was anything listening.
@@ -46,18 +58,51 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	# Both ends of the clock are read on the frame, not the physics tick: the
-	# start here, the stop in `goal_ring.gd`. The clock itself counts frames, so
-	# a check that runs anywhere else banks a reading from a different moment
-	# than the one on screen. The tilt and the ball stay on physics.
-	#
-	# The clock starts the moment the stick actually asks for movement -- not on
-	# load, and not on a touch that never leaves the dead zone.
-	if _stick != null and _stick.value != Vector2.ZERO:
-		GameState.begin_timing()
-
-	# Polled rather than signalled: it changes every frame anyway.
+	# Polled rather than signalled: it changes every frame anyway. The clock is
+	# read on the frame and not the physics tick, because the clock itself counts
+	# frames -- a reading taken anywhere else is from a different moment than the
+	# one on screen.
 	_time_label.text = GameState.format_time(GameState.level_time)
+
+
+## The ball is gone and the camera is watching it go. All this adds is the line
+## saying what to do about it.
+func _on_fell_out() -> void:
+	_awaiting_restart = true
+	_fall_prompt.show()
+
+
+## The two taps the level itself answers: one that hurries the opening shot along,
+## and one that takes the level again after a fall.
+##
+## Unhandled, so they count anywhere on the screen that nothing else wanted --
+## and the stick, the one thing that would have wanted the second, was put away
+## when the ball went over the edge.
+func _unhandled_input(event: InputEvent) -> void:
+	var tapped: bool = (event is InputEventScreenTouch and event.pressed) \
+			or (event is InputEventMouseButton and event.pressed)
+	if not tapped:
+		return
+
+	# A thumb on the screen during the opening shot says the player would rather
+	# get on with it. The shot is wound on faster from there -- it still turns the
+	# whole way round and still comes down behind the ball, so nobody is dropped
+	# into a level they were shown half of.
+	if GameState.is_intro_held():
+		var camera := get_tree().get_first_node_in_group("camera_rig") as CameraFollow
+		if camera != null:
+			camera.hurry_intro()
+		return
+
+	if not _awaiting_restart:
+		return
+
+	# Once. The reload takes a moment to come round, and a second tap in the
+	# meantime would ask for another one on top of it.
+	_awaiting_restart = false
+	_fall_prompt.hide()
+
+	GameState.restart_level()
 
 
 ## Brings the row of marbles to the number of SPARE lives, one at a time, so a
@@ -69,7 +114,20 @@ func _process(_delta: float) -> void:
 ## are on your last life, which is the moment the row most needs to say
 ## something -- with the count itself shown, an empty row meant you were already
 ## dead and had never been seen.
+##
+## Play mode has no count to show. The marbles and the climb towards another life
+## both give way to a single infinity, which is the honest readout: there is
+## nothing here to run out of and nothing to earn.
 func _on_lives_changed(lives: int) -> void:
+	var unlimited := lives < 0
+
+	_unlimited.visible = unlimited
+	_lives_box.visible = not unlimited
+	_next_life_row.visible = not unlimited
+
+	if unlimited:
+		return
+
 	var wanted := maxi(lives - 1, 0)
 
 	while _marbles.size() < wanted:

@@ -2,38 +2,54 @@ extends CanvasLayer
 
 ## Victory overlay. The goal ring spawns this once the ball is airborne.
 ##
-## The score is counted up rather than stated. Each award the level was worth
-## shows on its own for a beat, flies into the running total, and the total
-## kicks and throbs while it eats the points -- so the player watches the number
-## being earned instead of reading a finished sum. A tap anywhere hurries it.
+## The score is STATED: the finished total, with the awards it was made of listed
+## under it. It used to be counted out instead -- each award popping up on a chip,
+## flying into a climbing total, the total throbbing while it ate the points. The
+## crowns are what lands now, and a number counting itself up underneath them was
+## two celebrations talking over each other.
 ##
-## What the awards are, and the order they land in, is entirely the goal ring's
-## business: this reads `GameState.last_award` and plays whatever is in it.
+## What the awards are, and the order they are listed in, is entirely the goal
+## ring's business: this reads `GameState.last_award` and shows whatever is in it.
+##
+## The crowns above the score are the level's five, in their own colours. Any won
+## for the first time this run spiral into place one at a time, each laying the
+## words for what it was won for across itself in its own colour -- see
+## `crowns.gd`. Those words stay up: a run that took four crowns should be able
+## to show all four at the end, which is why they are slanted.
 
 ## How long the panel takes to fade up, so it does not snap over the celebration.
 @export var fade_duration := 0.4
 
-## How long an award sits on screen by itself before it flies into the total.
-@export var award_hold := 0.4
+@export_group("Crowns")
 
-## How long the flight into the total takes.
-@export var award_fly := 0.3
+## How a crown arrives: bigger than its slot, out at the end of a radius, and
+## wound several turns round from square. All three run out together over the
+## landing, so it spirals in, shrinks and straightens as one movement.
+@export var crown_punch := 2.2
+@export var crown_spiral_radius := 210.0
+@export var crown_spiral_turns := 1.35
 
-## Roughly how long the total takes to eat one award, whatever its size. Held
-## about the same for a fifty and a fifty thousand, so the pace of the tally
-## does not depend on how well the level went.
-@export var award_count := 0.55
+## How long that landing takes, and how long the panel waits on it before
+## bringing in the next crown.
+@export var crown_drop := 0.42
+@export var crown_hold := 0.9
 
-## What a tap multiplies the pace of the rest of the tally by.
+## How the words lie across their crown. Slanted so that several of them can be
+## up at once: parallel lines, one crown apart, never cross each other however
+## long they are.
+@export var cheer_tilt_degrees := -45.0
+
+## How long the words take to fade up as their crown lands.
+##
+## Slow, and slowest at the start: the crown spirals in hard and fast, and words
+## that snapped on with it would be a second thing happening in the same instant.
+## They surface under it instead, and are still arriving after it has landed.
+@export var cheer_fade_in := 0.75
+
+## What a tap multiplies the pace of the rest of the celebration by.
 @export var tap_speed_up := 5.0
 
 @export_group("Record Stamp")
-
-## A beat of quiet between the last award's sound finishing and the record
-## fanfare, so the news arrives on its own rather than on the tail of the
-## multiplier. The wait itself is however long that sound had left to run -- a
-## tap hurries the counting, but nothing can hurry a sound already playing.
-@export var record_gap := 0.12
 
 ## How far past its resting size the stamp starts, so it comes down onto the
 ## panel rather than fading up on it.
@@ -59,37 +75,23 @@ extends CanvasLayer
 @onready var _next_button: Button = %NextLevelButton
 @onready var _menu_button: Button = %MenuButton
 @onready var _total_label: Label = %TotalValue
-@onready var _chip: Control = %AwardChip
-@onready var _chip_name: Label = %AwardName
-@onready var _chip_value: Label = %AwardValue
+@onready var _award_list: VBoxContainer = %AwardList
+@onready var _award_row: HBoxContainer = %AwardRow
+@onready var _crowns: HBoxContainer = %Crowns
+@onready var _crown_slot: Control = %CrownSlot
+@onready var _cheer_template: Label = %CheerTemplate
 @onready var _stamp: Control = %RecordStamp
 
-## Where the chip sits before it flies. Read once the panel has been laid out,
-## since the chip is moved about by hand afterwards.
-var _chip_home := Vector2.ZERO
+## Badge per crown, so the celebration can reach the one that has just been won.
+var _badges := {}
 
-## The total as shown, which trails `_target` while the count catches up. Kept
-## as a float so a slow count still moves every frame.
-var _shown := 0.0
-var _target := 0
-
-## Points a second the count is currently running at.
-var _rate := 0.0
-
-## How much of the last award's kick is left, and the clock the throb runs on.
-var _impact := 0.0
-var _throb_time := 0.0
-
+## How much faster the rest of the celebration is running, after a tap.
 var _speed := 1.0
-var _tallying := false
-var _has_next := false
 
-## When the last award sound will have died away, on the engine clock. The
-## record fanfare waits for this: the awards' sounds run far longer than the
-## counting they arrive with -- the multiplier's is nearly two seconds against a
-## count of about half of one, and a tap shortens the count further still -- so
-## playing the fanfare on the finished number lands it in the middle of them.
-var _award_sfx_until := 0.0
+## Set while crowns are still landing -- what makes a tap mean "hurry up".
+var _celebrating := false
+
+var _has_next := false
 
 ## Set once the stamp has landed, from which point `_process` owns its scale.
 var _pulsing := false
@@ -107,30 +109,24 @@ func _ready() -> void:
 
 	Audio.wire_clicks(self)
 
-	# Both buttons stay away until the tally is done. A tap anywhere hurries the
-	# count along, and a button sitting under that tap would swallow it and send
-	# the player to the next level instead of speeding anything up.
+	# Both buttons stay away until the crowns have landed. A tap anywhere hurries
+	# them along, and a button sitting under that tap would swallow it and send
+	# the player to the next level instead.
 	_next_button.hide()
 	_menu_button.hide()
-
-	_chip.hide()
 	_stamp.hide()
-	_total_label.text = "0"
+
+	_show_score()
+	_build_crowns()
 
 	_panel.modulate.a = 0.0
 	var fade := create_tween()
 	fade.tween_property(_panel, "modulate:a", 1.0, fade_duration)
 	await fade.finished
 
-	# Anchors have settled by now, so this is the chip's real resting place.
-	_chip_home = _chip.position
+	await _celebrate_crowns()
 
-	await _run_tally()
-
-	# Held back to here rather than played on open, so the news lands on the
-	# finished number instead of over the counting.
 	if GameState.beat_best:
-		await _let_awards_ring_out()
 		Audio.play(Audio.NEW_RECORD)
 		_stamp_record()
 
@@ -138,22 +134,6 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	var counting := _shown < float(_target)
-
-	if counting:
-		_shown = minf(_shown + _rate * _speed * delta, float(_target))
-		_refresh_total()
-
-	# The kick from an award landing, dying away, plus a throb for as long as
-	# the total is still eating. Both drive the same scale, so they are worked
-	# out together here rather than fought over by two tweens.
-	_impact = move_toward(_impact, 0.0, delta * 2.5 * _speed)
-	_throb_time += delta * _speed
-
-	var throb := sin(_throb_time * 26.0) * 0.035 if counting else 0.0
-	_total_label.pivot_offset = _total_label.size * 0.5
-	_total_label.scale = Vector2.ONE * (1.0 + _impact + throb)
-
 	# The stamp breathes on its own clock, and only once it has finished landing
 	# -- until then the slam tween owns its scale and the two would fight.
 	if _pulsing:
@@ -161,10 +141,10 @@ func _process(delta: float) -> void:
 		_stamp.scale = Vector2.ONE * (1.0 + sin(_pulse_time * record_pulse_speed) * record_pulse)
 
 
-## A tap hurries the rest of the tally. Handled as unhandled input so it only
-## ever picks up taps nothing else wanted.
+## A tap hurries the rest of the celebration. Handled as unhandled input so it
+## only ever picks up taps nothing else wanted.
 func _unhandled_input(event: InputEvent) -> void:
-	if not _tallying:
+	if not _celebrating:
 		return
 
 	var tapped: bool = (event is InputEventScreenTouch and event.pressed) \
@@ -173,107 +153,160 @@ func _unhandled_input(event: InputEvent) -> void:
 		_speed = maxf(_speed, tap_speed_up)
 
 
-func _run_tally() -> void:
-	_tallying = true
+# --- The score ---
 
-	for award in GameState.last_award:
+## The finished total, and the awards it came to under it.
+##
+## The total is read off [GameState] rather than added up here: it is the number
+## that was actually banked, and a panel that did its own sums could show one
+## thing while the save held another.
+func _show_score() -> void:
+	_total_label.text = GameState.format_gems(GameState.score)
+
+	for award: Dictionary in GameState.last_award:
 		if award.has("factor"):
-			await _play_multiplier(award)
-		else:
-			await _play_points(award)
+			var factor := float(award["factor"])
+			if factor <= 1.0:
+				continue
+			_add_award_row(str(award.get("label", "")), "×" + _trim_zeroes(factor))
+			continue
 
-	_tallying = false
+		var points := int(award.get("points", 0))
+		if points <= 0:
+			continue
+		_add_award_row(str(award.get("label", "")), "+" + GameState.format_gems(points))
 
 
-## A lump of points: shown, thrown at the total, then eaten.
-func _play_points(award: Dictionary) -> void:
-	var points := int(award.get("points", 0))
-	if points <= 0:
+func _add_award_row(label: String, value: String) -> void:
+	var row: HBoxContainer = _award_row.duplicate()
+	row.unique_name_in_owner = false
+	row.visible = true
+	(row.get_node("AwardName") as Label).text = label
+	(row.get_node("AwardValue") as Label).text = value
+	_award_list.add_child(row)
+
+
+# --- The crowns ---
+
+## All five slots, in their own colours for the ones this level has already given
+## up and dark for the rest.
+##
+## Anything won on THIS run is left empty for now -- it is about to jump in.
+func _build_crowns() -> void:
+	var won := GameState.last_crowns_won
+	var earned := GameState.crowns_for(GameState.current_level)
+
+	for crown: int in Crowns.ORDER:
+		var slot: Control = _crown_slot.duplicate()
+		slot.unique_name_in_owner = false
+		slot.visible = true
+		_crowns.add_child(slot)
+
+		var badge: TextureRect = slot.get_node("Badge")
+		badge.modulate = Crowns.colour_for(crown) if earned & crown else Crowns.UNEARNED
+		badge.visible = not (won & crown)
+		_badges[crown] = badge
+
+
+## The new crowns, one at a time: each drops into its slot with the words for
+## what it was won for held over it.
+func _celebrate_crowns() -> void:
+	var won := Crowns.won_in(GameState.last_crowns_won)
+	if won.is_empty():
 		return
 
-	await _present(str(award.get("label", "")), "+" + GameState.format_gems(points))
+	_celebrating = true
 
-	_play_award_sfx(Audio.TALLY)
-	_impact = 0.14
-	await _count_to(_target + points)
+	for crown: int in won:
+		await _land_crown(crown)
 
-
-## A multiplier on everything counted so far. Lands harder than a lump of points
-## because it is usually worth a great deal more.
-func _play_multiplier(award: Dictionary) -> void:
-	var factor := float(award.get("factor", 1.0))
-	if factor <= 1.0 or _target <= 0:
-		return
-
-	await _present(str(award.get("label", "")), "x" + _trim_zeroes(factor))
-
-	_play_award_sfx(Audio.MULTIPLIER)
-	_impact = 0.34
-	await _count_to(int(round(_target * factor)))
+	_celebrating = false
 
 
-## Pops the chip up with this award on it, holds it there long enough to be
-## read, then flies it into the total and puts it away.
-func _present(label: String, value: String) -> void:
-	_chip_name.text = label
-	_chip_value.text = value
+## One crown arriving: wound out and round, spiralling into its slot, with its
+## words fading in over the top and out again a beat later.
+##
+## The spiral is driven from a single 0-to-1 run rather than as three separate
+## tweens on position, rotation and scale. They are one movement -- the angle
+## that swings the badge round is the same angle it is turned by -- and three
+## tweens racing each other could never guarantee that.
+##
+## The words are faded out AFTER this returns rather than waited on, so the next
+## crown is already on its way in while the last one's line clears.
+func _land_crown(crown: int) -> void:
+	var badge: TextureRect = _badges[crown]
+	badge.pivot_offset = badge.size * 0.5
+	_spiral(badge, 0.0)
+	badge.show()
 
-	_chip.pivot_offset = _chip.size * 0.5
-	_chip.position = _chip_home
-	_chip.scale = Vector2.ZERO
-	_chip.modulate.a = 1.0
-	_chip.show()
+	# Told where the crown is GOING, not where it is: the badge is out at the end
+	# of the spiral by now, and centring the line on it would fling the words
+	# across the panel with it.
+	_say(crown, badge.get_parent() as Control)
+	Audio.play(Audio.EXTRA_LIFE)
 
-	var pop := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	pop.tween_property(_chip, "scale", Vector2.ONE, 0.22 / _speed)
-	await pop.finished
-
-	await get_tree().create_timer(award_hold / _speed).timeout
-
-	# Aimed at the middle of the total, allowing for the chip shrinking on the
-	# way in -- otherwise it lands off to one side.
-	var landing := _total_label.get_global_rect().get_center() - _chip.size * 0.125
-
-	var fly := create_tween().set_parallel(true).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_BACK)
-	fly.tween_property(_chip, "global_position", landing, award_fly / _speed)
-	fly.tween_property(_chip, "scale", Vector2.ONE * 0.25, award_fly / _speed)
-	fly.tween_property(_chip, "modulate:a", 0.0, award_fly / _speed)
-	await fly.finished
-
-	_chip.hide()
-
-
-## Runs the total up to `value` and waits for it to arrive. The climb itself is
-## done in `_process`, so a tap part way through speeds up the count already
-## under way rather than only the next one.
-func _count_to(value: int) -> void:
-	_target = value
-	_rate = maxf(float(_target) - _shown, 0.0) / maxf(award_count, 0.01)
-
-	while _shown < float(_target):
-		await get_tree().process_frame
-
-	_refresh_total()
+	# The landing and the beat it is held for are one tween, not a tween followed
+	# by a timer. A `SceneTreeTimer` made while a coroutine is being resumed by a
+	# tween's `finished` never fires -- the crown after this one would never
+	# land -- and an interval on the end of the chain says the same thing without
+	# leaving the mechanism that works.
+	var land := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	land.tween_method(func(along: float) -> void: _spiral(badge, along),
+			0.0, 1.0, crown_drop / _speed)
+	land.chain().tween_interval(crown_hold / _speed)
+	await land.finished
 
 
-## Plays an award's sound and remembers when it will be over, so the record
-## fanfare can wait its turn. Only the awards go through here: everything else
-## the panel makes a noise about is meant to overlap.
-func _play_award_sfx(stream: AudioStream) -> void:
-	var ends_at := _clock() + Audio.play(stream)
-	_award_sfx_until = maxf(_award_sfx_until, ends_at)
+## Where a crown is when it is `along` of the way in: 0 is wound right out, 1 is
+## home, square and the size of its slot.
+##
+## The angle is what does the work. It runs down to nothing, and it is used three
+## times over -- to swing the badge round its slot, to set how far out it is
+## swung, and to turn the badge itself -- so all of it arrives at once.
+func _spiral(badge: Control, along: float) -> void:
+	var left := 1.0 - along
+	var angle := crown_spiral_turns * TAU * left
+
+	badge.position = Vector2.from_angle(angle) * crown_spiral_radius * left
+	badge.rotation = angle
+	badge.scale = Vector2.ONE * lerpf(crown_punch, 1.0, along)
 
 
-## Waits out whatever is left of the award sounds, plus a beat. Usually there is
-## something to wait for: the counting is over well before the multiplier's
-## sting has finished ringing.
-func _let_awards_ring_out() -> void:
-	var left := _award_sfx_until - _clock() + record_gap
-	if left <= 0.0:
-		return
+## Lays this crown's words across it, in the crown's own colour, and fades them
+## up.
+##
+## Centred on the slot rather than on the panel: five crowns in a row, and the
+## line has to say which of them it is talking about. The colour says the same
+## thing again -- a green line belongs to the green crown, whatever it is lying
+## over by the time the fifth one lands.
+##
+## Added to the panel rather than to the crown's slot: a slot is one cell of a
+## row, and a line this long hangs a good way out of it.
+func _say(crown: int, slot: Control) -> void:
+	var cheer: Label = _cheer_template.duplicate()
+	cheer.unique_name_in_owner = false
+	cheer.text = Crowns.name_for(crown)
+	cheer.add_theme_color_override("font_color", Crowns.colour_for(crown))
+	cheer.modulate.a = 0.0
+	cheer.visible = true
+	_panel.add_child(cheer)
 
-	await get_tree().create_timer(left).timeout
+	# Turned about its own corner and then hung so that the MIDDLE of it lands on
+	# the crown. Turning it about its middle instead -- `pivot_offset` -- would
+	# read better, but a control's pivot is not in the transform until the frame
+	# after it is set, and this is placed the moment it is made. Rotating the
+	# offset by hand is the same answer and needs nothing to have settled.
+	var tilt := deg_to_rad(cheer_tilt_degrees)
+	cheer.pivot_offset = Vector2.ZERO
+	cheer.rotation = tilt
+	cheer.global_position = slot.get_global_rect().get_center() \
+			- (cheer.size * 0.5).rotated(tilt)
 
+	var rise := create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	rise.tween_property(cheer, "modulate:a", 1.0, cheer_fade_in / _speed)
+
+
+# --- The record stamp ---
 
 ## Brings the stamp down beside the total and leaves it pulsing there.
 func _stamp_record() -> void:
@@ -292,10 +325,6 @@ func _stamp_record() -> void:
 	slam.tween_property(_stamp, "rotation", deg_to_rad(record_tilt_degrees), record_slam)
 	slam.tween_property(_stamp, "modulate:a", 1.0, record_slam * 0.4)
 
-	# The total takes the hit as the stamp lands, the same way it does when an
-	# award flies into it.
-	_impact = 0.22
-
 	await slam.finished
 	_pulsing = true
 
@@ -304,14 +333,11 @@ func _stamp_record() -> void:
 ##
 ## The total's label runs the full width of the screen and centres its text, so
 ## the label's own rect says nothing about where the number ends -- that has to
-## be measured off the text. Done now rather than up front because the number is
-## only this wide once the counting has stopped.
+## be measured off the text.
 func _place_stamp() -> void:
 	# Pinned to what the text actually needs before anything is measured off it.
 	# The stamp has been hidden since the panel opened, so its box is still at
-	# whatever the scene authored, or part way through settling towards its
-	# contents -- either way it is not yet the width the placement below has to
-	# be worked out against.
+	# whatever the scene authored.
 	_stamp.reset_size()
 
 	var font := _total_label.get_theme_font("font")
@@ -329,15 +355,7 @@ func _place_stamp() -> void:
 	_stamp.global_position = Vector2(x, centre.y - _stamp.size.y * 0.5)
 
 
-## Seconds on a clock that keeps running whatever the tree is doing -- the panel
-## plays over a celebration that may have paused it.
-func _clock() -> float:
-	return Time.get_ticks_msec() / 1000.0
-
-
-func _refresh_total() -> void:
-	_total_label.text = GameState.format_gems(int(round(_shown)))
-
+# --- Building blocks ---
 
 ## "2" rather than "2.0", but "2.5" kept as it is -- multipliers are written the
 ## way they would be said.

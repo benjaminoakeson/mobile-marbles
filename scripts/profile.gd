@@ -11,6 +11,11 @@ extends Control
 ## player picked straight back to it; whatever is affected hears about it from
 ## there, mid-level if that is where it is. This sheet is only somewhere to say
 ## it.
+##
+## The dev tools are the exception, and they are here for the same reason the
+## settings are: they belong to nothing on any page, and they were taking up room
+## on the levels page next to the button that actually gets pressed. They are the
+## last row, in debug builds only.
 
 ## How long the sheet takes to fade up or away.
 @export var fade_time := 0.14
@@ -25,6 +30,20 @@ const CHOICE_HEIGHT := 96.0
 const CHOICE_RADIUS := 16
 const ROW_GAP := 34
 
+## What the wipe is labelled in. Both dev tools are built from the same pill, and
+## this is the only thing telling them apart.
+const DESTRUCTIVE_TEXT := Color(1, 0.63529414, 0.63529414, 1)
+
+## The face the tools sit on. A shade up from the unchosen pill the settings use,
+## which is the sheet's own colour: a switch that is off can afford to disappear
+## into the background, but a button you are meant to press cannot.
+const DEV_FACE := Color(0.20392157, 0.22745098, 0.25490196, 1)
+
+## How long the wipe stays armed before it forgets it was asked. Without this the
+## two taps need not be anywhere near each other in time, and one stray press
+## minutes after another is enough to lose the save.
+const RESET_ARMED_FOR := 3.0
+
 @onready var _button: Button = %ProfileButton
 @onready var _sheet: Control = %Sheet
 @onready var _backdrop: Button = %Backdrop
@@ -33,6 +52,16 @@ const ROW_GAP := 34
 @onready var _stats: Label = %Stats
 
 var _fade: Tween
+
+## The two dev buttons, held on to so pressing one can report back through its
+## own label -- which saves the sheet needing a status line of its own.
+var _dev_unlock_button: Button
+var _dev_reset_button: Button
+
+## The wipe asks twice. The first press only arms it; the second is the one that
+## throws away every best time, every cleared level and the whole bank.
+var _reset_armed := false
+var _disarm_timer: SceneTreeTimer
 
 
 func _ready() -> void:
@@ -65,6 +94,10 @@ func _open() -> void:
 
 
 func _shut() -> void:
+	# A sheet reopened later must not start one tap from a wipe, with nothing on
+	# screen saying so.
+	_disarm()
+
 	_fade_to(0.0).tween_callback(_sheet.hide)
 
 
@@ -93,6 +126,12 @@ func _build() -> void:
 
 	_add_slider("MUSIC", GameState.music_volume, GameState.set_music_volume)
 	_add_slider("EFFECTS", GameState.sfx_volume, GameState.set_sfx_volume)
+
+	# `OS.is_debug_build()` is false in a release export, so the tools cannot
+	# reach players by accident -- but a debug export still shows them, which is
+	# what makes them usable on a phone.
+	if OS.is_debug_build():
+		_add_dev_tools()
 
 
 func _refresh_stats() -> void:
@@ -188,6 +227,94 @@ func _add_slider(caption: String, level: float, on_move: Callable) -> void:
 
 	row.add_child(slider)
 	_rows.add_child(row)
+
+
+# --- Dev tools ---
+# Debug builds only. Both reach straight into GameState and move the world under
+# whatever page is open behind this sheet, which is why GameState says so -- see
+# `progress_changed`.
+
+func _add_dev_tools() -> void:
+	var row := VBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.add_child(_caption("DEV TOOLS"))
+
+	_dev_unlock_button = _action("Unlock Everything", Color.WHITE, _unlock_everything)
+	row.add_child(_dev_unlock_button)
+
+	_dev_reset_button = _action("Delete Everything", DESTRUCTIVE_TEXT, _reset_progress)
+	row.add_child(_dev_reset_button)
+
+	_rows.add_child(row)
+
+
+func _unlock_everything() -> void:
+	GameState.dev_unlock_everything()
+
+	# Arming the wipe and then reaching for this button instead should not leave
+	# it armed behind a shut sheet.
+	_disarm()
+	_dev_unlock_button.text = "Unlocked \u2713"
+
+	_refresh_stats()
+
+
+## Asks twice. The first press only arms it; the second is the one that wipes.
+func _reset_progress() -> void:
+	if not _reset_armed:
+		_arm()
+		return
+
+	GameState.dev_reset_progress()
+	_reset_armed = false
+	_disarm_timer = null
+	_dev_reset_button.text = "Deleted \u2713"
+
+	_refresh_stats()
+
+
+func _arm() -> void:
+	_reset_armed = true
+	_dev_reset_button.text = "Tap again to wipe"
+
+	# The timer is held on to so a second arming cannot leave an older one still
+	# running, ready to disarm the new one out from under the player's thumb.
+	_disarm_timer = get_tree().create_timer(RESET_ARMED_FOR)
+	var armed_with := _disarm_timer
+
+	await armed_with.timeout
+
+	if _reset_armed and _disarm_timer == armed_with:
+		_disarm()
+
+
+## Puts the wipe back to needing two taps.
+func _disarm() -> void:
+	_reset_armed = false
+	_disarm_timer = null
+
+	if is_instance_valid(_dev_reset_button):
+		_dev_reset_button.text = "Delete Everything"
+
+
+## One full-width pill that does something when tapped, built off the same parts
+## as the choice rows so a tool looks like it belongs on this sheet.
+func _action(text: String, colour: Color, on_press: Callable) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(0.0, CHOICE_HEIGHT)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.add_theme_font_size_override("font_size", 34)
+	button.add_theme_color_override("font_color", colour)
+	button.add_theme_color_override("font_hover_color", colour)
+	button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	button.add_theme_stylebox_override("normal", _pill(DEV_FACE))
+	button.add_theme_stylebox_override("hover", _pill(DEV_FACE))
+	button.add_theme_stylebox_override("pressed", _pill(CHOSEN))
+	button.add_theme_stylebox_override("focus", _pill(Color(0, 0, 0, 0)))
+	button.pressed.connect(on_press)
+
+	return button
 
 
 func _percent(level: float) -> String:

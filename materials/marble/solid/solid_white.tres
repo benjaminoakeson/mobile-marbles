@@ -24,4 +24,4 @@ shader_parameter/pattern_strength = 0.55
 shader_parameter/pattern_scale = 5.5
 shader_parameter/pattern_sharpness = 2.4
 shader_parameter/pattern_roughness = 0.05
-shader_parameter/pattern_relief = 0
+shader_parameter/pattern_relief = 0.0

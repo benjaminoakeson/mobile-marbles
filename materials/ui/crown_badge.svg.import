@@ -2,22 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://j61o8c8vngca"
-path.s3tc="res://.godot/imported/texturify_pano-4.jpg-233a42c87fc30e29e799f891d6cf64d7.s3tc.ctex"
-path.etc2="res://.godot/imported/texturify_pano-4.jpg-233a42c87fc30e29e799f891d6cf64d7.etc2.ctex"
+uid="uid://i2kdx1h83nfg"
+path="res://.godot/imported/crown_badge.svg-00e1f8b03d51f9a766566b0173a7b0c7.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
-source_file="res://materials/textures/sky/texturify_pano-4.jpg"
-dest_files=["res://.godot/imported/texturify_pano-4.jpg-233a42c87fc30e29e799f891d6cf64d7.s3tc.ctex", "res://.godot/imported/texturify_pano-4.jpg-233a42c87fc30e29e799f891d6cf64d7.etc2.ctex"]
+source_file="res://materials/ui/crown_badge.svg"
+dest_files=["res://.godot/imported/crown_badge.svg-00e1f8b03d51f9a766566b0173a7b0c7.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -25,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -39,4 +37,7 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false

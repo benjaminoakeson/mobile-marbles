@@ -2,6 +2,10 @@ extends Control
 
 ## The shop: three marbles at a time, and a clock running down to three more.
 ##
+## Which three is [GameState]'s to decide -- the cheapest marble left and two
+## rolled by rarity, see [method GameState._pick_stock]. All this shows is what
+## the tier a marble belongs to is worth and what colour it is.
+##
 ## The stock itself is not kept here. Which marbles are out and when they change
 ## belong to [GameState] -- see [method GameState.shop_skins] -- because the ten
 ## minutes has to pass while the game is shut, and a page that only exists while
@@ -143,6 +147,12 @@ func _build_slot(id: String) -> Dictionary:
 
 	var skin_name: Label = tile.get_node("Stack/SkinName")
 	skin_name.text = MarbleSkins.name_for(id)
+
+	# The name carries the tier's colour rather than a tier label being added
+	# under it. The tile is a third of the screen wide and already holds a
+	# marble, a name and a price; the colour is the same code the picker uses,
+	# and it costs no room at all.
+	skin_name.add_theme_color_override("font_color", MarbleSkins.colour_for(id))
 
 	_slots.add_child(tile)
 

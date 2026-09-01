@@ -142,11 +142,12 @@ func _colour_for(index: int) -> Color:
 	return LOCKED_COLOUR
 
 
-## Whether a chapter counts as beaten. The challenge run is the thing that
-## finishes a chapter and opens the next, so it is what the road is drawn from --
-## free play through every level in it does not join the dots up.
+## Whether a chapter counts as beaten: every level in it played through. That is
+## what opens the chapter after it, so that is what the road is drawn from. A
+## challenge run is not asked about -- it opens nothing, and a road that lit up
+## for it would be promising something the game does not pay.
 func _is_done(index: int) -> bool:
-	return GameState.is_challenge_complete(_world, _chapter_at(index))
+	return GameState.is_set_complete(_world, _chapter_at(index))
 
 
 ## The chapter a dot stands for, or "" for a dot that is not there. Every read

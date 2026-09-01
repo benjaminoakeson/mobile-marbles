@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://b5gpf8ykf6y5o"]
 
 [ext_resource type="Script" uid="uid://bwgm24o5g7bk2" path="res://scripts/level_complete.gd" id="1_complete"]
+[ext_resource type="Texture2D" path="res://materials/ui/crown_badge.svg" id="2_crown_badge"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_primary"]
 content_margin_left = 40.0
@@ -60,6 +61,21 @@ corner_radius_bottom_left = 120
 ; something pressed onto the panel rather than another chip laid on it. Sized by
 ; the node's own offsets, not by its text, because the script measures the box to
 ; place it beside the total.
+; What the crowns and the score sit on. Dark and see-through: the level is still
+; there behind this panel, with the ball drifting off through it, and a solid
+; card would shut that out -- but white type over a bright level needs something
+; to sit on, and outlines alone were doing all of that work.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+content_margin_left = 34.0
+content_margin_top = 26.0
+content_margin_right = 34.0
+content_margin_bottom = 26.0
+bg_color = Color(0, 0, 0, 0.41960785)
+corner_radius_top_left = 36
+corner_radius_top_right = 36
+corner_radius_bottom_right = 36
+corner_radius_bottom_left = 36
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stamp"]
 content_margin_left = 20.0
 content_margin_top = 12.0
@@ -109,8 +125,8 @@ mouse_filter = 2
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 300.0
-offset_bottom = 620.0
+offset_top = 240.0
+offset_bottom = 560.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -121,19 +137,60 @@ text = "LEVEL
 COMPLETE"
 horizontal_alignment = 1
 
-; --- The tally: a running total, and one chip at a time flying into it ---
+; --- What the level gave up: the crowns, the score, and where the score came
+; --- from. All three are stated rather than counted out. The score used to be
+; --- tallied award by award, with a chip flying into a climbing total; the
+; --- crowns are the thing worth watching land now, and a number counting itself
+; --- up underneath them was two celebrations talking over each other.
 
-; Scaled by the script as it counts, so its pivot has to sit in the middle. The
-; label spans the full width and centres its text, which keeps that pivot on the
-; screen's centre line however many digits the number grows to.
-[node name="TotalValue" type="Label" parent="Panel"]
-unique_name_in_owner = true
+; The crowns and the score, each on a card of its own, stacked down the middle.
+;
+; A column rather than three placed boxes: a card has to hug what is on it, and
+; the breakdown under the score is between nought and five rows tall depending on
+; how the level went. Every box here takes its height from its contents, and the
+; column stacks whatever that comes to.
+[node name="Stack" type="VBoxContainer" parent="Panel"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 700.0
-offset_bottom = 860.0
+offset_top = 690.0
+offset_bottom = 1600.0
 grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 34
+
+[node name="CrownCard" type="PanelContainer" parent="Panel/Stack"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+; One slot per crown, filled by the script -- see level_complete.gd.
+[node name="Crowns" type="HBoxContainer" parent="Panel/Stack/CrownCard"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+alignment = 1
+theme_override_constants/separation = 26
+
+[node name="ScoreCard" type="PanelContainer" parent="Panel/Stack"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="ScoreStack" type="VBoxContainer" parent="Panel/Stack/ScoreCard"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+; The score, stated. Centred over the card rather than over the screen, which is
+; the same line -- the card is centred too -- but leaves the record stamp
+; measuring itself against a box that ends where the number does.
+[node name="TotalValue" type="Label" parent="Panel/Stack/ScoreCard/ScoreStack"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(600, 150)
+layout_mode = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.94901961, 0.72156863, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.70196080)
@@ -141,6 +198,65 @@ theme_override_constants/outline_size = 18
 theme_override_font_sizes/font_size = 130
 text = "0"
 horizontal_alignment = 1
+vertical_alignment = 1
+
+; What the score is made of, under the score itself. One row per award, in the
+; order the goal ring worked them out -- the lumps of points first and whatever
+; multiplied them last, which is the order they were applied in.
+[node name="AwardList" type="VBoxContainer" parent="Panel/Stack/ScoreCard/ScoreStack"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+; A slot is a fixed box the badge inside can be thrown around in. The badge is
+; NOT the box: a row lays its children out and would drag one back into place
+; mid-jump.
+[node name="CrownSlot" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(104, 104)
+layout_mode = 1
+anchors_preset = 0
+offset_right = 104.0
+offset_bottom = 104.0
+mouse_filter = 2
+
+[node name="Badge" type="TextureRect" parent="CrownSlot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_crown_badge")
+expand_mode = 1
+stretch_mode = 5
+
+; What a crown says when it lands. Cloned per crown and left up: they used to be
+; one label reused, and the line for one crown was wiped out by the next.
+;
+; Laid across its own crown at a slant, so five of them can be on the panel at
+; once and still be read -- parallel lines a crown apart never cross. Placed,
+; slanted and coloured by the script, since all three depend on which crown it
+; belongs to.
+[node name="CheerTemplate" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(620, 86)
+layout_mode = 1
+anchors_preset = 0
+offset_right = 620.0
+offset_bottom = 86.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.78431374)
+theme_override_constants/outline_size = 20
+theme_override_font_sizes/font_size = 56
+text = "Level Finished"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 ; Stamped beside the finished total when the run beats the record, then left
 ; pulsing. Hidden until then, and placed by the script -- where "beside" is
@@ -157,9 +273,9 @@ visible = false
 layout_mode = 1
 anchors_preset = 0
 offset_left = 787.0
-offset_top = 725.0
+offset_top = 865.0
 offset_right = 1044.0
-offset_bottom = 853.0
+offset_bottom = 993.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
@@ -176,44 +292,41 @@ HIGHSCORE"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-; Deliberately NOT in a container: it is flown across the screen by hand, and a
-; container would drag it back into place every frame.
-[node name="AwardChip" type="PanelContainer" parent="Panel"]
+; What the score is made of, under the score itself. One row per award, in the
+; order the goal ring worked them out -- the lumps of points first and whatever
+; multiplied them last, which is the order they were applied in.
+; Cloned per award. Kept out of the list itself so the styling is authored once
+; here rather than rebuilt in code.
+[node name="AwardRow" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(600, 74)
 layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -300.0
-offset_top = 980.0
-offset_right = 300.0
-offset_bottom = 1100.0
-grow_horizontal = 2
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_chip")
-
-[node name="Row" type="HBoxContainer" parent="Panel/AwardChip"]
-layout_mode = 2
+anchors_preset = 0
+offset_right = 600.0
+offset_bottom = 74.0
 mouse_filter = 2
 theme_override_constants/separation = 32
 
-[node name="AwardName" type="Label" parent="Panel/AwardChip/Row"]
-unique_name_in_owner = true
+[node name="AwardName" type="Label" parent="AwardRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.7372549, 0.78039216, 0.75294118, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.70196080)
+theme_override_constants/outline_size = 12
 theme_override_font_sizes/font_size = 48
 text = "LEVEL CLEAR"
 vertical_alignment = 1
 
-[node name="AwardValue" type="Label" parent="Panel/AwardChip/Row"]
-unique_name_in_owner = true
+[node name="AwardValue" type="Label" parent="AwardRow"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 56
-text = "+2,000"
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.70196080)
+theme_override_constants/outline_size = 12
+theme_override_font_sizes/font_size = 52
+text = "+125"
 horizontal_alignment = 2
 vertical_alignment = 1
 

@@ -49,9 +49,27 @@ signal level_started(level_path: String)
 ## The run's gems have paid for an extra life.
 signal extra_life_earned
 
-## The player has steered for the first time this level, so the clock is now
-## running. What the ball waits on before it is allowed to move -- see
-## `player.gd`.
+## The ball has left the world and the level is waiting to be taken again. What
+## the HUD puts its prompt up on -- the tap that answers it calls
+## [method restart_level].
+##
+## Only ever emitted for a fall the run SURVIVES. A fall that spends the last
+## life is a game over, and that screen owns what happens next.
+signal fell_out
+
+## The dev tools have rewritten progress wholesale -- everything opened, or
+## everything wiped. For whatever is on screen at the time to rebuild itself.
+##
+## Ordinary play never emits this: progress moves one level at a time, and the
+## menus read it fresh whenever they come back into view. This is for the two
+## buttons that move it while a page is being looked at.
+signal progress_changed
+
+## The level's clock has started, and with it the level itself: the ball is let
+## go on this, and the HUD's readouts start meaning something.
+##
+## It comes either at the end of the camera's opening fly-round or, on a level
+## with no camera to fly it, on the frame after the level loads.
 signal timing_started
 
 const SAVE_PATH := "user://progress.cfg"
@@ -60,13 +78,20 @@ const SAVE_PATH := "user://progress.cfg"
 ## levels of a chapter. Running out means the set is attempted again.
 const STARTING_LIVES := 3
 
+## What `lives` holds in play mode. Negative rather than a huge number, so
+## nothing can quietly count down to a game over from it, and so everything
+## reading the count can tell "unlimited" from "three" -- see
+## [method has_infinite_lives].
+const INFINITE_LIVES := -1
+
 ## What a level's gems have to add up to for the first extra life of a run.
-const FIRST_EXTRA_LIFE := 250
+## About one level's worth, so a run that keeps finding gems keeps its lives up.
+const FIRST_EXTRA_LIFE := 20
 
 ## How much higher the bar goes each time a life is earned. The count starts
-## over from nothing after every life, so the second of a run costs 350 gems on
-## top of the first, the third 450 on top of that, and so on.
-const EXTRA_LIFE_STEP := 100
+## over from nothing after every life, so the second of a run costs 30 gems on
+## top of the first, the third 40 on top of that, and so on.
+const EXTRA_LIFE_STEP := 10
 
 # --- The current run ---
 var score := 0
@@ -95,16 +120,28 @@ var extra_life_target := FIRST_EXTRA_LIFE
 
 ## How the current level is being played.
 ##
-## FREE is the level list: any level of an unlocked chapter, on its own, with
-## its own three lives. Nothing is unlocked by it.
+## PLAY is the way through the game: one level at a time, as many goes at it as
+## it takes, and beating it opens the next one. There is nothing to lose in it --
+## no lives to run out of and no game over -- which is the whole point. Falling
+## off costs the time on the clock and nothing else.
 ##
-## CHALLENGE is one continuous attempt at a whole set, starting at its first
-## level and carrying the same lives all the way through. Finishing it is the
-## ONLY thing that unlocks the next chapter; running out of lives part way
-## fails the run and unlocks nothing.
-enum Mode { FREE, CHALLENGE }
+## CHALLENGE is one continuous attempt at a whole chapter, starting at its first
+## level and carrying the same three lives all the way through. Running out ends
+## the run. It unlocks NOTHING: everything the game opens is opened by playing,
+## and what a finished challenge is worth is still to be decided -- for now it is
+## recorded and shown, and that is all.
+enum Mode { PLAY, CHALLENGE }
 
-var run_mode := Mode.FREE
+var run_mode := Mode.PLAY
+
+## Which mode the level list is OFFERING -- the tab the player last put the start
+## button on. Not the same thing as `run_mode`, which is how the level currently
+## loaded is being played.
+##
+## Remembered between sessions, because coming back from a failed challenge to a
+## button that has quietly turned back into Play is how a player ends up starting
+## a run they did not mean to.
+var preferred_mode := Mode.PLAY
 
 ## The set the current level belongs to, and its place in that set. Empty for a
 ## level that is not registered -- see `_enter_set()`.
@@ -124,16 +161,40 @@ var last_award: Array[Dictionary] = []
 
 # --- Remembered between sessions ---
 ## Level path -> value.
+##
+## Still written on every finish, and still what `beat_best` is worked out from
+## for the record stamp on the victory panel -- but no longer read back out
+## anywhere. The level page used to print both; it shows the crowns now.
 var best_score := {}
 var best_time := {}
 
+## Level path -> the crowns that level has given up, as a bitmask of `Crowns`.
+##
+## Kept for good, and cumulative: a crown earned on one run is not lost by a
+## slower run afterwards. They are collectables, not a scoreboard.
+var crowns := {}
+
+## The crowns the level just finished handed over for the FIRST time, for the
+## victory panel to make something of. Bits, like the rest of them -- and nothing
+## at all when the run turned up no new ones.
+var last_crowns_won := 0
+
 ## Set id -> the level numbers beaten in it at least once, in whatever order
-## they were played. Shown by the menus; nothing is gated on it, since free play
-## lets the levels of an unlocked chapter be taken in any order.
+## they were played.
+##
+## This is the progress the whole game opens off: a level opens the one after it,
+## a finished chapter opens the next chapter, and a finished world opens the next
+## world. Either mode writes it -- a level beaten during a challenge run is
+## beaten -- so a challenge is a harder way through the same door, never a
+## separate one.
 var cleared_levels := {}
 
-## Set id -> true once its challenge run has been finished. This is the only
-## thing that unlocks anything.
+## Set id -> true once its challenge run has been finished.
+##
+## A record and nothing more. It unlocks nothing and is worth nothing yet -- the
+## way through the game is [member cleared_levels] -- but it is kept and shown,
+## so whatever a finished challenge comes to be worth can be paid out on a
+## record that was already being written.
 var challenges_done := {}
 
 ## Every gem ever collected, banked for good and spent in the shop. A level's
@@ -167,6 +228,9 @@ var shop_offer: Array[String] = []
 ## while the game is SHUT. A player who closes the game with two minutes left on
 ## the clock should come back in ten to new stock, not to the same three marbles
 ## with two minutes still to go.
+##
+## Zero means the shop has never been stocked, which is the ONLY thing that asks
+## for a roll ahead of the clock -- see [method shop_skins].
 var shop_refresh_at := 0
 
 ## What the stick should be at the START of a level.
@@ -206,17 +270,36 @@ var left_handed := false
 var music_volume := 1.0
 var sfx_volume := 1.0
 
-## Dev override: every world and chapter reads as open, whatever has actually
-## been finished. Set from the levels page's dev tools and cleared by resetting.
+## Dev override: every world and chapter reads as open and every marble reads as
+## owned, whatever has actually been finished or bought. Set from the levels
+## page's dev tools and cleared by resetting.
 ##
 ## Kept apart from the real records rather than faking them, so the menus go on
-## telling the truth about what has been cleared and challenged, and turning it
-## off puts everything back exactly where it was.
+## telling the truth about what has been cleared and challenged, the bank is not
+## quietly handed the price of the catalogue, and turning it off puts everything
+## back exactly where it was.
 var dev_unlock_all := false
 
 var _timing := false
 var _timer_started := false
 var _run_over := false
+
+## Where the run stood when this attempt at the level began.
+##
+## A fall puts the level back to the start, gems and all -- so whatever this
+## attempt banked has to go back too, or a level with a gem near the spawn is an
+## endless supply of gems, and of the extra lives they buy. See
+## [method restart_level].
+var _attempt_bank := 0
+var _attempt_run_gems := 0
+var _attempt_extra_life_target := FIRST_EXTRA_LIFE
+var _attempt_lives := STARTING_LIVES
+
+## Set by `restart_level()` and cleared by the load it belongs to. An intro is
+## a look at a level the player has not seen; taking the same one again after a
+## fall is not that, and sitting through the fly-round on every retry would be
+## the game holding the player still.
+var _retrying := false
 
 
 func _ready() -> void:
@@ -243,10 +326,10 @@ func start_level(level_path: String) -> void:
 	gem_score = 0
 	beat_best = false
 	last_award = []
+	last_crowns_won = 0
 	_run_over = false
 	set_score(0)
 
-	# Armed, not running. The clock waits for the player -- see `begin_timing()`.
 	_timing = false
 	_timer_started = false
 
@@ -260,7 +343,67 @@ func start_level(level_path: String) -> void:
 	# life back to the bottom.
 	gem_progress_changed.emit(run_gems, extra_life_target)
 
+	# Taken after the set has been entered, so the lives it may just have dealt
+	# are the ones this attempt is measured against.
+	_attempt_bank = bank
+	_attempt_run_gems = run_gems
+	_attempt_extra_life_target = extra_life_target
+	_attempt_lives = lives
+
 	level_started.emit(level_path)
+
+	# Deferred, so every node in the level has readied by the time it runs and
+	# the camera has had its chance to ask for the level to be held. Which is
+	# also what makes the order the level's nodes happen to be in irrelevant.
+	_start_unless_held.call_deferred()
+
+
+## Starts the level unless the camera is still looking round it.
+##
+## The clock used to start here outright. It waited on the player's first steer
+## before that, which meant the drop onto the spawn -- and any roll it turned
+## into -- happened off the clock; it waits on the opening shot now, which is not
+## the player's time either.
+func _start_unless_held() -> void:
+	# Whatever the retry flag was for, its level has loaded and readied by now --
+	# and if that level had no camera to read it, it is spent all the same. It
+	# lives exactly one load.
+	_retrying = false
+
+	if not is_intro_held():
+		begin_timing()
+
+
+## Whether the camera may play its opening shot. Asked by the camera as it
+## readies, and answered no for a level being taken again after a fall: the
+## player has just seen it.
+func may_play_intro() -> bool:
+	if _retrying:
+		_retrying = false
+		return false
+
+	return true
+
+
+## The opening shot is over. Everything that was waiting on it -- the clock, the
+## ball, the stick -- goes on `timing_started`.
+func end_intro() -> void:
+	begin_timing()
+
+
+## Whether the level is still waiting on its opening shot.
+##
+## Asked of the camera rather than kept as a flag here. The camera and the HUD
+## that starts the level ready in whatever order the level scene happens to list
+## them, and a flag set by one and cleared by the other answers differently from
+## level to level -- which is exactly what it did: on the one level that lists
+## its camera first, the clock ran through the whole opening shot.
+func is_intro_held() -> bool:
+	for rig in get_tree().get_nodes_in_group("camera_rig"):
+		if rig.has_method("is_running_intro") and rig.is_running_intro():
+			return true
+
+	return false
 
 
 ## Works out where the level sits: which set it belongs to, and whether it is
@@ -278,7 +421,7 @@ func _enter_set(level_path: String) -> void:
 		run_index = 0
 		run_world = 0
 		run_chapter = ""
-		run_mode = Mode.FREE
+		run_mode = Mode.PLAY
 		_deal_lives()
 		return
 
@@ -301,22 +444,26 @@ func _enter_set(level_path: String) -> void:
 		# A level outside the set the challenge was running in. Whatever that run
 		# was, it is not this, so it does not get to bank a challenge on the way
 		# past.
-		run_mode = Mode.FREE
+		run_mode = Mode.PLAY
 
 	run_set = set_id
 	run_index = place.index
 	run_world = place.world
 	run_chapter = place.chapter
 
-	# Free play is every level on its own, with its own three lives.
+	# Play is every level on its own, and a challenge that this level is not part
+	# of has just become one.
 	if not carries_on:
 		_deal_lives()
 
 
-## Begins a free-play attempt. One level, three lives, nothing riding on it.
-## Called by the level list just before it swaps to the level.
-func begin_free_play() -> void:
-	run_mode = Mode.FREE
+## Begins a play attempt: one level, unlimited goes at it, and the next level
+## opened by finishing it. Called by the level list just before it swaps to the
+## level.
+##
+## The lives are dealt when the level loads, in `_enter_set()`.
+func begin_play() -> void:
+	run_mode = Mode.PLAY
 
 
 ## Begins a challenge run at the top of a set. The caller is expected to send
@@ -339,12 +486,21 @@ func is_challenge_run() -> bool:
 	return run_mode == Mode.CHALLENGE
 
 
-## Hands out a full set of lives for a fresh attempt, and starts the climb
-## towards an extra life over from the bottom.
+## Hands out lives for a fresh attempt, and starts the climb towards an extra
+## one over from the bottom.
+##
+## Play mode is handed the unlimited marker instead of a count. The climb is
+## restarted either way: it costs nothing, and it means a challenge started from
+## a play session begins its climb where a challenge always does.
 func _deal_lives() -> void:
-	lives = STARTING_LIVES
+	lives = INFINITE_LIVES if run_mode == Mode.PLAY else STARTING_LIVES
 	_restart_extra_life_climb()
 	lives_changed.emit(lives)
+
+
+## Whether this run can be failed at all. False only during a challenge.
+func has_infinite_lives() -> bool:
+	return lives == INFINITE_LIVES
 
 
 ## The player has left a level for the menu. Whatever they had built up towards
@@ -359,7 +515,7 @@ func leave_run() -> void:
 	# Walking out on a challenge abandons it. Without this the mode would still
 	# be set the next time a level loaded, and a single level picked from the
 	# list would quietly count as carrying on a run that was already given up.
-	run_mode = Mode.FREE
+	run_mode = Mode.PLAY
 
 	_restart_extra_life_climb()
 	save_progress()
@@ -413,11 +569,16 @@ func collect_gem(points: int) -> void:
 ## the count back to nothing with the bar raised.
 ##
 ## The gems counted carry from level to level, so the count picks up where the
-## last level left it. A set's first extra life comes at 250 gems, the next at
-## 350 more, then 450 more -- and a long run may well end before the player has
-## found another.
+## last level left it. A set's first extra life comes at 20 gems, the next at 30
+## more, then 40 more -- and a long run may well end before the player has found
+## another.
 func _award_extra_life() -> void:
 	if _run_over:
+		return
+
+	# Nothing to add to. Adding one here would also turn the unlimited marker
+	# into a real count, and a real count is a count that can run out.
+	if has_infinite_lives():
 		return
 
 	if run_gems < extra_life_target:
@@ -461,13 +622,21 @@ func set_score(value: int) -> void:
 ## The points for clearing are worked out by the goal ring, not here -- what a
 ## level is worth, and how much a fast run multiplies it, is a property of that
 ## level rather than of the tracker.
-func finish_level(clear_points: int) -> void:
+## Called by the goal ring when the ball is through it.
+##
+## `was_fast` and `all_gems` are handed over rather than worked out here: the
+## fast-time deadline is tuned per level on the goal ring itself, and only the
+## ring knows it. What they MEAN -- which crowns they are worth -- is decided
+## here, so the rules live in one place.
+func finish_level(clear_points: int, was_fast: bool, all_gems: bool) -> void:
 	_timing = false
 
 	add_score(clear_points)
 
 	if current_level.is_empty():
 		return
+
+	_award_crowns(was_fast, all_gems)
 
 	var beat_score: bool = score > best_score.get(current_level, -1)
 	if beat_score:
@@ -484,9 +653,50 @@ func finish_level(clear_points: int) -> void:
 	save_progress()
 
 
+## The crowns this run of the level has just given up, folded into whatever it
+## had given up before.
+##
+## GOLD is not among them: it is the chapter's challenge and is read off
+## `challenges_done`, which `_bank_progress()` writes.
+##
+## The green one asks for a level finished without taking a single gem, so a
+## level with no gems in it hands it over for nothing. That is the honest answer
+## to the question as asked, and a level with no gems has no diamond to give
+## either -- the two are the same edge of the same rule.
+func _award_crowns(was_fast: bool, all_gems: bool) -> void:
+	var had: int = crowns.get(current_level, 0)
+	var earned := had | Crowns.SILVER
+
+	if gem_score <= 0:
+		earned |= Crowns.GREEN
+
+	if was_fast:
+		earned |= Crowns.RED
+
+	# Taking the level DURING a challenge is the whole of what this asks. The run
+	# it belongs to may well die two levels later; the crown was still won here,
+	# on three lives, and taking it back would be reading the player's worst
+	# moment onto their best one.
+	if run_mode == Mode.CHALLENGE:
+		earned |= Crowns.GOLD
+
+	if all_gems and was_fast:
+		earned |= Crowns.DIAMOND
+
+	crowns[current_level] = earned
+	last_crowns_won = earned & ~had
+
+
+## Every crown a level has given up.
+func crowns_for(level_path: String) -> int:
+	return crowns.get(level_path, 0)
+
+
 ## Marks the level off, and -- when this was the last level of a challenge run
-## -- marks the whole challenge done. That flag is what opens the next
-## chapter, so it is the one piece of progress free play can never write.
+## -- marks the whole challenge done as well.
+##
+## The level being marked off is what opens the next one. The challenge flag
+## rides alongside it and opens nothing; see [member challenges_done].
 func _bank_progress() -> void:
 	if run_set.is_empty():
 		return
@@ -504,12 +714,78 @@ func _bank_progress() -> void:
 		challenges_done[run_set] = true
 
 
+## The ball has left the alive zone.
+##
+## Everything a fall COSTS is decided here; what it looks like belongs to the
+## level -- see `alive_zone.gd`. Answers whether the level should go on to show
+## the fall and wait to be taken again, which it should not if that was the last
+## life: the game-over screen owns the level from there.
+func fall_out() -> bool:
+	if _run_over:
+		return false
+
+	# The clock stops where the ball left the world. Nothing that happens while
+	# the fall is being watched is the player's time.
+	stop_timing()
+
+	lose_life()
+	if _run_over:
+		return false
+
+	fell_out.emit()
+	return true
+
+
+## Whether the run is over and the game-over screen has the level.
+func is_run_over() -> bool:
+	return _run_over
+
+
+## Takes the level again from the top, as though this attempt had not happened.
+##
+## The scene is RELOADED rather than the ball put back on its spawn: a level that
+## resets is a level with its gems back, its broken floor whole and its clock at
+## zero, and reloading is the only way to be sure of all of it at once.
+##
+## What the reload cannot undo is what the attempt paid into the run, because
+## none of that lives in the level: gems are banked the moment they are picked
+## up. So the bank, the climb towards the next life, and any life that climb
+## bought are all put back to where this attempt found them. The life spent
+## FALLING is the one thing that stands -- that is the cost, and in play mode
+## there is nothing to spend.
+func restart_level() -> void:
+	bank = _attempt_bank
+	run_gems = _attempt_run_gems
+	extra_life_target = _attempt_extra_life_target
+
+	if not has_infinite_lives():
+		lives = maxi(_attempt_lives - 1, 0)
+		lives_changed.emit(lives)
+
+	bank_changed.emit(bank)
+	gem_progress_changed.emit(run_gems, extra_life_target)
+	save_progress()
+
+	# The level is about to be taken again, not seen for the first time. Read and
+	# cleared by `hold_for_intro()` on the way back in.
+	_retrying = true
+
+	# `start_level()` on the way back in resets the clock, the score and the
+	# level's own gem tally, so there is nothing here to put back by hand.
+	get_tree().reload_current_scene()
+
+
 ## Called when the ball falls off the stage.
 func lose_life() -> void:
 	# Once the run is over it stays over. A ball still tumbling behind the
 	# game-over screen would otherwise keep spending lives it does not have, and
 	# stack up a fresh game-over screen for each one.
 	if _run_over:
+		return
+
+	# Play mode has nothing to spend. The ball has already been put back on the
+	# spawn by the alive zone, which is the whole of what falling off costs.
+	if has_infinite_lives():
 		return
 
 	lives -= 1
@@ -532,11 +808,11 @@ func lose_life() -> void:
 ## Puts the player back on their feet after a game over.
 ##
 ## Progress is left alone. There is nothing to take away: a failed challenge
-## simply never wrote its done flag, and free play was never risking anything in
-## the first place.
+## simply never wrote its done flag, and the levels it did beat on the way are
+## beaten either way.
 func reset_run() -> void:
 	_run_over = false
-	run_mode = Mode.FREE
+	run_mode = Mode.PLAY
 	_deal_lives()
 	save_progress()
 
@@ -585,10 +861,7 @@ func is_level_cleared(world: int, chapter: String, index: int) -> bool:
 
 
 ## Whether this set's challenge run has been finished -- the whole set in one
-## attempt without running out of lives.
-##
-## A set with nothing built for it never counts, so an empty chapter cannot
-## unlock the one after it.
+## attempt without running out of lives. A record only; nothing waits on it.
 func is_challenge_complete(world: int, chapter: String) -> bool:
 	if LevelManager.levels_in(world, chapter).is_empty():
 		return false
@@ -596,71 +869,95 @@ func is_challenge_complete(world: int, chapter: String) -> bool:
 	return challenges_done.get(LevelManager.set_id(world, chapter), false)
 
 
-## Whether a chapter can be played at all. The easiest one opens as soon as
-## its world does; every one after it waits on the CHALLENGE of the chapter
-## before it, which is the only thing that unlocks anything.
+## Whether every level built for a chapter has been beaten, in any order and in
+## either mode. This is what opens the chapter after it.
+##
+## A chapter with nothing built for it never counts, so an empty one cannot open
+## the rest of the world behind it.
+func is_set_complete(world: int, chapter: String) -> bool:
+	var built := LevelManager.levels_in(world, chapter)
+	if built.is_empty():
+		return false
+
+	return cleared_in(world, chapter) >= built.size()
+
+
+## Whether a chapter can be played at all. The easiest one opens as soon as its
+## world does; every one after it waits on the chapter before it being finished
+## -- every level in it beaten.
 func is_set_unlocked(world: int, chapter: String) -> bool:
 	if dev_unlock_all:
 		return true
 
 	# Counted among the chapters this world actually HAS. Waiting on a chapter
-	# that was planned but never built would lock the rest of the world behind a
-	# challenge nobody can run.
+	# that was planned but never built would lock the rest of the world behind
+	# levels nobody can play.
 	var built := LevelManager.built_chapters(world)
 	var step := built.find(chapter)
 	if step > 0:
-		return is_challenge_complete(world, built[step - 1])
+		return is_set_complete(world, built[step - 1])
 
 	return is_world_unlocked(world)
 
 
-## Whether a level can be opened from the list. Once a chapter is unlocked
-## every level in it is, in any order -- the run that has to be done in order is
-## the challenge, and that one starts itself at the top.
+## Whether a level can be opened from the list.
+##
+## One at a time: the first level of an open chapter is open, and every level
+## after it waits on the one before it being beaten. That is the whole of the
+## progression -- play a level, open the next.
+##
+## Beaten, not beaten in any particular mode. A level cleared on the way through
+## a challenge run opens the next one exactly as playing it would.
 func is_level_unlocked(world: int, chapter: String, index: int) -> bool:
 	if LevelManager.level_at(world, chapter, index).is_empty():
 		return false
 
-	return is_set_unlocked(world, chapter)
+	if not is_set_unlocked(world, chapter):
+		return false
+
+	if dev_unlock_all or index <= 0:
+		return true
+
+	return is_level_cleared(world, chapter, index - 1)
 
 
-## Whether a challenge run can be started: the chapter is open and there is
-## something in it to run.
+## Whether a challenge run can be started.
+##
+## The chapter has to be open, have something in it to run, and -- this is what
+## makes it a challenge rather than a first attempt -- be FINISHED: every level in
+## it beaten at least once, in any order and in either mode.
+##
+## Taking a whole chapter on three lives is not something to be walked into
+## blind. By the time it opens, the player has been round every level in it and
+## knows what the run is asking of them.
 func can_start_challenge(world: int, chapter: String) -> bool:
 	if LevelManager.levels_in(world, chapter).is_empty():
 		return false
 
-	return is_set_unlocked(world, chapter)
+	if not is_set_unlocked(world, chapter):
+		return false
+
+	return dev_unlock_all or is_set_complete(world, chapter)
 
 
 ## World 1 is always open. Every world after it waits on the whole of the world
-## before it -- every chapter's challenge finished. A chapter with no
-## levels in it never counts as done, so this stays shut until a world is
-## actually built out.
+## before it -- every level of every chapter beaten.
 func is_world_unlocked(world: int) -> bool:
 	if dev_unlock_all or world <= 1:
 		return true
 
 	# Every chapter the world before this one actually has. A world with nothing
-	# in it has no challenges to finish, so it never opens the next -- which is
-	# what stops the whole game unlocking itself down an unbuilt chain.
+	# in it has nothing to finish, so it never opens the next -- which is what
+	# stops the whole game unlocking itself down an unbuilt chain.
 	var built := LevelManager.built_chapters(world - 1)
 	if built.is_empty():
 		return false
 
-	for chapter in built:
-		if not is_challenge_complete(world - 1, chapter):
+	for chapter: String in built:
+		if not is_set_complete(world - 1, chapter):
 			return false
 
 	return true
-
-
-func best_time_for(level_path: String) -> float:
-	return best_time.get(level_path, INF)
-
-
-func best_score_for(level_path: String) -> int:
-	return best_score.get(level_path, 0)
 
 
 ## Minutes and seconds, or just seconds under a minute, down to the hundredth.
@@ -697,7 +994,15 @@ static func format_gems(value: int) -> String:
 	return "-" + grouped if value < 0 else grouped
 
 
+## Whether a marble can be worn. The dev unlock answers yes to all of them
+## without writing any of them down -- see [member dev_unlock_all] -- so the
+## shelf, the picker and `buy_skin()` all follow from this one question.
 func owns_skin(skin_id: String) -> bool:
+	# Every id resolves to something in the catalogue, so there is nothing left
+	# for the override to say no to.
+	if dev_unlock_all:
+		return true
+
 	return owned_skins.has(MarbleSkins.resolve(skin_id))
 
 
@@ -733,8 +1038,15 @@ func buy_skin(skin_id: String) -> bool:
 ## The restock happens HERE, when the shelf is looked at, rather than on a timer
 ## running in the shop page. A timer only runs while the game does, and the whole
 ## point of the ten minutes is that it passes while the game is shut.
+##
+## The CLOCK is what asks for a roll, never an empty shelf. An empty shelf is a
+## real answer -- it is what a player who owns every marble is shown -- and
+## rolling on it is a loop: the restock tells the shop page, the page asks what
+## is out, there is still nothing to sell, and it rolls again until the stack
+## gives out. `shop_refresh_at` of zero is the one shelf that has never been
+## stocked, and the only thing that rolls early.
 func shop_skins() -> Array[String]:
-	if shop_offer.is_empty() or _now() >= shop_refresh_at:
+	if shop_refresh_at == 0 or _now() >= shop_refresh_at:
 		_restock_shop()
 
 	return shop_offer
@@ -755,32 +1067,83 @@ func _restock_shop() -> void:
 
 ## Three marbles the player does not already own.
 ##
-## One of each kind first, so there is always something affordable on the shelf
-## beside the things that are not -- a shop that rolled three animated marbles
-## would be showing a player with eight hundred gems nothing they could buy.
-## Then whatever is left over, wherever it comes from, for the case where a kind
-## has been bought out.
+## The first slot always holds the cheapest marble left in the game, so there is
+## something affordable on the shelf beside the things that are not -- a shop
+## that rolled three legendary ones would be showing a player with four hundred
+## gems nothing they could buy. The other two are rolled by rarity.
+##
+## Fewer than three come back only when there are fewer than three left to sell,
+## and an empty shelf is what a player who owns every marble is shown.
 func _pick_stock() -> Array[String]:
 	var picked: Array[String] = []
 
-	for family: String in MarbleSkins.FAMILIES:
-		var choices := MarbleSkins.ids().filter(func(id: String) -> bool:
-			return MarbleSkins.family_for(id) == family and not owns_skin(id))
+	# What is left, tier by tier. A tier with nothing unowned in it is left OUT
+	# rather than left empty: that is what hands its odds to the tiers that do
+	# have something, so a player who owns every common marble starts being
+	# offered uncommon ones in that slot rather than an empty shelf.
+	#
+	# Built in `RARITIES` order, which a Dictionary keeps, so the first key is
+	# always the commonest tier still holding stock.
+	var stock := {}
+	for rarity: String in MarbleSkins.RARITIES:
+		var left := MarbleSkins.ids_in(rarity).filter(func(id: String) -> bool:
+			return not owns_skin(id))
 
-		if not choices.is_empty():
-			picked.append(choices.pick_random())
+		if not left.is_empty():
+			stock[rarity] = left
 
-		if picked.size() == SHOP_SLOTS:
-			return picked
+	if stock.is_empty():
+		return picked
 
-	var rest := MarbleSkins.ids().filter(func(id: String) -> bool:
-		return not owns_skin(id) and not picked.has(id))
-	rest.shuffle()
+	picked.append(_take_stock(stock, stock.keys()[0]))
 
-	while picked.size() < SHOP_SLOTS and not rest.is_empty():
-		picked.append(rest.pop_back())
+	while picked.size() < SHOP_SLOTS and not stock.is_empty():
+		picked.append(_take_stock(stock, _roll_rarity(stock)))
 
 	return picked
+
+
+## Takes one marble out of a tier, and the tier itself once that empties it. The
+## same shelf must never offer the same marble twice, and neither three slots nor
+## eight tiers are enough for chance to be trusted with that.
+func _take_stock(stock: Dictionary, rarity: String) -> String:
+	var left: Array = stock[rarity]
+	var id: String = left.pop_at(randi() % left.size())
+
+	if left.is_empty():
+		stock.erase(rarity)
+
+	return id
+
+
+## Which tier the next slot is rolled from.
+##
+## Each tier is half as likely as the one below it, which is what makes a rare
+## marble on the shelf worth stopping for. The weights are over the TIERS and not
+## over the marbles in them, so a tier holding twenty skins is no likelier to
+## come up than one holding eight -- how many marbles happen to be drawn for a
+## tier is not meant to be how often it is offered.
+func _roll_rarity(stock: Dictionary) -> String:
+	var weights := {}
+	var total := 0
+
+	for rarity: String in stock:
+		var steps := MarbleSkins.RARITIES.size() - 1 - MarbleSkins.RARITIES.find(rarity)
+		weights[rarity] = 1 << steps
+		total += weights[rarity]
+
+	var roll := randi() % total
+	var last := ""
+
+	for rarity: String in stock:
+		last = rarity
+		roll -= weights[rarity]
+		if roll < 0:
+			return rarity
+
+	# Only reachable if the weights above did not add up to `total`, which they
+	# always do. The commonest tier left is the safe answer either way.
+	return last
 
 
 ## The wall clock, in whole seconds. The shop is the only thing in the game that
@@ -894,12 +1257,14 @@ func save_progress() -> void:
 	file.set_value("bank", "gems", bank)
 	file.set_value("best", "score", best_score)
 	file.set_value("best", "time", best_time)
+	file.set_value("best", "crowns", crowns)
 	file.set_value("progress", "cleared", cleared_levels)
 	file.set_value("progress", "challenges", challenges_done)
 	file.set_value("marble", "skin", marble_skin)
 	file.set_value("marble", "owned", owned_skins.keys())
 	file.set_value("shop", "offer", shop_offer)
 	file.set_value("shop", "refresh_at", shop_refresh_at)
+	file.set_value("menu", "mode", preferred_mode)
 	file.set_value("controls", "stick_gated", stick_gated)
 	file.set_value("controls", "stick_preference", stick_preference)
 	file.set_value("controls", "left_handed", left_handed)
@@ -926,6 +1291,7 @@ func load_progress() -> void:
 	bank = file.get_value("bank", "gems", 0)
 	best_score = file.get_value("best", "score", {})
 	best_time = file.get_value("best", "time", {})
+	crowns = file.get_value("best", "crowns", {})
 	cleared_levels = file.get_value("progress", "cleared", {})
 	challenges_done = file.get_value("progress", "challenges", {})
 	# Resolved on the way in, so a save naming a skin that no longer exists comes
@@ -948,6 +1314,11 @@ func load_progress() -> void:
 	shop_offer.assign((file.get_value("shop", "offer", []) as Array).filter(
 			func(id: String) -> bool: return MarbleSkins.has(id)))
 	shop_refresh_at = file.get_value("shop", "refresh_at", 0)
+	# Clamped to a mode that exists: a save written by a build with a different
+	# set of modes in it must not leave the start button pointing at nothing.
+	preferred_mode = clampi(int(file.get_value("menu", "mode", Mode.PLAY)),
+			Mode.PLAY, Mode.CHALLENGE) as Mode
+
 	stick_gated = file.get_value("controls", "stick_gated", true)
 	stick_preference = file.get_value("controls", "stick_preference", StickPreference.LAST_USED)
 	left_handed = file.get_value("controls", "left_handed", false)
@@ -998,6 +1369,7 @@ func dev_reset_progress() -> void:
 	challenges_done = {}
 	best_score = {}
 	best_time = {}
+	crowns = {}
 	bank = 0
 	dev_unlock_all = false
 	marble_skin = MarbleSkins.DEFAULT
@@ -1009,18 +1381,29 @@ func dev_reset_progress() -> void:
 	shop_refresh_at = 0
 
 	_run_over = false
-	run_mode = Mode.FREE
+	run_mode = Mode.PLAY
+	preferred_mode = Mode.PLAY
 	_deal_lives()
 
 	bank_changed.emit(bank)
 	marble_skin_changed.emit(marble_skin)
 	owned_skins_changed.emit()
 	shop_changed.emit()
+	progress_changed.emit()
 	save_progress()
 
 
-## Opens every world and chapter at once. Nothing is marked as finished --
-## see `dev_unlock_all` for why -- so `dev_reset_progress()` is the way back off.
+## Opens every world and chapter at once, and hands over every marble in the
+## catalogue with it. Nothing is marked as finished and nothing is written into
+## the owned set -- see `dev_unlock_all` for why -- so `dev_reset_progress()` is
+## the way back off.
 func dev_unlock_everything() -> void:
 	dev_unlock_all = true
+
+	# The marble picker and the shop shelf are both built from `owns_skin()`,
+	# and neither is listening for a world opening -- so the skins have to say
+	# so themselves, or a page already on screen goes on showing the old stock.
+	owned_skins_changed.emit()
+	progress_changed.emit()
+
 	save_progress()

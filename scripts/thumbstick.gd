@@ -120,17 +120,43 @@ func _on_gate_swapped(on: bool) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:
-			if _touch_index == -1 and get_global_rect().has_point(event.position) \
-					and not _blocked_at(event.position):
-				_touch_index = event.index
-				_is_active = true
-				_global_base_pos = event.position
-				_base_pos = event.position - global_position 
-				_move_knob(event.position)
+			_take(event.index, event.position)
 		elif event.index == _touch_index:
 			_release()
-	elif event is InputEventScreenDrag and event.index == _touch_index:
-		_move_knob(event.position)
+	elif event is InputEventScreenDrag:
+		if event.index == _touch_index:
+			_move_knob(event.position)
+		else:
+			# A thumb that was already down before this stick was: the level was
+			# taken again from the fall screen, or the opening shot was hurried
+			# along, and the press that did it belonged to a stick that has since
+			# been thrown away with the rest of the scene.
+			#
+			# Its first MOVEMENT is what this catches. A thumb held perfectly
+			# still is asking for nothing, so there is nothing to answer until it
+			# moves -- and when it does, the stick is under it, rather than the
+			# player having to lift off and press again to be heard.
+			_take(event.index, event.position)
+
+
+## Takes a touch as the stick's, if the stick is free and the touch is somewhere
+## the stick is allowed to have it.
+##
+## Wherever the touch is, is where the stick is: the base goes under the thumb
+## and the reading starts from nothing, so a thumb adopted mid-drag does not
+## lurch off in whatever direction it happened to be moving.
+func _take(index: int, at: Vector2) -> void:
+	if _touch_index != -1:
+		return
+
+	if not get_global_rect().has_point(at) or _blocked_at(at):
+		return
+
+	_touch_index = index
+	_is_active = true
+	_global_base_pos = at
+	_base_pos = at - global_position
+	_move_knob(at)
 
 
 ## Drops any touch in progress and stops listening for new ones. Used when the

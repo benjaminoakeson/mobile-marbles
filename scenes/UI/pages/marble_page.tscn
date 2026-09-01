@@ -126,9 +126,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 24
 
-; Cloned per family and per skin, so every tile keeps the styling authored here
-; rather than having it rebuilt in code.
-[node name="FamilyTemplate" type="Label" parent="."]
+; Cloned per tier and per skin, so every tile keeps the styling authored here
+; rather than having it rebuilt in code. The heading's colour is set per tier by
+; the page -- see marble_page.gd -- so the one here is only what shows in the
+; editor.
+[node name="RarityTemplate" type="Label" parent="."]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1

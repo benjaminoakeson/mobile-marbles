@@ -54,7 +54,21 @@ custom_minimum_size = Vector2(340, 88)
 layout_mode = 2
 mouse_filter = 2
 
+; What play mode shows where the row of marbles would be. A row that is simply
+; never spent says nothing; this says why.
+[node name="Unlimited" type="Label" parent="TopLeft"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 120
+text = "∞"
+
+; Hidden in play mode along with the marbles: there is no next life to climb
+; towards when there is no life to lose.
 [node name="NextLifeRow" type="HBoxContainer" parent="TopLeft"]
+unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 
@@ -81,7 +95,33 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 40
-text = "0 / 250"
+text = "0 / 20"
+
+; --- The fall: what the level says while it waits to be taken again ---
+; Centred and low, clear of the clock above and of wherever the thumb last was.
+; It is a Label and not a button: the tap is taken as unhandled input, so it
+; counts anywhere on the screen rather than only on these words.
+[node name="FallPrompt" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -400.0
+offset_top = -420.0
+offset_right = 400.0
+offset_bottom = -300.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 56
+text = "TAP TO TRY AGAIN"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 ; --- Top centre: the clock, the one number the player watches while playing ---
 ; A plain Panel, NOT a PanelContainer. A container clamps itself to its

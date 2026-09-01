@@ -15,22 +15,35 @@ extends Control
 ## the catalogue in LevelManager and the progress in GameState, so a level added
 ## to one, or cleared in the other, shows up here on its own.
 ##
-## The dev tools sit next to Practice, and open as another popup. They used to be
-## on the marble page; they are here because this is the page whose state they
-## actually move.
+## One button starts a level, and the two tabs over it choose what starting one
+## means: PLAY, which is the game itself -- one level, as many goes as it takes,
+## and the next level opened by finishing it -- or CHALLENGE, a whole chapter on
+## three lives in one sitting. The tabs only swap the button; the run itself
+## begins on the button, so no single tap can commit to a mode.
+##
+## The dev tools are on the profile sheet, which is reachable from every tab.
+## They were next to the start button, where they took up half the room the one
+## button the player actually presses had to sit in.
 
 @onready var _name_label: Label = %NameLabel
 @onready var _preview_button: Button = %PreviewButton
 @onready var _prev_button: Button = %PrevButton
 @onready var _next_button: Button = %NextButton
-@onready var _practice_button: Button = %PracticeButton
+@onready var _play_tab: Button = %PlayTab
+@onready var _challenge_tab: Button = %ChallengeTab
+@onready var _play_button: Button = %PlayButton
 @onready var _challenge_button: Button = %ChallengeButton
-@onready var _dev_button: Button = %DevToolsButton
 @onready var _challenge_gloss: Panel = %Gloss
 @onready var _challenge_crown: TextureRect = %Crown
+@onready var _challenge_lock: TextureRect = %Lock
 @onready var _status: Label = %Status
-@onready var _high_score_value: Label = %HighScoreValue
-@onready var _best_time_value: Label = %BestTimeValue
+@onready var _crowns: HBoxContainer = %Crowns
+@onready var _crown_template: Button = %CrownTemplate
+
+@onready var _crown_info: Control = %CrownInfo
+@onready var _crown_info_scrim: Button = %CrownInfoScrim
+@onready var _crown_info_name: Label = %CrownName
+@onready var _crown_info_ask: Label = %CrownAsk
 @onready var _empty_notice: Label = %EmptyNotice
 @onready var _preview: Node3D = %LevelPreview
 
@@ -64,20 +77,6 @@ var _leaving := false
 var _browse_world := 1
 var _browse_chapter := ""
 
-## Reset asks twice. It throws away every best time, every cleared level and the
-## whole bank, and one stray press should not be able to do that.
-var _reset_armed := false
-var _disarm_timer: SceneTreeTimer
-
-## How long the reset stays armed before it forgets it was asked. Without this
-## the two taps need not be anywhere near each other in time, and one stray
-## press minutes after another is enough to wipe the save.
-const RESET_ARMED_FOR := 3.0
-
-## What the wipe is labelled in. The dev popup builds both tools from one
-## template, and this is the only thing telling them apart.
-const DESTRUCTIVE_TEXT := Color(1, 0.63529414, 0.63529414, 1)
-
 
 func _ready() -> void:
 	# The picture is the way in to the selector. The arrows are later siblings, so
@@ -85,19 +84,22 @@ func _ready() -> void:
 	_preview_button.pressed.connect(_open_selector)
 	_prev_button.pressed.connect(_step_level.bind(-1))
 	_next_button.pressed.connect(_step_level.bind(1))
-	_practice_button.pressed.connect(_play)
+	_play_button.pressed.connect(_play)
 	_challenge_button.pressed.connect(_start_challenge)
 
-	# `OS.is_debug_build()` is false in a release export, so the tools cannot
-	# reach players by accident -- but a debug export still shows them, which is
-	# what makes them usable on a phone.
-	_dev_button.visible = OS.is_debug_build()
-	if _dev_button.visible:
-		_dev_button.pressed.connect(_open_dev_popup)
+	# The tabs only ever change what the button under them is. Nothing starts
+	# from a tab -- the mode is chosen and then started, in two taps, because a
+	# tab that launched a run would make a mis-tap cost a chapter.
+	_play_tab.pressed.connect(_choose_mode.bind(GameState.Mode.PLAY))
+	_challenge_tab.pressed.connect(_choose_mode.bind(GameState.Mode.CHALLENGE))
 
 	# Tapping the dimmed page around a popup puts it away, which is the way out
-	# every other app on the phone has trained a thumb to expect.
+	# every other app on the phone has trained a thumb to expect. The crown card
+	# goes one further: the sheet behind it covers the whole page, so anywhere at
+	# all -- including another crown -- puts it away.
 	_popup_scrim.pressed.connect(_close_popup)
+	_crown_info_scrim.pressed.connect(_close_crown_info)
+	_crown_info.hide()
 
 	_world_prev.pressed.connect(_step_browse_world.bind(-1))
 	_world_next.pressed.connect(_step_browse_world.bind(1))
@@ -107,6 +109,11 @@ func _ready() -> void:
 	# be minutes stale by the time it is looked at again.
 	visibility_changed.connect(_on_visibility_changed)
 
+	# The dev tools are on the profile sheet, which opens OVER this page without
+	# ever hiding it -- so the check above never fires for them. This is how a
+	# page with the world unlocked out from under it hears about it.
+	GameState.progress_changed.connect(_on_progress_changed)
+
 	_restore_selection()
 	_refresh()
 
@@ -115,6 +122,16 @@ func _on_visibility_changed() -> void:
 	if not visible:
 		return
 
+	# Left open behind a tab change, the card would be the first thing back.
+	_close_crown_info()
+
+	_restore_selection()
+	_refresh()
+
+
+## Whatever the dev tools just did, the world, chapter and level this page is
+## showing may not have survived it.
+func _on_progress_changed() -> void:
 	_restore_selection()
 	_refresh()
 
@@ -164,20 +181,19 @@ func _furthest_chapter(world: int) -> String:
 		return ""
 	var furthest: String = built[0]
 
-	for chapter in built:
+	for chapter: String in built:
 		if not GameState.is_set_unlocked(world, chapter):
 			break
 
 		furthest = chapter
-		if not GameState.is_challenge_complete(world, chapter):
+		if not GameState.is_set_complete(world, chapter):
 			break
 
 	return furthest
 
 
-## Where to land in a set. The first level not yet beaten, since that is what
-## the player most likely came for -- but every level is open, so this is only
-## a starting point and not a limit.
+## Where to land in a set. The first level not yet beaten, which is both what the
+## player most likely came for and the furthest one they are allowed to open.
 func _next_level_due(world: int, chapter: String) -> int:
 	for index in LevelManager.levels_in(world, chapter).size():
 		if not GameState.is_level_cleared(world, chapter, index):
@@ -196,14 +212,24 @@ func _refresh() -> void:
 
 	_name_label.text = LevelManager.headline(world, index, path)
 	_status.text = _status_text(world, chapter, path)
-	_show_records(path)
+	_show_crowns(path)
 
 	# Nothing to step to in a set holding one level, or none at all.
 	var built: int = LevelManager.levels_in(world, chapter).size()
 	_prev_button.visible = built > 1
 	_next_button.visible = built > 1
 
-	_practice_button.disabled = path.is_empty() \
+	# Which face of the start button is on show, and which tab is lit. Both are
+	# read back off GameState rather than kept here, so a page rebuilt after a
+	# level -- or after the dev tools have been through it -- comes back on the
+	# mode the player left it on.
+	var challenge: bool = GameState.preferred_mode == GameState.Mode.CHALLENGE
+	_play_tab.button_pressed = not challenge
+	_challenge_tab.button_pressed = challenge
+	_play_button.visible = not challenge
+	_challenge_button.visible = challenge
+
+	_play_button.disabled = path.is_empty() \
 		or not GameState.is_level_unlocked(world, chapter, index)
 
 	var can_challenge := GameState.can_start_challenge(world, chapter)
@@ -212,9 +238,13 @@ func _refresh() -> void:
 		if GameState.is_challenge_complete(world, chapter) else "Challenge Run"
 
 	# The shine and the crown belong to the gold face. Left on over the grey
-	# disabled one they would read as a button that is still on offer.
+	# disabled one they would read as a button that is still on offer. The
+	# padlock is the other half of that: it takes the crown's place, so a locked
+	# run is grey, shut, and says so with a symbol as well as with the line under
+	# the level.
 	_challenge_gloss.visible = can_challenge
 	_challenge_crown.visible = can_challenge
+	_challenge_lock.visible = not can_challenge
 
 	_preview.show_level(path)
 	_empty_notice.visible = path.is_empty()
@@ -234,18 +264,73 @@ func _status_text(world: int, chapter: String, path: String) -> String:
 				world, built[step - 1])
 		return "Locked"
 
-	return "Free play - %d lives for this level" % GameState.STARTING_LIVES
+	# The challenge is the whole chapter, so what it says has nothing to do with
+	# whichever level the page happens to be showing.
+	if GameState.preferred_mode == GameState.Mode.CHALLENGE:
+		var length := LevelManager.levels_in(world, chapter).size()
+
+		# The chapter is open, so the only thing left that can be holding the
+		# run shut is not having been all the way through it yet.
+		if not GameState.can_start_challenge(world, chapter):
+			return "Beat all %d levels to unlock the challenge" % length
+
+		return "Challenge - %d lives for all %d levels, in one go" % [
+			GameState.STARTING_LIVES,
+			length,
+		]
+
+	var index := LevelManager.selected_level
+	if not GameState.is_level_unlocked(world, chapter, index):
+		# Named rather than numbered: "Beat 2 - Open Wide first" is a level the
+		# player can go and find, where "beat the level before this one" is not.
+		var previous := LevelManager.level_at(world, chapter, index - 1)
+		return "Beat %s first" % LevelManager.numbered_name(previous, index - 1)
+
+	return "Play - unlimited lives"
 
 
-## The two records for this level. Both are written by the same call in
-## `GameState.finish_level()`, so a level that has never been finished has
-## neither -- and shows a dash rather than a zero it never actually scored.
-func _show_records(path: String) -> void:
-	var played: bool = not path.is_empty() and GameState.best_score.has(path)
+## The five crowns this level has to give, earned ones in their own colour and
+## the rest as empty slots.
+##
+## All five are always on show, including on a level that has never been played
+## and on an empty slot with no level in it at all. A crown that only appeared
+## once it was won would be a prize nobody knew was there -- and every one of
+## them can be tapped to ask what it is, won or not, for the same reason.
+##
+## Rebuilt rather than repainted: five nodes is nothing, and it keeps this the
+## only place that has to know how a crown is drawn.
+func _show_crowns(path: String) -> void:
+	_clear(_crowns)
 
-	_high_score_value.text = GameState.format_gems(GameState.best_score_for(path)) \
-		if played else "--"
-	_best_time_value.text = GameState.format_time(GameState.best_time_for(path))
+	var earned := GameState.crowns_for(path) if not path.is_empty() else 0
+
+	for crown: int in Crowns.ORDER:
+		var badge: Button = _crown_template.duplicate()
+		badge.unique_name_in_owner = false
+		badge.visible = true
+		badge.modulate = Crowns.colour_for(crown) if earned & crown else Crowns.UNEARNED
+		badge.pressed.connect(_open_crown_info.bind(crown))
+
+		# Built after the menu was given its clicks, so it asks for its own.
+		Audio.wire_clicks(badge)
+
+		_crowns.add_child(badge)
+
+
+## What that crown is and what it takes, in its own colour.
+##
+## The same card either way: a crown already won still answers "what was that one
+## for again?", and the answer does not change for having been earned.
+func _open_crown_info(crown: int) -> void:
+	_crown_info_name.text = Crowns.name_for(crown)
+	_crown_info_name.add_theme_color_override("font_color", Crowns.colour_for(crown))
+	_crown_info_ask.text = Crowns.ask_for(crown)
+
+	_crown_info.show()
+
+
+func _close_crown_info() -> void:
+	_crown_info.hide()
 
 
 ## Moves along the set by one, wrapping at either end so the arrows never go
@@ -271,13 +356,15 @@ func _play() -> void:
 	if path.is_empty():
 		return
 
-	GameState.begin_free_play()
+	GameState.begin_play()
 	_load(path)
 
 
 ## The whole set in one attempt. Always from its first level -- a challenge is
-## not something that can be joined part way through -- and losing the lives
-## fails it. Finishing it is what opens the next chapter.
+## not something that can be joined part way through -- and losing the lives ends
+## it. Finishing it opens nothing that playing the same levels would not have
+## opened; it is recorded as done and shown as a tick, and that is all it is
+## worth for now.
 func _start_challenge() -> void:
 	if _leaving:
 		return
@@ -297,6 +384,18 @@ func _start_challenge() -> void:
 
 	GameState.begin_challenge(world, chapter)
 	_load(path)
+
+
+## Puts the start button on one mode or the other. Saved rather than kept on the
+## page, so it survives the level the player is about to play -- coming back from
+## a level rebuilds this page from nothing.
+func _choose_mode(mode: GameState.Mode) -> void:
+	if GameState.preferred_mode == mode:
+		return
+
+	GameState.preferred_mode = mode
+	GameState.save_progress()
+	_refresh()
 
 
 func _load(path: String) -> void:
@@ -422,112 +521,23 @@ func _pick_level_at(index: int) -> void:
 	_refresh()
 
 
-## Opens the shared popup. `with_chrome` is what tells the level selector apart
-## from the dev tools: both fill the same grid, but only one of them wants a
-## world, a chapter road and a chapter name above it.
-func _show_popup(title: String, columns: int, with_chrome := true) -> void:
+## Opens the selector popup. There used to be a second thing built in it -- the
+## dev tools -- which is what the chrome could be turned off for; the chrome is
+## simply always on now.
+func _show_popup(title: String, columns: int) -> void:
 	_clear(_popup_grid)
 	_popup_title.text = title
 	_popup_grid.columns = columns
-	_selector_chrome.visible = with_chrome
+	_selector_chrome.visible = true
 	_popup.visible = true
 
 
 func _close_popup() -> void:
 	_popup.visible = false
 
-	# The reset lives on a button inside the popup, which is about to be freed.
-	# Leaving it armed would mean a popup reopened later starts one tap from a
-	# wipe, with nothing on screen saying so.
-	_disarm()
-
 	# Emptied on the way out rather than on the way in, so a popup is never left
 	# holding buttons built against progress that has since moved on.
 	_clear(_popup_grid)
-
-
-# --- Dev tools ---
-# Debug builds only. Both tools reach straight into GameState, so the page is
-# rebuilt afterwards -- the world, chapter and level it is showing may not
-# survive what they just did.
-
-## Two buttons, built the same way every other popup here is built. Held on to
-## so pressing one can report back through its own label, which saves the popup
-## needing a status line of its own.
-var _dev_unlock_button: Button
-var _dev_reset_button: Button
-
-
-func _open_dev_popup() -> void:
-	_show_popup("DEV TOOLS", 1, false)
-
-	_dev_unlock_button = _clone(_level_template)
-	_dev_unlock_button.text = "Unlock Everything"
-	_dev_unlock_button.pressed.connect(_unlock_everything)
-	_popup_grid.add_child(_dev_unlock_button)
-
-	_dev_reset_button = _clone(_level_template)
-	_dev_reset_button.text = "Delete Everything"
-	_dev_reset_button.pressed.connect(_reset_progress)
-
-	# The two tools come off the same template, so without this the one that
-	# wipes the save looks exactly like the one that does not.
-	_dev_reset_button.add_theme_color_override("font_color", DESTRUCTIVE_TEXT)
-	_dev_reset_button.add_theme_color_override("font_hover_color", DESTRUCTIVE_TEXT)
-
-	_popup_grid.add_child(_dev_reset_button)
-
-
-func _unlock_everything() -> void:
-	GameState.dev_unlock_everything()
-
-	# Arming the wipe and then reaching for this button instead should not leave
-	# it armed behind the popup.
-	_disarm()
-	_dev_unlock_button.text = "Unlocked \u2713"
-
-	_restore_selection()
-	_refresh()
-
-
-## Asks twice. The first press only arms it; the second is the one that wipes.
-func _reset_progress() -> void:
-	if not _reset_armed:
-		_arm()
-		return
-
-	GameState.dev_reset_progress()
-	_reset_armed = false
-	_disarm_timer = null
-	_dev_reset_button.text = "Deleted \u2713"
-
-	_restore_selection()
-	_refresh()
-
-
-func _arm() -> void:
-	_reset_armed = true
-	_dev_reset_button.text = "Tap again to wipe"
-
-	# The timer is held on to so a second arming cannot leave an older one still
-	# running, ready to disarm the new one out from under the player's thumb.
-	_disarm_timer = get_tree().create_timer(RESET_ARMED_FOR)
-	var armed_with := _disarm_timer
-
-	await armed_with.timeout
-
-	if _reset_armed and _disarm_timer == armed_with:
-		_disarm()
-
-
-## Puts the wipe back to needing two taps. Also called when the popup closes, by
-## which point the button it was labelling has been freed -- hence the check.
-func _disarm() -> void:
-	_reset_armed = false
-	_disarm_timer = null
-
-	if is_instance_valid(_dev_reset_button):
-		_dev_reset_button.text = "Delete Everything"
 
 
 # --- Building blocks ---

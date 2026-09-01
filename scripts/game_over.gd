@@ -1,11 +1,12 @@
 extends CanvasLayer
 
-## Shown when the lives run out.
+## Shown when the lives run out, which in practice means a challenge run: play
+## mode has no lives to lose and never gets here.
 ##
-## What that means depends on how the level was being played. A free-play level
-## is just spent -- the way out is the menu. A challenge run has FAILED: the set
-## has to be taken again from its first level for the next chapter to open,
-## so that run is offered straight from here.
+## A failed challenge is offered straight back from here, from the first level of
+## its chapter -- a run cannot be joined part way through. The bare "out of lives"
+## below it is the fallback for anything that somehow spends a life outside a
+## challenge; there is no such route today.
 
 ## How long the panel takes to fade up.
 @export var fade_duration := 0.4
@@ -15,8 +16,8 @@ extends CanvasLayer
 @onready var _retry_button: Button = %RetryButton
 @onready var _menu_button: Button = %MenuButton
 
-## Read before anything is reset -- `reset_run()` drops the run back to free
-## play, which would make a failed challenge look like an ordinary game over.
+## Read before anything is reset -- `reset_run()` drops the run back to play
+## mode, which would make a failed challenge look like an ordinary game over.
 var _failed_challenge := false
 
 

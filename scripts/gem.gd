@@ -9,13 +9,16 @@ extends Area3D
 
 enum Kind { EMERALD, SAPPHIRE, RUBY, TOPAZ, AMETHYST, DIAMOND }
 
+## What each kind is worth. Small, whole numbers a player can count in their
+## head: a diamond is ten emeralds, and a handful of gems reads as a handful
+## rather than as a four-figure number nobody follows.
 const VALUES := {
-	Kind.EMERALD: 10,
-	Kind.SAPPHIRE: 25,
-	Kind.RUBY: 50,
-	Kind.TOPAZ: 100,
-	Kind.AMETHYST: 150,
-	Kind.DIAMOND: 250,
+	Kind.EMERALD: 1,
+	Kind.SAPPHIRE: 2,
+	Kind.RUBY: 3,
+	Kind.TOPAZ: 4,
+	Kind.AMETHYST: 5,
+	Kind.DIAMOND: 10,
 }
 
 ## The sound a gem makes on the way out. Preloaded rather than reached for
