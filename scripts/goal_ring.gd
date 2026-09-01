@@ -179,18 +179,36 @@ func _catch(body: RigidBody3D) -> void:
 	_send_off(body, heading)
 
 
-## The way the ball was travelling as it came through the glass.
+## The way the ball is to be sent: where it was already going, if that was
+## anywhere, and otherwise straight through the ring.
 ##
-## Falls back to the way the ring faces, pointed away from wherever the ball is,
-## for the case that should not happen: a goal opened by a ball that is barely
-## moving. Sending it nowhere would leave it sitting in the ring.
+## The fallback is THROUGH -- from the side the ball is standing on, out the
+## other -- and not, as it was, further onto the side it is already on. That was
+## written for a ball which had passed through under its own steam and only
+## needed carrying onward, back when nothing could open a goal without arriving
+## at speed. A pane broken by leaning on it is opened with the ball still on the
+## near side and still still, and pointing it "onward" from there fires it
+## backwards out of the goal it just won.
+##
+## The speed is only trusted when it was going roughly the right way. A ball that
+## leaned the glass open has almost none, and what little it has is drift --
+## sideways, or a nudge back off the pane -- which normalises to a perfectly
+## confident direction and gets multiplied up to `minimum_exit_speed`. Half a
+## right angle is the bar: a genuine goal is taken nearly square, and anything
+## vaguer than that is noise the ring should not be steering by.
 func _heading_of(player: RigidBody3D) -> Vector3:
+	var through := ring.global_transform.basis.y.normalized()
+	var out := through
+	if through.dot(player.global_position - global_position) >= 0.0:
+		out = -through
+
 	var travelling := player.linear_velocity
 	if travelling.length_squared() > 0.01:
-		return travelling.normalized()
+		var heading := travelling.normalized()
+		if heading.dot(out) > 0.5:
+			return heading
 
-	var through := ring.global_transform.basis.y.normalized()
-	return through if through.dot(player.global_position - global_position) >= 0.0 else -through
+	return out
 
 
 ## One burst of confetti out of the ring, thrown the way the ball went, with its

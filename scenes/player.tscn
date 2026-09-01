@@ -10,7 +10,7 @@
 [ext_resource type="Material" uid="uid://bshardburst1" path="res://materials/particles/impact_burst.tres" id="9_shardburst"]
 [ext_resource type="PrismMesh" uid="uid://bshardpiece1" path="res://materials/particles/impact_shard.tres" id="10_shardpiece"]
 [ext_resource type="Script" uid="uid://ccocw06xqri33" path="res://scripts/impact_burst.gd" id="11_impactburst"]
-[ext_resource type="Script" path="res://scripts/roll_marks.gd" id="12_rollmarks"]
+[ext_resource type="Script" uid="uid://c0pr3oir84w8c" path="res://scripts/roll_marks.gd" id="12_rollmarks"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_6x1ae"]
 
@@ -31,8 +31,8 @@ continuous_cd = true
 contact_monitor = true
 max_contacts_reported = 4
 script = ExtResource("5_player")
-grip = 0.0
-brake = 2.0
+grip = 1.0
+brake = 12.0
 coast_brake = 0.0
 
 [node name="PlayerCollider" type="CollisionShape3D" parent="." unique_id=739215703]

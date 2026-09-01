@@ -30,6 +30,7 @@ shape = 1
 size = Vector3(2.1, 0.07, 2.1)
 surface_material = ExtResource("6_pane")
 break_impulse = 10.0
+breaks_under_weight = true
 spokes = 9
 rings = 4
 

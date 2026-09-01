@@ -2,9 +2,17 @@
 class_name DestructibleSurface
 extends StaticBody3D
 
-## A pane that gives way when the ball hits it hard enough, and comes apart the
-## way glass does: a web of cracks spreading from wherever it was struck, and
-## shards cut along those same cracks.
+## A pane that gives way when the ball hits it hard enough -- or leans on it long
+## enough -- and comes apart the way glass does: a web of cracks spreading from
+## wherever it was struck, and shards cut along those same cracks.
+##
+## Two ways through, because glass fails two ways. A BLOW is measured as an
+## impulse and decided the tick before it lands; see [member break_impulse]. A
+## LEAN is the ball shouldered into the pane and held there, with no speed in it
+## at all; see [member breaks_under_weight]. Both crack before they break, and
+## either can finish what the other started -- a pane crazed by a hit that fell
+## short can be pushed the rest of the way, which is the whole point of the
+## second route existing.
 ##
 ## Drop it under the Level body and set `size`. The collider and the pane you can
 ## see are both built from that one number, because they have to agree exactly --
@@ -155,6 +163,45 @@ var _tinted: Material = null
 ## glass is weaker glass; the second hit does not have to be the first one again.
 @export_range(0.05, 1.0) var cracked_strength := 0.4
 
+## Whether leaning on the pane breaks it, given time, with no speed at all.
+##
+## The impulse above measures a BLOW, and a ball that arrives at a pane with
+## nothing left has struck it with nothing -- so a goal crept up to at walking
+## pace used to have to be backed away from and run at again, which is a fight
+## with the controls at the exact moment the level should be over.
+##
+## This is the other way glass fails: not struck, but leaned on. The ball settles
+## against the pane and it gives -- because the player is holding the stick into
+## it, or, on a pane lying flat, because the marble is sitting on it and that is
+## enough. See [method _press_on].
+##
+## OFF by default, and on for the goal ring. Mind that a pane lying FLAT with
+## this on will give way under a ball that simply stops on it, with no input at
+## all -- which is right for a goal laid down, and the end of using one as a
+## floor. A pane meant to be stood on should keep the blow and leave this alone.
+@export var breaks_under_weight := false
+
+## How close the ball has to be to count as leaning on the pane, on top of its
+## own reach.
+##
+## Much looser than [constant CONTACT_SLOP], which answers a different question.
+## That one is a hair, because it is deciding whether a ball travelling at the
+## glass is arriving THIS tick. This one is deciding whether a ball is resting
+## against it -- and a resting body does not sit flush: the solver holds it off
+## by its own collision margin, which in Godot is around 0.04 by default and more
+## once a contact is being pushed into. A hair is not enough to see that with.
+@export var lean_reach := 0.12
+
+## How long a full-stick push straight into the pane takes to crack it, and then
+## how long from cracked to broken, in seconds.
+##
+## Counted against how squarely and how hard the stick is pushed, so a shove at
+## an angle takes proportionally longer and a nudge longer still. Short enough
+## not to feel like a wait; long enough that brushing along the glass on the way
+## past never quietly wears it through.
+@export var lean_crack_time := 0.55
+@export var lean_break_time := 0.45
+
 ## What the ball keeps of its speed for going through.
 ##
 ## The pane is taken out of the world before the step that would have hit it, so
@@ -234,8 +281,17 @@ var _tinted: Material = null
 @onready var _mesh: MeshInstance3D = $Mesh
 
 var _ball: RigidBody3D
+
+## What the player is steering, asked how hard they are pushing. Only wanted by
+## the lean; a pane that cannot break under weight never looks for it.
+var _steering: Node
 var _broken := false
 var _cracked := false
+
+## How long the ball has been pushed into the pane, in seconds of full-stick,
+## square-on push. Dropped the moment the push stops -- see
+## [method _lean_on_it].
+var _leaned := 0.0
 
 ## How far the ball reaches, so the pane knows when it is about to be touched
 ## rather than waiting to be told that it was.
@@ -281,6 +337,13 @@ func _ready() -> void:
 	_play_gravity = _ball.gravity_scale
 	_ball_radius = _measure_ball()
 
+	# Deferred, because a pane is a child of the very body it is looking for --
+	# the goal ring's glass sits two levels inside it -- and Godot readies
+	# children before their parents. Asked for here, the group is still empty and
+	# every pane in the game decides there is nothing steering it.
+	if breaks_under_weight:
+		_find_steering.call_deferred()
+
 
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint() or _ball == null:
@@ -292,33 +355,43 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var blow := _blow_coming(delta)
+
 	if blow <= 0.0:
 		# Away from the pane, across it, or nowhere near it. Whatever it does
 		# next is a new run at the glass.
 		_hit_answered = false
-		return
 
-	if _hit_answered:
-		return
+	elif not _hit_answered:
+		var threshold := break_impulse * (cracked_strength if _cracked else 1.0)
 
-	var threshold := break_impulse * (cracked_strength if _cracked else 1.0)
+		if blow >= threshold:
+			_shatter(_ball.global_position)
 
-	if blow >= threshold:
-		_shatter(_ball.global_position)
+			# The whole cost of going through, and the only thing done to the
+			# ball. The pane is out of the world before the step that would have
+			# hit it, so there is no contact to survive: the ball carries
+			# straight on, a shade slower. Nothing here changes its heading,
+			# which is what keeps the chase camera pointed where it was already
+			# looking.
+			_ball.linear_velocity *= shatter_momentum_kept
+			return
 
-		# The whole cost of going through, and the only thing done to the ball.
-		# The pane is out of the world before the step that would have hit it,
-		# so there is no contact to survive: the ball carries straight on, a
-		# shade slower. Nothing here changes its heading, which is what keeps
-		# the chase camera pointed where it was already looking.
-		_ball.linear_velocity *= shatter_momentum_kept
+		if cracks_before_breaking and not _cracked and blow >= break_impulse * crack_share:
+			# The pane held, so it is a wall like any other and the solver
+			# bounces the ball off it in its own time -- off the real angle it
+			# struck at, with the pane's own physics material. Nothing is added
+			# on top of that.
+			_craze(_ball.global_position)
+			_hit_answered = true
 
-	elif cracks_before_breaking and not _cracked and blow >= break_impulse * crack_share:
-		# The pane held, so it is a wall like any other and the solver bounces
-		# the ball off it in its own time -- off the real angle it struck at,
-		# with the pane's own physics material. Nothing is added on top of that.
-		_craze(_ball.global_position)
-		_hit_answered = true
+	# Every tick, whatever the speed said. A ball shouldered against the glass is
+	# NOT still: the solver pushes back on it as hard as the stick pushes in, so
+	# it reports a hair of closing speed for as long as it is held there. That
+	# reads as a blow -- a tiny one, far under any threshold -- and this used to
+	# sit in the `no blow` branch, where a ball being leaned on the pane could
+	# never reach it. Leaning is about contact and intent, not speed, so it is
+	# asked on its own terms rather than as the case left over when speed is nil.
+	_lean_on_it(delta)
 
 
 ## The blow the pane is about to take, or zero if it is about to take none.
@@ -344,8 +417,119 @@ func _blow_coming(delta: float) -> float:
 	if closing <= 0.0:
 		return 0.0
 
-	# Off the end of the pane: whatever the ball is doing, it is not doing it
-	# here. Its own reach is allowed for, so a hit on the very edge still counts.
+	if not _over_face(here, thin):
+		return 0.0
+
+	# Still short of the pane once this step has run. Nothing yet.
+	if _gap_to_face(here, thin) > closing * delta + CONTACT_SLOP:
+		return 0.0
+
+	return _ball.mass * closing
+
+
+## Finds what the player steers, once every node in the level has readied.
+func _find_steering() -> void:
+	var body := get_tree().get_first_node_in_group("level_body")
+	if body == null or not body.has_method("steer_direction"):
+		push_warning("DestructibleSurface: no steerable level body; this pane will not break under weight")
+		return
+
+	_steering = body
+
+
+## The ball leaning on the pane for another step, and the pane giving way if it
+## has been leaned on for long enough.
+##
+## Crack first, then break, exactly as a blow does -- so a pane that gives way
+## under weight still crazes on the way, and a player who cracked it with a hit
+## can finish it by simply pushing.
+##
+## The tally is dropped the moment the lean stops rather than bled away, because
+## what it is counting is one continuous push. Backing off and coming again is a
+## fresh attempt, which is the same thing `_hit_answered` says about blows.
+func _lean_on_it(delta: float) -> void:
+	if not breaks_under_weight:
+		return
+
+	var thin := _thin_axis()
+	var here := to_local(_ball.global_position)
+	var face := _face_normal() * (1.0 if here[thin] >= 0.0 else -1.0)
+
+	var press := _press_on(face, here, thin)
+	if press <= 0.0:
+		_leaned = 0.0
+		return
+
+	_leaned += delta * press
+
+	var needed := lean_break_time if _cracked else lean_crack_time
+	if _leaned < needed:
+		return
+
+	_leaned = 0.0
+
+	if _cracked or not cracks_before_breaking:
+		# Nothing is done to the ball's speed, unlike a blow going through. There
+		# is none to keep: it is standing still against the glass, and what moves
+		# it on is the same lean that broke the pane, now with nothing in the way.
+		_shatter(_ball.global_position)
+	else:
+		_craze(_ball.global_position)
+
+
+## How hard the ball is being pressed into the face, 0 to 1, and 0 when it is not
+## touching the pane at all.
+##
+## Two things press, and they are added because they are the same question
+## arriving by different routes: what is holding the ball against this pane.
+##
+## WEIGHT is the marble's own, straight down, put through the face. It is
+## everything for a pane lying flat and nothing for one stood on its edge -- which
+## is what lets a goal ring laid down give way under a ball simply sitting on it,
+## with the stick never touched.
+##
+## PUSH is the stick, which steers on the horizontal, so it is the exact mirror:
+## nothing for a flat pane, everything for an upright one. The two are
+## complementary by construction, and a pane at an angle takes a share of each.
+##
+## The push is read off the stick rather than off gravity, even though gravity is
+## what the stick leans and the two point the same way. Gravity alone would have
+## been the tidier answer, but the lean tops out at
+## `GravityTilt.max_lean_degrees` -- twenty degrees -- so a pane stood on its edge
+## could never be pressed harder than sin(20) = 0.34 however hard the player
+## shoved, and every time below would have meant three times itself. Split this
+## way, one means one on a pane at any angle.
+##
+## Speed is deliberately absent. A ball lying still on the glass, or held against
+## it with the stick square, is asking the pane for everything it can ask.
+func _press_on(face: Vector3, here: Vector3, thin: int) -> float:
+	if not _over_face(here, thin):
+		return 0.0
+
+	# Up against it. Deliberately NOT the tight slop the blow uses -- a body the
+	# solver is holding against another is held a margin off it, not flush. See
+	# [member lean_reach].
+	if _gap_to_face(here, thin) > lean_reach:
+		return 0.0
+
+	# Straight into the face is 1, along it is 0, away from it is nothing at all.
+	var weight := maxf(-Vector3.DOWN.dot(face), 0.0)
+
+	var push := 0.0
+	if _steering != null:
+		# Empty with the stick centred, and while the level is frozen -- so a
+		# pane is never worn through by a ball left parked against it after the
+		# level is over. Its length carries how far the stick is pushed, so a
+		# nudge takes longer than a shove.
+		var steer: Vector3 = _steering.steer_direction()
+		push = maxf(-steer.dot(face), 0.0)
+
+	return minf(weight + push, 1.0)
+
+
+## Whether the ball is over the pane's face at all, rather than off the end of
+## it. Its own reach is allowed for, so a hit on the very edge still counts.
+func _over_face(here: Vector3, thin: int) -> bool:
 	if shape == Shape.DISC:
 		# A disc is set into something -- a frame, a wall, the middle of a goal
 		# ring -- and its rim is buried in whatever that is. So the ball has to be
@@ -353,20 +537,20 @@ func _blow_coming(delta: float) -> float:
 		# within reach of the edge: out there it is going to meet the frame, and a
 		# pane that breaks when the ball was never going to touch it shatters
 		# under hits that visibly bounce off the ring.
-		if Vector2(here[(thin + 1) % 3], here[(thin + 2) % 3]).length() \
-				> maxf(_disc_radius() - _ball_radius, _disc_radius() * 0.1):
-			return 0.0
-	else:
-		for axis in [(thin + 1) % 3, (thin + 2) % 3]:
-			if absf(here[axis]) > size[axis] * 0.5 + _ball_radius:
-				return 0.0
+		return Vector2(here[(thin + 1) % 3], here[(thin + 2) % 3]).length() \
+				<= maxf(_disc_radius() - _ball_radius, _disc_radius() * 0.1)
 
-	# Still short of the pane once this step has run. Nothing yet.
-	var gap := absf(here[thin]) - size[thin] * 0.5 - _ball_radius
-	if gap > closing * delta + CONTACT_SLOP:
-		return 0.0
+	for axis in [(thin + 1) % 3, (thin + 2) % 3]:
+		if absf(here[axis]) > size[axis] * 0.5 + _ball_radius:
+			return false
 
-	return _ball.mass * closing
+	return true
+
+
+## How far the ball still has to travel to touch the face. Zero or less once it
+## is resting against the pane.
+func _gap_to_face(here: Vector3, thin: int) -> float:
+	return absf(here[thin]) - size[thin] * 0.5 - _ball_radius
 
 
 ## Breaks the pane where it stands. Public so a level can spring it from a switch
