@@ -14,8 +14,15 @@ extends CanvasLayer
 ## The crowns above the score are the level's five, in their own colours. Any won
 ## for the first time this run spiral into place one at a time, each laying the
 ## words for what it was won for across itself in its own colour -- see
-## `crowns.gd`. Those words stay up: a run that took four crowns should be able
-## to show all four at the end, which is why they are slanted.
+## `crowns.gd`.
+##
+## Those words used to stay up, on the argument that a run taking four crowns
+## should be able to show all four at the end -- which is why they are slanted,
+## so that parallel lines a crown apart never cross. They come down again now:
+## four lines that never leave are four lines lying over the crowns they are
+## naming for the rest of the panel, and the crowns are the thing worth looking
+## at. The slant still earns its keep, because the lines still overlap while they
+## are up.
 
 ## How long the panel takes to fade up, so it does not snap over the celebration.
 @export var fade_duration := 0.4
@@ -45,6 +52,15 @@ extends CanvasLayer
 ## that snapped on with it would be a second thing happening in the same instant.
 ## They surface under it instead, and are still arriving after it has landed.
 @export var cheer_fade_in := 0.75
+
+## How long they stay once they have arrived, and how long they take to clear.
+##
+## The hold starts from FULL, so a line is legible for this long on top of the
+## time it spent fading up -- it is the beat it is readable for, not its whole
+## life. Long enough to read four words, short enough that the crown it is lying
+## across is not covered for the rest of the panel.
+@export var cheer_hold := 1.6
+@export var cheer_fade_out := 0.7
 
 ## What a tap multiplies the pace of the rest of the celebration by.
 @export var tap_speed_up := 5.0
@@ -319,8 +335,18 @@ func _say(crown: int, slot: Control) -> void:
 	cheer.global_position = slot.get_global_rect().get_center() \
 			- (cheer.size * 0.5).rotated(tilt)
 
+	# Up, held, and gone again. The line is worth reading once; leaving it lying
+	# across the panel for the rest of the celebration turns five of them into a
+	# thicket over the crowns they are naming.
+	#
+	# Freed rather than left at nothing, because a slanted label that has finished
+	# saying its piece is still a node sitting over the panel.
 	var rise := create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
 	rise.tween_property(cheer, "modulate:a", 1.0, cheer_fade_in / _speed)
+	rise.tween_interval(cheer_hold / _speed)
+	rise.tween_property(cheer, "modulate:a", 0.0, cheer_fade_out / _speed) \
+			.set_ease(Tween.EASE_OUT)
+	rise.tween_callback(cheer.queue_free)
 
 
 # --- The record stamp ---
