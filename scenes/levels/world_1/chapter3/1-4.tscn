@@ -12,7 +12,7 @@
 [ext_resource type="Material" uid="uid://sr5p41ba3r67" path="res://materials/wood.tres" id="9_ghl8k"]
 [ext_resource type="Material" uid="uid://ccx0h56h5bg3p" path="res://materials/grass.tres" id="10_cv0e6"]
 [ext_resource type="Script" uid="uid://b1h4mv4b1mlb6" path="res://scripts/alive_zone.gd" id="11_oxlp8"]
-[ext_resource type="Script" uid="uid://ctrv7kf36tnvv" path="res://scripts/parts/rotating_part.gd" id="12_v214x"]
+[ext_resource type="Script" uid="uid://h4mfpu8ysemv" path="res://scripts/moving_platform.gd" id="12_v214x"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_fqldq"]
 size = Vector3(75, 36, 106)
@@ -200,6 +200,7 @@ mesh = SubResource("ArrayMesh_a5rnb")
 [node name="SolidDisk" type="AnimatableBody3D" parent="AnimatableBody3D" unique_id=1781388783]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7)
 script = ExtResource("12_v214x")
+spin = 1
 carries_riders = false
 
 [node name="CSGBakedCollisionShape3D2" type="CollisionShape3D" parent="AnimatableBody3D/SolidDisk" unique_id=1297003684]
@@ -220,6 +221,7 @@ mesh = SubResource("ArrayMesh_v6k17")
 [node name="SolidDisk3" type="AnimatableBody3D" parent="AnimatableBody3D" unique_id=467125595]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -11)
 script = ExtResource("12_v214x")
+spin = 1
 spin_degrees = -45.0
 carries_riders = false
 
@@ -232,6 +234,7 @@ mesh = SubResource("ArrayMesh_v6k17")
 [node name="SolidDisk4" type="AnimatableBody3D" parent="AnimatableBody3D" unique_id=985294027]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.9676104, 0, -21.90283)
 script = ExtResource("12_v214x")
+spin = 1
 carries_riders = false
 
 [node name="CSGBakedCollisionShape3D2" type="CollisionShape3D" parent="AnimatableBody3D/SolidDisk4" unique_id=185295569]
@@ -243,6 +246,7 @@ mesh = SubResource("ArrayMesh_v6k17")
 [node name="SolidDisk5" type="AnimatableBody3D" parent="AnimatableBody3D" unique_id=1413063866]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -26)
 script = ExtResource("12_v214x")
+spin = 1
 spin_degrees = -45.0
 
 [node name="CSGBakedCollisionShape3D2" type="CollisionShape3D" parent="AnimatableBody3D/SolidDisk5" unique_id=129229423]
@@ -254,6 +258,7 @@ mesh = SubResource("ArrayMesh_v6k17")
 [node name="SolidDisk6" type="AnimatableBody3D" parent="AnimatableBody3D" unique_id=851744340]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -34)
 script = ExtResource("12_v214x")
+spin = 1
 
 [node name="CSGBakedCollisionShape3D2" type="CollisionShape3D" parent="AnimatableBody3D/SolidDisk6" unique_id=882325614]
 shape = SubResource("ConcavePolygonShape3D_os2yb")
@@ -264,6 +269,7 @@ mesh = SubResource("ArrayMesh_v6k17")
 [node name="SolidDisk7" type="AnimatableBody3D" parent="AnimatableBody3D" unique_id=837653110]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -42)
 script = ExtResource("12_v214x")
+spin = 1
 spin_degrees = -45.0
 
 [node name="CSGBakedCollisionShape3D2" type="CollisionShape3D" parent="AnimatableBody3D/SolidDisk7" unique_id=1812886414]
@@ -275,6 +281,7 @@ mesh = SubResource("ArrayMesh_v6k17")
 [node name="SolidDisk8" type="AnimatableBody3D" parent="AnimatableBody3D" unique_id=1845997742]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -43)
 script = ExtResource("12_v214x")
+spin = 1
 spin_degrees = -45.0
 
 [node name="CSGBakedCollisionShape3D2" type="CollisionShape3D" parent="AnimatableBody3D/SolidDisk8" unique_id=2069512339]
@@ -286,6 +293,7 @@ mesh = SubResource("ArrayMesh_v6k17")
 [node name="SolidDisk9" type="AnimatableBody3D" parent="AnimatableBody3D" unique_id=689729116]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -49)
 script = ExtResource("12_v214x")
+spin = 1
 
 [node name="CSGBakedCollisionShape3D2" type="CollisionShape3D" parent="AnimatableBody3D/SolidDisk9" unique_id=1168814081]
 shape = SubResource("ConcavePolygonShape3D_os2yb")
@@ -309,6 +317,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 1, 0)
 [node name="HollowDisk" type="AnimatableBody3D" parent="AnimatableBody3D" unique_id=856988811]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -28)
 script = ExtResource("12_v214x")
+spin = 1
 
 [node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="AnimatableBody3D/HollowDisk" unique_id=2096588413]
 shape = SubResource("ConcavePolygonShape3D_hppjq")
@@ -319,6 +328,7 @@ mesh = SubResource("ArrayMesh_upsmr")
 [node name="HollowDisk2" type="AnimatableBody3D" parent="AnimatableBody3D" unique_id=435232375]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -36)
 script = ExtResource("12_v214x")
+spin = 1
 
 [node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="AnimatableBody3D/HollowDisk2" unique_id=1733778299]
 shape = SubResource("ConcavePolygonShape3D_hppjq")

@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/UI/hud.tscn" id="3_f6drh"]
 [ext_resource type="PackedScene" uid="uid://brgmkpo6nfamg" path="res://scenes/camera.tscn" id="4_scs1r"]
 [ext_resource type="PackedScene" uid="uid://odyo2cun2tc" path="res://scenes/player.tscn" id="5_of3hu"]
-[ext_resource type="Script" uid="uid://ctrv7kf36tnvv" path="res://scripts/parts/rotating_part.gd" id="6_ad572"]
+[ext_resource type="Script" uid="uid://h4mfpu8ysemv" path="res://scripts/moving_platform.gd" id="6_ad572"]
 [ext_resource type="Material" uid="uid://b2ivsf4r4nl8" path="res://materials/sandstone.tres" id="7_uhkjm"]
 [ext_resource type="Material" uid="uid://b5xldmsdgiv5y" path="res://materials/sand.tres" id="8_clie8"]
 [ext_resource type="PackedScene" uid="uid://dvnbcmtvmjsm1" path="res://scenes/gem.tscn" id="9_teprc"]
@@ -94,7 +94,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
 [node name="AnimatableBody3D" type="AnimatableBody3D" parent="." unique_id=451791419]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, -53)
 script = ExtResource("6_ad572")
-spin = 1
+spin = 2
 spin_degrees = 150.0
 spin_axis = Vector3(0, 0, 1)
 step_degrees = 120.0

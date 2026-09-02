@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/UI/hud.tscn" id="2_wccxa"]
 [ext_resource type="PackedScene" uid="uid://brgmkpo6nfamg" path="res://scenes/camera.tscn" id="3_57oud"]
 [ext_resource type="PackedScene" uid="uid://odyo2cun2tc" path="res://scenes/player.tscn" id="4_3fg0y"]
-[ext_resource type="Script" uid="uid://ctrv7kf36tnvv" path="res://scripts/parts/rotating_part.gd" id="5_a2n4i"]
+[ext_resource type="Script" uid="uid://h4mfpu8ysemv" path="res://scripts/moving_platform.gd" id="5_a2n4i"]
 [ext_resource type="Script" uid="uid://f0unaaq2y4xp" path="res://scripts/gravity_tilt.gd" id="5_rnpb6"]
 [ext_resource type="PackedScene" uid="uid://b3lsg1wjkkrr2" path="res://scenes/spawnpoint.tscn" id="6_gy07s"]
 [ext_resource type="PackedScene" uid="uid://dff8ndsvoi5a4" path="res://scenes/goal_ring.tscn" id="7_5qji4"]
@@ -159,7 +159,7 @@ kind = 2
 [node name="platform1" type="AnimatableBody3D" parent="AnimatableBody3D" unique_id=1903261245]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, -6.5)
 script = ExtResource("5_a2n4i")
-spin = 2
+spin = 3
 spin_degrees = 3.0
 spin_axis = Vector3(1, 0, 0)
 sweep_start_degrees = 0.0
@@ -176,7 +176,7 @@ mesh = SubResource("ArrayMesh_3ay3b")
 [node name="platform2" type="AnimatableBody3D" parent="AnimatableBody3D" unique_id=545686533]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0.45, -40.5)
 script = ExtResource("5_a2n4i")
-spin = 2
+spin = 3
 spin_degrees = 3.0
 spin_axis = Vector3(1, 0, 0)
 sweep_start_degrees = -10.0

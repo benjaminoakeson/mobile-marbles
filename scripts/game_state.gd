@@ -75,6 +75,15 @@ signal time_ran_out
 ## furniture that has to get off the screen before the victory panel lands on it.
 signal level_finished
 
+## A level already finished has been banked again, because the ball was still
+## rolling and found more. The score, the awards it is made of and the crowns
+## have all just been worked out afresh -- see [method rebank_level].
+##
+## What listens is the victory panel, which is very likely already on screen by
+## then: it goes up on its own delay rather than waiting for the ball to stop, so
+## this is how it hears that the level it is showing is worth more than it said.
+signal level_rebanked
+
 ## The dev tools have rewritten progress wholesale -- everything opened, or
 ## everything wiped. For whatever is on screen at the time to rebuild itself.
 ##
@@ -741,6 +750,44 @@ func finish_level(clear_points: int, was_fast: bool, all_gems: bool) -> void:
 
 	add_score(clear_points)
 
+	_bank_level(was_fast, all_gems)
+
+
+## A finished level banked again, because it turned out to be worth more than it
+## was when the goal was taken.
+##
+## The level ends the instant the glass goes, but the ball does not: it coasts
+## out the far side, and a gem it runs over on the way is as collected as one
+## taken on the way in. So the tally has to be settled a second time, once the
+## ball has come to rest -- see `goal_ring.gd::_watch_the_coast()`, which is the
+## only thing that calls this.
+##
+## The whole new total is handed over rather than the difference, because the
+## all-gems multiplier does not add to the old total, it replaces the sum it was
+## worked out from.
+##
+## Nothing is undone here. The clock is not touched and `level_finished` is not
+## announced again -- the level really did end back at the ring, and this is only
+## the accounting catching up with a ball that was still moving.
+func rebank_level(total: int, was_fast: bool, all_gems: bool) -> void:
+	set_score(total)
+
+	_bank_level(was_fast, all_gems)
+
+	# After the banking, not before: what listens is the victory panel reading
+	# all of it back out, and it has to read what was just written.
+	level_rebanked.emit()
+
+
+## Everything a finished level writes down: its crowns, its bests, its place in
+## the set, and whatever awards that has just won.
+##
+## Written to be safe to run twice over the same finish, because a level whose
+## last gems lie past the goal is banked once at the ring and again once the ball
+## has stopped rolling. What that costs is spelled out where it is not obvious:
+## the crowns won and the record both accumulate rather than being restated, so
+## the second pass cannot take back what the first one found.
+func _bank_level(was_fast: bool, all_gems: bool) -> void:
 	if current_level.is_empty():
 		return
 
@@ -755,7 +802,10 @@ func finish_level(clear_points: int, was_fast: bool, all_gems: bool) -> void:
 	if beat_time:
 		best_time[current_level] = level_time
 
-	beat_best = beat_score or beat_time
+	# Folded in rather than set, so a second pass cannot rub out a record the
+	# first one set: the best it would be measured against by then is the one it
+	# just wrote, which nothing can beat twice.
+	beat_best = beat_best or beat_score or beat_time
 
 	_bank_progress()
 
@@ -797,7 +847,13 @@ func _award_crowns(was_fast: bool, all_gems: bool) -> void:
 		earned |= Crowns.DIAMOND
 
 	crowns[current_level] = earned
-	last_crowns_won = earned & ~had
+
+	# Folded in, not set. A level can be banked twice -- the gems past the goal
+	# are counted after the ball has stopped -- and by the second pass the crowns
+	# the first one handed over are crowns the level "had", so restating this
+	# would leave the victory panel with only the late ones to celebrate. Put
+	# back to nothing by `start_level()`, so nothing carries between attempts.
+	last_crowns_won |= earned & ~had
 
 
 ## Every crown a level has given up.

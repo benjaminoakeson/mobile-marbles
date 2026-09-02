@@ -108,11 +108,33 @@ var _speed := 1.0
 ## Set while crowns are still landing -- what makes a tap mean "hurry up".
 var _celebrating := false
 
+## The crowns still waiting to land, in the order they will, and the ones that
+## have already been queued. Kept apart because a crown is spoken for the moment
+## it joins the queue, and the queue itself empties as they arrive.
+##
+## A queue rather than a list walked once, because more can turn up: the ball is
+## often still rolling when this panel opens, and the gem it finds out there can
+## win a crown with the celebration already halfway through.
+var _pending: Array = []
+var _celebrated := 0
+
+## Set while a run of the queue is in progress, so a late crown joins the run
+## already going instead of starting a second one alongside it.
+var _landing := false
+
+## Set once the panel is up. Nothing is celebrated before then -- a crown won
+## while the panel is still fading in waits for it to arrive.
+var _open := false
+
 var _has_next := false
 
 ## Set once the stamp has landed, from which point `_process` owns its scale.
 var _pulsing := false
 var _pulse_time := 0.0
+
+## Set once the stamp has been called for, so a level that only turns out to be a
+## record after the panel is open cannot bring down a second one.
+var _stamped := false
 
 
 func _ready() -> void:
@@ -149,6 +171,12 @@ func _ready() -> void:
 	_menu_button.hide()
 	_stamp.hide()
 
+	# The ball is very likely still rolling out there, and a gem it finds is worth
+	# points and can be worth a crown. This panel opens on the goal ring's own
+	# delay rather than waiting for it to stop -- see `goal_ring.gd::_show_menu()`
+	# -- so whatever it finds arrives here, on this, with the panel already up.
+	GameState.level_rebanked.connect(_on_level_rebanked)
+
 	_show_score()
 	_build_crowns()
 
@@ -157,11 +185,12 @@ func _ready() -> void:
 	fade.tween_property(_panel, "modulate:a", 1.0, fade_duration)
 	await fade.finished
 
+	_open = true
+
+	_queue_new_crowns()
 	await _celebrate_crowns()
 
-	if GameState.beat_best:
-		Audio.play(Audio.NEW_RECORD)
-		_stamp_record()
+	_stamp_record_if_won()
 
 	_reveal_buttons()
 
@@ -193,8 +222,23 @@ func _unhandled_input(event: InputEvent) -> void:
 ## The total is read off [GameState] rather than added up here: it is the number
 ## that was actually banked, and a panel that did its own sums could show one
 ## thing while the save held another.
+##
+## Written to be run again over an open panel, because the level can be banked a
+## second time while it is up -- see [method _on_level_rebanked]. The rows are
+## thrown away and rebuilt rather than added to: a late gem does not just append
+## a line, it makes the GEMS line bigger, and it can bring in a multiplier that
+## belongs below everything else.
 func _show_score() -> void:
 	_total_label.text = GameState.format_gems(GameState.score)
+
+	# The stamp is hung off the last digit of the total, so a total that has just
+	# grown leaves it sitting over the number it is standing beside.
+	if _stamped:
+		_place_stamp()
+
+	for row: Node in _award_list.get_children():
+		_award_list.remove_child(row)
+		row.queue_free()
 
 	for award: Dictionary in GameState.last_award:
 		if award.has("factor"):
@@ -241,19 +285,63 @@ func _build_crowns() -> void:
 		_badges[crown] = badge
 
 
-## The new crowns, one at a time: each drops into its slot with the words for
+## The crowns won this run that have not been spoken for yet, lined up to land.
+##
+## Called when the panel opens and again every time the level is banked afresh
+## underneath it, so a crown won by a gem taken after the goal joins the queue
+## behind the ones already in it.
+func _queue_new_crowns() -> void:
+	for crown: int in Crowns.won_in(GameState.last_crowns_won):
+		if _celebrated & crown:
+			continue
+
+		# Marked here rather than as it lands, so a second look at the same news
+		# does not queue it twice.
+		_celebrated |= crown
+		_pending.append(crown)
+
+
+## The queued crowns, one at a time: each drops into its slot with the words for
 ## what it was won for held over it.
+##
+## Drains the queue rather than walking a list taken at the start, because a
+## crown can be won while this is running -- the ball is still rolling out there
+## -- and the run that is already going should pick it up rather than have a
+## second one land crowns on top of it. That is what `_landing` guards.
 func _celebrate_crowns() -> void:
-	var won := Crowns.won_in(GameState.last_crowns_won)
-	if won.is_empty():
+	if _landing or _pending.is_empty():
 		return
 
+	_landing = true
 	_celebrating = true
 
-	for crown: int in won:
-		await _land_crown(crown)
+	while not _pending.is_empty():
+		await _land_crown(_pending.pop_front())
 
 	_celebrating = false
+	_landing = false
+
+
+## The level has been banked again with the panel already up: the ball found more
+## on its way out. Everything shown is read afresh, and anything newly won lands
+## on top of what is already there.
+##
+## The score can move on its own without a crown behind it -- a gem past the goal
+## that was not the last one is points and nothing more -- so the tally is
+## rebuilt every time, and the crowns only when there are new ones.
+func _on_level_rebanked() -> void:
+	_show_score()
+	_queue_new_crowns()
+
+	# Nothing lands before the panel has arrived, and nothing starts a second run
+	# alongside one already going -- that run drains the queue this just added to,
+	# and stamps the record itself when it is done.
+	if not _open or _landing:
+		return
+
+	await _celebrate_crowns()
+
+	_stamp_record_if_won()
 
 
 ## One crown arriving: wound out and round, spiralling into its slot, with its
@@ -268,6 +356,13 @@ func _celebrate_crowns() -> void:
 ## crown is already on its way in while the last one's line clears.
 func _land_crown(crown: int) -> void:
 	var badge: TextureRect = _badges[crown]
+
+	# Coloured here rather than trusted to the slot it was built with. A crown won
+	# after the panel opened was drawn dark, because at the time it was not won
+	# yet -- and it is the only one this matters for, since every other badge is
+	# already in the colour this puts it in.
+	badge.modulate = Crowns.colour_for(crown)
+
 	badge.pivot_offset = badge.size * 0.5
 	_spiral(badge, 0.0)
 	badge.show()
@@ -350,6 +445,20 @@ func _say(crown: int, slot: Control) -> void:
 
 
 # --- The record stamp ---
+
+## The stamp, if this run turned out to be a record and it is not already down.
+##
+## Asked again after every late crown, because a level banked a second time can
+## become a record on that second banking -- the gems past the goal are what
+## pushed it over. Once is the most it can land, whichever banking won it.
+func _stamp_record_if_won() -> void:
+	if _stamped or not GameState.beat_best:
+		return
+
+	_stamped = true
+	Audio.play(Audio.NEW_RECORD)
+	_stamp_record()
+
 
 ## Brings the stamp down beside the total and leaves it pulsing there.
 func _stamp_record() -> void:

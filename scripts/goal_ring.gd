@@ -33,8 +33,27 @@ signal level_completed
 ## leaving a marble turning on the spot.
 @export var coast_damping := 4.0
 
+## How slow the coasting ball counts as stopped, in metres a second.
+##
+## Drag never quite brings it to nothing -- it halves and halves -- so "stopped"
+## has to be a number. This one is the point past which the ball has less than a
+## few centimetres of roll left in it, which is not enough to reach anything it
+## has not already reached. What it ends is the watch on the gems past the goal;
+## see [method _watch_the_coast].
+@export var settled_speed := 0.1
+
+## The longest that watch may run, in seconds.
+##
+## The drag settles the ball in a second or two, so this is not the number the
+## watch normally ends on -- it is the backstop for a ball that never settles at
+## all, one left resting on a moving part that keeps nudging it along. Without it
+## that ball holds the victory panel off the screen for good.
+@export var coast_watch_limit := 6.0
+
 ## Seconds between coming through and the menu appearing, so the ball is seen
 ## clear of the ring first.
+##
+## A ball still rolling holds the menu past this -- see [method _show_menu].
 @export var menu_delay := 1.5
 
 @export var level_complete_scene: PackedScene = preload("res://scenes/UI/level_complete.tscn")
@@ -97,6 +116,20 @@ signal level_completed
 
 var _is_triggered := false
 
+## The ball on its way out, while it is still moving and so still able to score.
+## Null before the goal is taken and again once the coast is over.
+var _coasting_ball: RigidBody3D = null
+
+## Whether the coasting ball has already been read as stopped once.
+var _ball_stopped := false
+
+## How long it has been coasting, against `coast_watch_limit`.
+var _coast_time := 0.0
+
+## What the gems came to at the last banking. What tells a coast that has picked
+## something up from one that has not.
+var _banked_gems := 0
+
 @onready var ring: MeshInstance3D = $Ring
 @onready var _glass: DestructibleSurface = $Glass
 @onready var _ring_collider: CollisionShape3D = $RingCollider
@@ -111,7 +144,7 @@ func _ready() -> void:
 		_ring_collider.shape = ring.mesh.create_trimesh_shape()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	# The clock runs on frames, so the frame is where it has to be stopped. The
 	# `body_entered` signal this used to listen on fires inside the physics
 	# flush, part way through a frame that has not added its own delta yet, and
@@ -122,6 +155,8 @@ func _process(_delta: float) -> void:
 	# bodies move -- so this does not catch the ball any sooner. What it fixes is
 	# WHICH reading of the clock gets banked.
 	_check_for_smash()
+
+	_watch_the_coast(delta)
 
 
 ## Looks for the glass gone, once a frame.
@@ -291,8 +326,71 @@ func _send_off(player: RigidBody3D, heading: Vector3) -> void:
 		_award_total(awards) - GameState.gem_score,
 		_was_fast(),
 		GameState.all_gems_collected())
+
+	# The ball is still moving, and gems on the far side of the goal are still
+	# gems, so the tally above is only the first answer. Handed over to the watch
+	# from here until it stops rolling.
+	_banked_gems = GameState.gem_score
+	_coasting_ball = player
+
 	level_completed.emit()
 	_show_menu()
+
+
+## The gems taken after the goal was, for as long as the ball is still going.
+##
+## A level is over the moment the glass breaks, but the ball is not: it bursts
+## out the far side and runs on, and a gem it rolls over out there is as
+## collected as one taken on the way in. Levels are built around that -- the last
+## gems put where only a goal taken at speed will carry the ball -- and until
+## this watch existed those levels could not give up their all-gems crown, since
+## the count was taken once, at the ring, with the ball still short of them.
+##
+## Watched every frame while the ball is moving, and once more after it has
+## stopped: a gem is taken in the physics tick, so the frame that first reads the
+## ball as still can have one arriving behind it. After that the watch ends for
+## good -- nothing else in the level can reach a gem, the ball was the only thing
+## that could, and a check that never stops is a check running under the victory
+## panel and the next level's loading screen.
+func _watch_the_coast(delta: float) -> void:
+	if _coasting_ball == null:
+		return
+
+	if not is_instance_valid(_coasting_ball):
+		_coasting_ball = null
+		return
+
+	_coast_time += delta
+	_claim_late_gems()
+
+	# The look after the stop was this one, so there is nothing left to wait for
+	# -- and a ball that has rolled on this long is one that is never going to
+	# stop on its own. Either way, the watch is over.
+	if _ball_stopped or _coast_time >= coast_watch_limit:
+		_coasting_ball = null
+		return
+
+	_ball_stopped = _coasting_ball.linear_velocity.length() <= settled_speed
+
+
+## Counts the level up again, if the gems have moved since it was last counted.
+##
+## The whole tally is worked out afresh rather than the new gems being added on,
+## because the gems are not the end of it: the one that completes the set turns
+## on the all-gems multiplier, which multiplies everything -- the clear, the
+## clock and the gems together. There is no sum to add to.
+func _claim_late_gems() -> void:
+	if GameState.gem_score == _banked_gems:
+		return
+
+	_banked_gems = GameState.gem_score
+
+	var awards := _award_breakdown()
+	GameState.last_award = awards
+	GameState.rebank_level(
+		_award_total(awards),
+		_was_fast(),
+		GameState.all_gems_collected())
 
 
 ## Whatever is left of the time score at the moment the ball reached the ring.
@@ -375,6 +473,15 @@ func _was_fast() -> bool:
 	return GameState.level_time < deadline
 
 
+## Puts the victory panel up, once the ball has been seen clear of the ring.
+##
+## It goes up on the delay alone, whether or not the ball has finished scoring.
+## Holding it back until the coast was over was a second or so added to the end
+## of every level -- including the many that have nothing past the ring to
+## collect -- and a player working back through a chapter feels that every time.
+## The panel keeps up with a ball still rolling instead: `GameState` says when a
+## finished level has been banked again, and the panel takes the news while it is
+## open. See `level_complete.gd::_on_level_rebanked()`.
 func _show_menu() -> void:
 	if level_complete_scene == null:
 		return

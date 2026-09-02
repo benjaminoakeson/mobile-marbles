@@ -9,7 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://b3lsg1wjkkrr2" path="res://scenes/spawnpoint.tscn" id="6_likw7"]
 [ext_resource type="PackedScene" uid="uid://dff8ndsvoi5a4" path="res://scenes/goal_ring.tscn" id="7_4dexr"]
 [ext_resource type="PackedScene" uid="uid://dvnbcmtvmjsm1" path="res://scenes/gem.tscn" id="8_5xawx"]
-[ext_resource type="Script" uid="uid://ctrv7kf36tnvv" path="res://scripts/parts/rotating_part.gd" id="10_m3p5o"]
+[ext_resource type="Script" uid="uid://h4mfpu8ysemv" path="res://scripts/moving_platform.gd" id="10_m3p5o"]
 [ext_resource type="Script" uid="uid://b1h4mv4b1mlb6" path="res://scripts/alive_zone.gd" id="11_7dybo"]
 [ext_resource type="Material" uid="uid://b2ivsf4r4nl8" path="res://materials/sandstone.tres" id="11_dw31h"]
 [ext_resource type="Material" uid="uid://b5xldmsdgiv5y" path="res://materials/sand.tres" id="11_hir6f"]
@@ -163,6 +163,7 @@ mesh = SubResource("ArrayMesh_dw31h")
 [node name="Base" type="AnimatableBody3D" parent="." unique_id=157228174]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -43.5)
 script = ExtResource("10_m3p5o")
+spin = 1
 spin_degrees = 90.0
 
 [node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Base" unique_id=429548510]
@@ -176,6 +177,7 @@ mesh = SubResource("ArrayMesh_likw7")
 [node name="Arm1" type="AnimatableBody3D" parent="Base" unique_id=2116503385]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 14, 0)
 script = ExtResource("10_m3p5o")
+spin = 1
 
 [node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Base/Arm1" unique_id=891081209]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, 0)
@@ -188,6 +190,7 @@ mesh = SubResource("ArrayMesh_4dexr")
 [node name="Arm2" type="AnimatableBody3D" parent="Base" unique_id=1117318871]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 14, 0)
 script = ExtResource("10_m3p5o")
+spin = 1
 
 [node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Base/Arm2" unique_id=1775378358]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, 0)
