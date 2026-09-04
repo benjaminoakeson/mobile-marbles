@@ -16,7 +16,7 @@ extends AnimatableBody3D
 ## world as it tilts, and a part that read its own motion in world space would
 ## think it was hurtling along while sitting perfectly still on a tilting floor.
 ##
-## [b]The three traps this exists to keep anyone from stepping in again:[/b]
+## [b]The four traps this exists to keep anyone from stepping in again:[/b]
 ##
 ## 1. `sync_to_physics` has to be OFF. A nested AnimatableBody3D with it on stops
 ##    inheriting its parent and drifts out of the level the moment it tilts.
@@ -34,6 +34,36 @@ extends AnimatableBody3D
 ##    at the point nearest to wherever the platform was placed rather than at its
 ##    head, and the one thing left that could jump -- looping an open rail end to
 ##    end -- warns in the inspector before it ever runs.
+##
+## 4. Where two platforms meet, the SEAM bounces the ball. Jolt takes the edges
+##    out of a surface built from several shapes of ONE body, and cannot do it
+##    for one built from several BODIES -- the leading edge of the next platform
+##    is a real edge of a real body, so the solver catches the ball on it and
+##    throws it. Across seventeen platforms laid end to end that costs the ball
+##    more than a third of its speed and hops it six centimetres into the air:
+##    a row of speed bumps down what is meant to be a smooth run.
+##
+##    Nothing here can merge the bodies -- moving independently is the whole
+##    point of them -- and Jolt's enhanced internal edge removal, which is on,
+##    does not help: it takes out edges that are geometrically INTERNAL, and
+##    two bodies moved on their own are never perfectly flush, so the next
+##    platform's edge is a real step of a fraction of a millimetre and is
+##    rightly left in.
+##
+##    What does tell a seam from a real bounce is the speed the ball comes in
+##    with. The hop is restitution reflecting the ball off the edge's tilted
+##    normal, and the ball's speed ALONG that normal is a few percent of its
+##    rolling speed -- a metre or two a second flat out -- where a ball dropped
+##    onto a platform or struck by a spinner arrives at five to fifteen. So the
+##    project's `physics/jolt_physics_3d/simulation/bounce_velocity_threshold`
+##    is raised from its default of 1.0: below it Jolt pays no restitution at
+##    all. One engine setting, the same for every body in the game, and a
+##    platform is left as bare as any other surface.
+##
+##    This used to be answered by dressing the platform in an `absorbent`
+##    material that cancelled the ball's own bounce -- which cost every honest
+##    bounce a platform should give, and made a lone spinner the one thing in a
+##    level the ball could not bounce off. Nothing wears a material now.
 ##
 ## Nothing moves during the opening camera shot. A level has to open the same way
 ## every time, and a platform turning behind the fly-round means the level the
@@ -84,8 +114,9 @@ enum Spin {
 
 ## How fast it travels, in metres a second.
 ##
-## Under PATH the sign matters: negative runs the rail backwards. Under SHUTTLE
-## it does not -- the platform goes out and comes back either way -- and with
+## Under PATH the sign still runs the rail backwards, but [member invert_path]
+## says that better and is the one to reach for. Under SHUTTLE the sign does
+## nothing -- the platform goes out and comes back either way -- and with
 ## [member travel_ease] on this is the AVERAGE, since an eased leg starts slow,
 ## runs about half as fast again through the middle, and slows to a stop.
 @export var travel_speed := 2.0
@@ -125,6 +156,24 @@ enum Spin {
 	set(value):
 		path_node = value
 		update_configuration_warnings()
+
+## Set off along the rail the other way.
+##
+## The same journey run backwards, and nothing else about it changes: the
+## platform still settles onto the rail at the point nearest to where it was
+## placed, still turns round at the far end, still loops if it is told to. Only
+## which way it leaves is different.
+##
+## This is what a negative [member travel_speed] has always done, and the two
+## COMPOSE -- a negative speed with this ticked sets off forwards again. Reach
+## for this one. A speed is how fast, not which way, and a rail of platforms told
+## apart by which of them carries a minus sign is a rail nobody can read at a
+## glance.
+##
+## Read once, when the level loads. Turning it over mid-level would be arguing
+## with the platform about which way it is already going; to send one back early,
+## move the end of its rail.
+@export var invert_path := false
 
 ## Run round and round instead of back and forth.
 ##
@@ -291,6 +340,10 @@ func _ready() -> void:
 	# Trap 1.
 	sync_to_physics = false
 
+	# Trap 4 is answered by the project's restitution threshold, not here -- see
+	# the note at the top. A platform is left as bare as any other surface, so it
+	# bounces the ball exactly as the rest of the level does.
+
 	_level = _find_level()
 	if _level == null:
 		push_warning("%s: no level body above it; motion will be measured in world space" % name)
@@ -299,6 +352,12 @@ func _ready() -> void:
 	_rest_basis = basis
 	_base_basis = basis
 	_last_in_level = _transform_in_level()
+
+	# Which way it leaves. Kept as the direction rather than folded into the
+	# speed, so a platform sent the other way still reads as running at the speed
+	# it says it runs at -- and so the turn at the end of the rail, which is this
+	# flipping, goes on meaning the one thing.
+	_path_direction = -1.0 if invert_path else 1.0
 
 	_path = get_node_or_null(path_node) as Path3D
 	if travel == Travel.PATH:
@@ -342,6 +401,16 @@ func _hold() -> void:
 
 ## The level is the player's now, and so is everything moving in it.
 func _release() -> void:
+	_held = false
+
+
+## Lets the platform move with no level under way -- for the menu's preview,
+## which shows a level frozen but wants the parts of it that move to be seen
+## moving. Undoes [method _hold]: the wait for the level to start is dropped,
+## because on the menu that start never comes.
+func preview() -> void:
+	if GameState.timing_started.is_connected(_release):
+		GameState.timing_started.disconnect(_release)
 	_held = false
 
 
@@ -435,8 +504,9 @@ func _eased(along: float) -> float:
 ## spawn, and a platform that jumps to the head of the curve is trap 3 happening
 ## before the player has touched anything.
 ##
-## Which way it sets off is the sign of [member travel_speed], so a platform
-## placed mid-rail runs forward first and negative sends it the other way.
+## Which way it sets off is [member invert_path], so a platform placed mid-rail
+## runs forward first and a ticked box sends it the other way. A negative
+## [member travel_speed] does the same thing and composes with it.
 func _settle_onto_rail() -> void:
 	var placed := _path.to_local(global_position)
 
@@ -670,6 +740,7 @@ func _validate_property(property: Dictionary) -> void:
 		"travel_pause": Travel.SHUTTLE,
 		"travel_ease": Travel.SHUTTLE,
 		"path_node": Travel.PATH,
+		"invert_path": Travel.PATH,
 		"path_loop": Travel.PATH,
 		"face_along_path": Travel.PATH,
 	}.get(property.name)

@@ -1,6 +1,6 @@
 [gd_scene format=4 uid="uid://brdbcu8iqnk8n"]
 
-[ext_resource type="Environment" uid="uid://bdesertenv001" path="res://environments/desert.tres" id="1_hswcx"]
+[ext_resource type="PackedScene" path="res://environments/world_2.tscn" id="1_hswcx"]
 [ext_resource type="PackedScene" path="res://scenes/thumbstick.tscn" id="2_rm6ij"]
 [ext_resource type="PackedScene" path="res://scenes/UI/hud.tscn" id="3_hjyi8"]
 [ext_resource type="PackedScene" uid="uid://brgmkpo6nfamg" path="res://scenes/camera.tscn" id="4_odep3"]
@@ -14,59 +14,58 @@
 [ext_resource type="Material" uid="uid://b5xldmsdgiv5y" path="res://materials/sand.tres" id="11_hpvad"]
 [ext_resource type="Script" uid="uid://h4mfpu8ysemv" path="res://scripts/moving_platform.gd" id="12_e1glc"]
 
-[sub_resource type="Curve3D" id="Curve3D_hjyi8"]
-_data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -8, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0),
-"tilts": PackedFloat32Array(0, 0)
-}
-point_count = 2
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_rm6ij"]
+data = PackedVector3Array(-2, -0.5, 2, -2, -0.5, -2, -2, 0.5, -2, 2, -0.5, -2, -2, -0.5, -2, -2, -0.5, 2, -2, 0.5, -2, -2, -0.5, -2, 2, -0.5, -2, -2, 0.5, -2, -2, 0.5, 2, -2, -0.5, 2, -2, -0.5, 2, -2, 0.5, 2, 2, 0.5, 2, 2, 0.5, 2, -2, 0.5, 2, -2, 0.5, -2, -2, -0.5, 2, 2, -0.5, 2, 2, -0.5, -2, 2, 0.5, 2, 2, -0.5, 2, -2, -0.5, 2, 2, -0.5, -2, 2, -0.5, 2, 2, 0.5, 2, 2, -0.5, -2, 2, 0.5, -2, -2, 0.5, -2, -2, 0.5, -2, 2, 0.5, -2, 2, 0.5, 2, 2, 0.5, 2, 2, 0.5, -2, 2, -0.5, -2)
 
-[sub_resource type="ArrayMesh" id="ArrayMesh_odep3"]
+[sub_resource type="ArrayMesh" id="ArrayMesh_hjyi8"]
 _surfaces = [{
-"aabb": AABB(-1.5, -0.125, -1.5, 3, 0.25, 3),
+"aabb": AABB(-2, -0.5, -2, 4, 1, 4),
 "attribute_data": PackedByteArray("AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/"),
 "format": 34359738391,
 "material": ExtResource("10_odep3"),
 "primitive": 3,
 "uv_scale": Vector4(0, 0, 0, 0),
 "vertex_count": 36,
-"vertex_data": PackedByteArray("AADAvwAAAL4AAMA/AADAvwAAAL4AAMC/AADAvwAAAD4AAMC/AADAPwAAAL4AAMC/AADAvwAAAL4AAMC/AADAvwAAAL4AAMA/AADAvwAAAD4AAMC/AADAvwAAAL4AAMC/AADAPwAAAL4AAMC/AADAvwAAAD4AAMC/AADAvwAAAD4AAMA/AADAvwAAAL4AAMA/AADAvwAAAL4AAMA/AADAvwAAAD4AAMA/AADAPwAAAD4AAMA/AADAPwAAAD4AAMA/AADAvwAAAD4AAMA/AADAvwAAAD4AAMC/AADAvwAAAL4AAMA/AADAPwAAAL4AAMA/AADAPwAAAL4AAMC/AADAPwAAAD4AAMA/AADAPwAAAL4AAMA/AADAvwAAAL4AAMA/AADAPwAAAL4AAMC/AADAPwAAAL4AAMA/AADAPwAAAD4AAMA/AADAPwAAAL4AAMC/AADAPwAAAD4AAMC/AADAvwAAAD4AAMC/AADAvwAAAD4AAMC/AADAPwAAAD4AAMC/AADAPwAAAD4AAMA/AADAPwAAAD4AAMA/AADAPwAAAD4AAMC/AADAPwAAAL4AAMC/AAD/f/9//n8AAP9//3/+fwAA/3//f/5//38AAP//AAD/fwAA//8AAP9/AAD//wAA/////wAA/z//////AAD/P/////8AAP8/AAD/f/9//n8AAP9//3/+fwAA/3//f/5//3//fwAA/z//f/9/AAD/P/9//38AAP8//3//////AAD/f/////8AAP9//////wAA/38AAP//AAD/fwAA//8AAP9/AAD//wAA/3//fwAA/z//f/9/AAD/P/9//38AAP8/////f/9//n////9//3/+f////3//f/5//////wAA/z//////AAD/P/////8AAP8//3//////AAD/f/////8AAP9//////wAA////f/9//n////9//3/+f////3//f/5/")
+"vertex_data": PackedByteArray("AAAAwAAAAL8AAABAAAAAwAAAAL8AAADAAAAAwAAAAD8AAADAAAAAQAAAAL8AAADAAAAAwAAAAL8AAADAAAAAwAAAAL8AAABAAAAAwAAAAD8AAADAAAAAwAAAAL8AAADAAAAAQAAAAL8AAADAAAAAwAAAAD8AAADAAAAAwAAAAD8AAABAAAAAwAAAAL8AAABAAAAAwAAAAL8AAABAAAAAwAAAAD8AAABAAAAAQAAAAD8AAABAAAAAQAAAAD8AAABAAAAAwAAAAD8AAABAAAAAwAAAAD8AAADAAAAAwAAAAL8AAABAAAAAQAAAAL8AAABAAAAAQAAAAL8AAADAAAAAQAAAAD8AAABAAAAAQAAAAL8AAABAAAAAwAAAAL8AAABAAAAAQAAAAL8AAADAAAAAQAAAAL8AAABAAAAAQAAAAD8AAABAAAAAQAAAAL8AAADAAAAAQAAAAD8AAADAAAAAwAAAAD8AAADAAAAAwAAAAD8AAADAAAAAQAAAAD8AAADAAAAAQAAAAD8AAABAAAAAQAAAAD8AAABAAAAAQAAAAD8AAADAAAAAQAAAAL8AAADAAAD/f/9//n8AAP9//3/+fwAA/3//f/5//38AAP//AAD/fwAA//8AAP9/AAD//wAA/////wAA/z//////AAD/P/////8AAP8/AAD/f/9//n8AAP9//3/+fwAA/3//f/5//3//fwAA/z//f/9/AAD/P/9//38AAP8//3//////AAD/f/////8AAP9//////wAA/38AAP//AAD/fwAA//8AAP9/AAD//wAA/3//fwAA/z//f/9/AAD/P/9//38AAP8/////f/9//n////9//3/+f////3//f/5//////wAA/z//////AAD/P/////8AAP8//3//////AAD/f/////8AAP9//////wAA////f/9//n////9//3/+f////3//f/5/")
 }]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_hpvad"]
-size = Vector3(3, 0.25, 3)
+[sub_resource type="Curve3D" id="Curve3D_odep3"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -8, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
 
-[sub_resource type="ArrayMesh" id="ArrayMesh_hjyi8"]
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_hjyi8"]
+data = PackedVector3Array(-1.5, -0.5, -1.5, -1.5, 0.45, -1.5, -1.5, -0.5, 1.5, -1.5, -0.5, -1.5, -1.5, -0.5, 1.5, 1.5, -0.5, -1.5, -1.5, -0.5, 1.5, -1.5, 0.45, 1.5, 1.5, -0.5, 1.5, -1.5, -0.5, -1.5, 1.5, 0.45, -1.5, -1.5, 0.45, -1.5, -1.5, -0.5, 1.5, -1.5, 0.45, -1.5, -1.5, 0.45, 1.5, -1.5, -0.5, -1.5, 1.5, -0.5, -1.5, 1.5, 0.45, -1.5, -1.5, -0.5, 1.5, 1.5, -0.5, 1.5, 1.5, -0.5, -1.5, 1.5, -0.5, -1.5, 1.5, -0.5, 1.5, 1.5, 0.45, 1.5, 1.5, -0.5, -1.5, 1.5, 0.45, 1.5, 1.5, 0.45, -1.5, 1.5, -0.5, 1.5, -1.5, 0.45, 1.5, 1.5, 0.45, 1.5, -1.5, 0.45, -1.5, 1.5, 0.45, -1.5, -1.5, 0.45, 1.5, 1.5, 0.45, 1.5, -1.5, 0.45, 1.5, 1.5, 0.45, -1.5)
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_odep3"]
 _surfaces = [{
-"aabb": AABB(-2.5, -0.5, -2.5, 5, 0.95, 5),
+"aabb": AABB(-1.5, -0.5, -1.5, 3, 0.95, 3),
 "attribute_data": PackedByteArray("AACAPwAAAADQzEw9AAAAAAAAgD8AAIA/AACAPwAAAAAAAAAAAAAAAAAAgD8AAIA/AACAPwAAgD8AAIA/0MxMPQAAAAAAAIA/AACAPwAAAAAAAAAAMzNzPwAAgD8zM3M/AACAPwAAgD/QzEw9AAAAANDMTD0AAIA/AACAPwAAAAAAAAAAAAAAAAAAAAAzM3M/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAAAANDMTD0AAAAAAACAPwAAgD/QzEw9AAAAANDMTD0AAIA/AAAAAAAAgD8AAIA/0MxMPQAAAADQzEw9"),
 "format": 34359738391,
 "material": ExtResource("10_odep3"),
 "primitive": 3,
 "uv_scale": Vector4(0, 0, 0, 0),
 "vertex_count": 30,
-"vertex_data": PackedByteArray("AAAgwAAAAL8AACDAAAAgwGZm5j4AACDAAAAgwAAAAL8AACBAAAAgwAAAAL8AACDAAAAgwAAAAL8AACBAAAAgQAAAAL8AACDAAAAgwAAAAL8AACBAAAAgwGZm5j4AACBAAAAgQAAAAL8AACBAAAAgwAAAAL8AACDAAAAgQGZm5j4AACDAAAAgwGZm5j4AACDAAAAgwAAAAL8AACBAAAAgwGZm5j4AACDAAAAgwGZm5j4AACBAAAAgwAAAAL8AACDAAAAgQAAAAL8AACDAAAAgQGZm5j4AACDAAAAgwAAAAL8AACBAAAAgQAAAAL8AACBAAAAgQAAAAL8AACDAAAAgQAAAAL8AACDAAAAgQAAAAL8AACBAAAAgQGZm5j4AACBAAAAgQAAAAL8AACDAAAAgQGZm5j4AACBAAAAgQGZm5j4AACDAAAAgQAAAAL8AACBAAAAgwGZm5j4AACBAAAAgQGZm5j4AACBAAAD/f/9//n8AAP9//3/+fwAA/3//f/5//38AAP//AAD/fwAA//8AAP9/AAD//wAA/3//fwAA/z//f/9/AAD/P/9//38AAP8//////wAA/z//////AAD/P/////8AAP8/AAD/f/9//n8AAP9//3/+fwAA/3//f/5//////wAA/z//////AAD/P/////8AAP8//38AAP//AAD/fwAA//8AAP9/AAD//wAA////f/9//n////9//3/+f////3//f/5/////f/9//n////9//3/+f////3//f/5//3//fwAA/z//f/9/AAD/P/9//38AAP8/")
+"vertex_data": PackedByteArray("AADAvwAAAL8AAMC/AADAv2Zm5j4AAMC/AADAvwAAAL8AAMA/AADAvwAAAL8AAMC/AADAvwAAAL8AAMA/AADAPwAAAL8AAMC/AADAvwAAAL8AAMA/AADAv2Zm5j4AAMA/AADAPwAAAL8AAMA/AADAvwAAAL8AAMC/AADAP2Zm5j4AAMC/AADAv2Zm5j4AAMC/AADAvwAAAL8AAMA/AADAv2Zm5j4AAMC/AADAv2Zm5j4AAMA/AADAvwAAAL8AAMC/AADAPwAAAL8AAMC/AADAP2Zm5j4AAMC/AADAvwAAAL8AAMA/AADAPwAAAL8AAMA/AADAPwAAAL8AAMC/AADAPwAAAL8AAMC/AADAPwAAAL8AAMA/AADAP2Zm5j4AAMA/AADAPwAAAL8AAMC/AADAP2Zm5j4AAMA/AADAP2Zm5j4AAMC/AADAPwAAAL8AAMA/AADAv2Zm5j4AAMA/AADAP2Zm5j4AAMA/AAD/f/9//n8AAP9//3/+fwAA/3//f/5//38AAP//AAD/fwAA//8AAP9/AAD//wAA/3//fwAA/z//f/9/AAD/P/9//38AAP8//////wAA/z//////AAD/P/////8AAP8/AAD/f/9//n8AAP9//3/+fwAA/3//f/5//////wAA/z//////AAD/P/////8AAP8//38AAP//AAD/fwAA//8AAP9/AAD//wAA////f/9//n////9//3/+f////3//f/5/////f/9//n////9//3/+f////3//f/5//3//fwAA/z//f/9/AAD/P/9//38AAP8/")
 }, {
-"aabb": AABB(-2.5, 0.45, -2.5, 5, 1e-05, 5),
+"aabb": AABB(-1.5, 0.45, -1.5, 3, 1e-05, 3),
 "attribute_data": PackedByteArray("AACAPwAAAAAAAIA/AACAPwAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAIA/"),
 "format": 34359738391,
 "material": ExtResource("11_hpvad"),
 "primitive": 3,
 "uv_scale": Vector4(0, 0, 0, 0),
 "vertex_count": 6,
-"vertex_data": PackedByteArray("AAAgwGZm5j4AACDAAAAgQGZm5j4AACDAAAAgwGZm5j4AACBAAAAgQGZm5j4AACBAAAAgwGZm5j4AACBAAAAgQGZm5j4AACDA/3//////////f/////////9//////////3//////////f/////////9/////////")
+"vertex_data": PackedByteArray("AADAv2Zm5j4AAMC/AADAP2Zm5j4AAMC/AADAv2Zm5j4AAMA/AADAP2Zm5j4AAMA/AADAv2Zm5j4AAMA/AADAP2Zm5j4AAMC//3//////////f/////////9//////////3//////////f/////////9/////////")
 }]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_odep3"]
-size = Vector3(5, 0.95001, 5)
-
 [sub_resource type="BoxShape3D" id="BoxShape3D_agq18"]
-size = Vector3(81, 104, 111)
+size = Vector3(26, 28, 66)
 
 [node name="1-1" type="Node3D" unique_id=1614486416]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1291218271]
-environment = ExtResource("1_hswcx")
+[node name="WorldEnvironment" parent="." unique_id=529110042 instance=ExtResource("1_hswcx")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=821745350]
 transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
@@ -96,312 +95,290 @@ thumbstick_path = NodePath("../UI/Thumbstick")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
 [node name="GoalRing" parent="Level" unique_id=325633537 instance=ExtResource("8_8h82p")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, -52.028)
-slow_time = 24.0
-fast_time = 12.0
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, -50.028)
 
 [node name="Gems" type="Node3D" parent="Level" unique_id=51730275]
 
 [node name="Gem" parent="Level/Gems" unique_id=473422485 instance=ExtResource("9_2qnqy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -3)
 
-[node name="Pad1" type="Path3D" parent="Level" unique_id=10813606]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -4)
-curve = SubResource("Curve3D_hjyi8")
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level" unique_id=1296370399]
+shape = SubResource("ConcavePolygonShape3D_rm6ij")
 
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad1" unique_id=431788805]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 0)
-script = ExtResource("12_e1glc")
-travel = 2
-path_node = NodePath("..")
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level" unique_id=442437158]
+mesh = SubResource("ArrayMesh_hjyi8")
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad1/Pad" unique_id=345317024]
-mesh = SubResource("ArrayMesh_odep3")
+[node name="CSGBakedCollisionShape3D2" type="CollisionShape3D" parent="Level" unique_id=1041833032]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -49)
+shape = SubResource("ConcavePolygonShape3D_rm6ij")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad1/Pad" unique_id=2011321823]
-shape = SubResource("BoxShape3D_hpvad")
+[node name="CSGBakedMeshInstance3D2" type="MeshInstance3D" parent="Level" unique_id=342900035]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -49)
+mesh = SubResource("ArrayMesh_hjyi8")
 
-[node name="Pad2" type="Path3D" parent="Level" unique_id=1838354539]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -7)
-curve = SubResource("Curve3D_hjyi8")
+[node name="Path3D" type="Path3D" parent="Level" unique_id=983589135]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.5)
+curve = SubResource("Curve3D_odep3")
 
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad2" unique_id=384859242]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 0)
-script = ExtResource("12_e1glc")
-travel = 2
-path_node = NodePath("..")
-
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad2/Pad" unique_id=1057959661]
-mesh = SubResource("ArrayMesh_odep3")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad2/Pad" unique_id=676251782]
-shape = SubResource("BoxShape3D_hpvad")
-
-[node name="Pad3" type="Path3D" parent="Level" unique_id=1030065974]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -10)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad3" unique_id=1837926951]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 0)
-script = ExtResource("12_e1glc")
-travel = 2
-path_node = NodePath("..")
-
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad3/Pad" unique_id=20726194]
-mesh = SubResource("ArrayMesh_odep3")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad3/Pad" unique_id=665535062]
-shape = SubResource("BoxShape3D_hpvad")
-
-[node name="Pad4" type="Path3D" parent="Level" unique_id=1293879074]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -13)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad4" unique_id=837181017]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 0)
-script = ExtResource("12_e1glc")
-travel = 2
-path_node = NodePath("..")
-
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad4/Pad" unique_id=440290891]
-mesh = SubResource("ArrayMesh_odep3")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad4/Pad" unique_id=2099060524]
-shape = SubResource("BoxShape3D_hpvad")
-
-[node name="Pad5" type="Path3D" parent="Level" unique_id=1571868153]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -16)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad5" unique_id=1136756917]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 0)
-script = ExtResource("12_e1glc")
-travel = 2
-path_node = NodePath("..")
-
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad5/Pad" unique_id=57027520]
-mesh = SubResource("ArrayMesh_odep3")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad5/Pad" unique_id=1481382119]
-shape = SubResource("BoxShape3D_hpvad")
-
-[node name="Pad6" type="Path3D" parent="Level" unique_id=2320569]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -19)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad6" unique_id=900054320]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 0)
-script = ExtResource("12_e1glc")
-travel = 2
-path_node = NodePath("..")
-
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad6/Pad" unique_id=1775797976]
-mesh = SubResource("ArrayMesh_odep3")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad6/Pad" unique_id=502557539]
-shape = SubResource("BoxShape3D_hpvad")
-
-[node name="Pad7" type="Path3D" parent="Level" unique_id=422424769]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -22)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad7" unique_id=886704878]
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D" unique_id=299090557]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 0)
 script = ExtResource("12_e1glc")
 travel = 2
 path_node = NodePath("..")
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad7/Pad" unique_id=554644626]
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D/Plat" unique_id=1641241063]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D/Plat" unique_id=1472263635]
 mesh = SubResource("ArrayMesh_odep3")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad7/Pad" unique_id=1305088330]
-shape = SubResource("BoxShape3D_hpvad")
+[node name="Path3D2" type="Path3D" parent="Level" unique_id=427219960]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6.5)
+curve = SubResource("Curve3D_odep3")
 
-[node name="Pad8" type="Path3D" parent="Level" unique_id=1395323545]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -25)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad8" unique_id=634691111]
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D2" unique_id=1520782984]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 0)
 script = ExtResource("12_e1glc")
 travel = 2
 path_node = NodePath("..")
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad8/Pad" unique_id=651325032]
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D2/Plat" unique_id=613968556]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D2/Plat" unique_id=146588403]
 mesh = SubResource("ArrayMesh_odep3")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad8/Pad" unique_id=1032676521]
-shape = SubResource("BoxShape3D_hpvad")
+[node name="Path3D3" type="Path3D" parent="Level" unique_id=722705563]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -9.5)
+curve = SubResource("Curve3D_odep3")
 
-[node name="Pad9" type="Path3D" parent="Level" unique_id=553820834]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -28)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad9" unique_id=1132902972]
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D3" unique_id=1366006379]
 script = ExtResource("12_e1glc")
 travel = 2
 path_node = NodePath("..")
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad9/Pad" unique_id=1721031886]
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D3/Plat" unique_id=909648822]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D3/Plat" unique_id=785303797]
 mesh = SubResource("ArrayMesh_odep3")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad9/Pad" unique_id=461782607]
-shape = SubResource("BoxShape3D_hpvad")
+[node name="Path3D4" type="Path3D" parent="Level" unique_id=1436664335]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -12.5)
+curve = SubResource("Curve3D_odep3")
 
-[node name="Pad10" type="Path3D" parent="Level" unique_id=984163350]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -31)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad10" unique_id=1805837108]
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D4" unique_id=2047759194]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
 script = ExtResource("12_e1glc")
 travel = 2
 path_node = NodePath("..")
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad10/Pad" unique_id=2145283953]
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D4/Plat" unique_id=976117991]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D4/Plat" unique_id=1184346990]
 mesh = SubResource("ArrayMesh_odep3")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad10/Pad" unique_id=1553592335]
-shape = SubResource("BoxShape3D_hpvad")
+[node name="Path3D5" type="Path3D" parent="Level" unique_id=1912591883]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -15.5)
+curve = SubResource("Curve3D_odep3")
 
-[node name="Pad11" type="Path3D" parent="Level" unique_id=972367417]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -34)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad11" unique_id=399354668]
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D5" unique_id=2011912698]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
 script = ExtResource("12_e1glc")
 travel = 2
 path_node = NodePath("..")
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad11/Pad" unique_id=27744347]
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D5/Plat" unique_id=1124222334]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D5/Plat" unique_id=335144458]
 mesh = SubResource("ArrayMesh_odep3")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad11/Pad" unique_id=1213783487]
-shape = SubResource("BoxShape3D_hpvad")
+[node name="Path3D6" type="Path3D" parent="Level" unique_id=1972090752]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -18.5)
+curve = SubResource("Curve3D_odep3")
 
-[node name="Pad12" type="Path3D" parent="Level" unique_id=268173839]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -37)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad12" unique_id=2018779750]
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D6" unique_id=461165725]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
 script = ExtResource("12_e1glc")
 travel = 2
 path_node = NodePath("..")
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad12/Pad" unique_id=208506321]
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D6/Plat" unique_id=681215433]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D6/Plat" unique_id=919671398]
 mesh = SubResource("ArrayMesh_odep3")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad12/Pad" unique_id=609522573]
-shape = SubResource("BoxShape3D_hpvad")
+[node name="Path3D7" type="Path3D" parent="Level" unique_id=129258850]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -21.5)
+curve = SubResource("Curve3D_odep3")
 
-[node name="Pad13" type="Path3D" parent="Level" unique_id=594352351]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -40)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad13" unique_id=389269826]
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D7" unique_id=1535300013]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 0)
 script = ExtResource("12_e1glc")
 travel = 2
 path_node = NodePath("..")
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad13/Pad" unique_id=1897456218]
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D7/Plat" unique_id=580057925]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D7/Plat" unique_id=1679430409]
 mesh = SubResource("ArrayMesh_odep3")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad13/Pad" unique_id=1167463869]
-shape = SubResource("BoxShape3D_hpvad")
+[node name="Path3D8" type="Path3D" parent="Level" unique_id=841907005]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -24.5)
+curve = SubResource("Curve3D_odep3")
 
-[node name="Pad14" type="Path3D" parent="Level" unique_id=1007933213]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -43)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad14" unique_id=2138942167]
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D8" unique_id=95372904]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 0)
 script = ExtResource("12_e1glc")
 travel = 2
 path_node = NodePath("..")
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad14/Pad" unique_id=1537814400]
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D8/Plat" unique_id=1193041062]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D8/Plat" unique_id=361146277]
 mesh = SubResource("ArrayMesh_odep3")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad14/Pad" unique_id=135013600]
-shape = SubResource("BoxShape3D_hpvad")
+[node name="Path3D9" type="Path3D" parent="Level" unique_id=1068602436]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -27.5)
+curve = SubResource("Curve3D_odep3")
 
-[node name="Pad15" type="Path3D" parent="Level" unique_id=1090316114]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -46)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad15" unique_id=1616981080]
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D9" unique_id=1114157540]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
 script = ExtResource("12_e1glc")
 travel = 2
 path_node = NodePath("..")
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad15/Pad" unique_id=314045785]
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D9/Plat" unique_id=1687052154]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D9/Plat" unique_id=1088932077]
 mesh = SubResource("ArrayMesh_odep3")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad15/Pad" unique_id=1622291568]
-shape = SubResource("BoxShape3D_hpvad")
+[node name="Path3D10" type="Path3D" parent="Level" unique_id=1471147106]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -30.5)
+curve = SubResource("Curve3D_odep3")
 
-[node name="Pad16" type="Path3D" parent="Level" unique_id=834948040]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -49)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad16" unique_id=1914688436]
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D10" unique_id=1978815379]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 0)
 script = ExtResource("12_e1glc")
 travel = 2
 path_node = NodePath("..")
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad16/Pad" unique_id=1577710639]
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D10/Plat" unique_id=1915024848]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D10/Plat" unique_id=2109228676]
 mesh = SubResource("ArrayMesh_odep3")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad16/Pad" unique_id=1985538628]
-shape = SubResource("BoxShape3D_hpvad")
+[node name="Path3D11" type="Path3D" parent="Level" unique_id=464888636]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -33.5)
+curve = SubResource("Curve3D_odep3")
 
-[node name="Pad17" type="Path3D" parent="Level" unique_id=299895454]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, -52)
-curve = SubResource("Curve3D_hjyi8")
-
-[node name="Pad" type="AnimatableBody3D" parent="Level/Pad17" unique_id=537661046]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0)
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D11" unique_id=32084108]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 0)
 script = ExtResource("12_e1glc")
 travel = 2
 path_node = NodePath("..")
+invert_path = true
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Pad17/Pad" unique_id=772494697]
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D11/Plat" unique_id=1242578713]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D11/Plat" unique_id=1160888069]
 mesh = SubResource("ArrayMesh_odep3")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Pad17/Pad" unique_id=1655626637]
-shape = SubResource("BoxShape3D_hpvad")
+[node name="Path3D12" type="Path3D" parent="Level" unique_id=631066734]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -36.5)
+curve = SubResource("Curve3D_odep3")
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level" unique_id=1299541710]
-mesh = SubResource("ArrayMesh_hjyi8")
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D12" unique_id=994151489]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 0)
+script = ExtResource("12_e1glc")
+travel = 2
+path_node = NodePath("..")
+invert_path = true
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Level" unique_id=268313076]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.024995, 0)
-shape = SubResource("BoxShape3D_odep3")
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D12/Plat" unique_id=1609926779]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D12/Plat" unique_id=1466677255]
+mesh = SubResource("ArrayMesh_odep3")
+
+[node name="Path3D13" type="Path3D" parent="Level" unique_id=451463852]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -39.5)
+curve = SubResource("Curve3D_odep3")
+
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D13" unique_id=1720023048]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 0)
+script = ExtResource("12_e1glc")
+travel = 2
+path_node = NodePath("..")
+invert_path = true
+
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D13/Plat" unique_id=1864729398]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D13/Plat" unique_id=159913982]
+mesh = SubResource("ArrayMesh_odep3")
+
+[node name="Path3D14" type="Path3D" parent="Level" unique_id=2078476895]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -42.5)
+curve = SubResource("Curve3D_odep3")
+
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D14" unique_id=329783805]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 0)
+script = ExtResource("12_e1glc")
+travel = 2
+path_node = NodePath("..")
+invert_path = true
+
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D14/Plat" unique_id=2105415878]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D14/Plat" unique_id=2065808469]
+mesh = SubResource("ArrayMesh_odep3")
+
+[node name="Path3D15" type="Path3D" parent="Level" unique_id=93188909]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -45.5)
+curve = SubResource("Curve3D_odep3")
+
+[node name="Plat" type="AnimatableBody3D" parent="Level/Path3D15" unique_id=1462584750]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 0)
+script = ExtResource("12_e1glc")
+travel = 2
+path_node = NodePath("..")
+invert_path = true
+
+[node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="Level/Path3D15/Plat" unique_id=197925219]
+shape = SubResource("ConcavePolygonShape3D_hjyi8")
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="Level/Path3D15/Plat" unique_id=723475341]
+mesh = SubResource("ArrayMesh_odep3")
 
 [node name="CSGCombiner3D" type="CSGCombiner3D" parent="." unique_id=1967459598]
 visible = false
 
-[node name="CSGBox3D" type="CSGBox3D" parent="CSGCombiner3D" unique_id=797479006]
-size = Vector3(5, 1, 5)
+[node name="CSGBox3D" type="CSGBox3D" parent="CSGCombiner3D" unique_id=206838593]
+size = Vector3(4, 1, 4)
 material = ExtResource("10_odep3")
-
-[node name="CSGBox3D" type="CSGBox3D" parent="CSGCombiner3D/CSGBox3D" unique_id=1312169177]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
-operation = 2
-size = Vector3(5, 1, 5)
-material = ExtResource("11_hpvad")
 
 [node name="Dynamic" type="CSGCombiner3D" parent="." unique_id=801382868]
 visible = false
 
-[node name="CSGBox3D" type="CSGBox3D" parent="Dynamic" unique_id=1836652391]
-size = Vector3(3, 0.25, 3)
+[node name="CSGBox3D" type="CSGBox3D" parent="Dynamic" unique_id=1496803758]
+size = Vector3(3, 1, 3)
 material = ExtResource("10_odep3")
+
+[node name="CSGBox3D2" type="CSGBox3D" parent="Dynamic/CSGBox3D" unique_id=540973732]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+operation = 2
+size = Vector3(3, 1, 3)
+material = ExtResource("11_hpvad")
 
 [node name="AliveZone" type="Area3D" parent="." unique_id=414637776]
 collision_layer = 16
@@ -409,5 +386,5 @@ collision_mask = 4
 script = ExtResource("11_7jtft")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="AliveZone" unique_id=614242323]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -12.5, -38.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, -27)
 shape = SubResource("BoxShape3D_agq18")

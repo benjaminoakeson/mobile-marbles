@@ -36,11 +36,28 @@ const CAN_AFFORD := Color(0.3372549, 0.8862745, 0.5137255)
 const TOO_DEAR := Color(0.85, 0.42, 0.42)
 const OWNED := Color(0.55, 0.75, 1.0)
 
+## What the double-gems tile reads before it is bought and after. Owned, it shows
+## no price at all, in the colour a bought marble's price turns -- so the one
+## bought thing on the money row says it the way the shelf says it.
+##
+## The price is here as well as in the scene because the tile is repainted from
+## code the moment the page opens: the scene's copy is the layout's, this one is
+## the one that ends up on screen.
+const DOUBLE_GEMS_PRICE := "$3.99"
+const DOUBLE_GEMS_ACTIVE := "ACTIVE"
+
+## What a money item's price reads in while it is still for sale. The grey the
+## tiles are laid out with -- money prices are not in gems, so they are not in
+## the gem colours above.
+const UNSOLD := Color(0.63529414, 0.6784314, 0.6509804)
+
 @onready var _slots: HBoxContainer = %Slots
 @onready var _template: Button = %SlotTemplate
 @onready var _restock: Label = %Restock
 @onready var _sold_out: Label = %SoldOut
 @onready var _note: Label = %Note
+@onready var _double_gems: Button = %DoubleGems
+@onready var _double_gems_cost: Label = %DoubleGemsCost
 
 ## One entry per tile on the shelf: the marble it is selling and the parts of the
 ## tile that have to be repainted when the gems or the ownership change.
@@ -62,10 +79,17 @@ func _ready() -> void:
 	# The things bought with money. There is no store behind any of them yet --
 	# they are laid out so the page can be seen whole, and they say as much when
 	# they are tapped rather than doing nothing, which reads as a broken button.
-	for item: Button in [%NoAds, %InfiniteLives, %PackSmall, %PackMedium, %PackLarge]:
+	for item: Button in [%NoAds, %PackSmall, %PackMedium, %PackLarge]:
 		item.pressed.connect(_not_for_sale_yet)
 
+	# Double gems is the exception, and only by half: there is still no store to
+	# take the money, but what the money buys is built and permanent, so the tile
+	# has an owned state to show and something to listen to.
+	_double_gems.pressed.connect(_buy_double_gems)
+	GameState.double_gems_changed.connect(func(_active: bool) -> void: _price_unlocks())
+
 	_stock_shelf()
+	_price_unlocks()
 
 
 func _process(delta: float) -> void:
@@ -193,6 +217,28 @@ func _price_shelf() -> void:
 func _not_for_sale_yet() -> void:
 	_note.visible = true
 	_note_left = NOTE_SECONDS
+
+
+## The double-gems tile. Owned, it does nothing -- it is bought once and kept for
+## good, and a second sale of the same thing is the one outcome a shop must never
+## have. Unowned, there is still no store to take the money, so it says so.
+##
+## What goes here when a store exists is the purchase flow, and the only thing it
+## has to do on success is call `GameState.grant_double_gems()`. Everything else
+## -- the tile, the save, the doubling itself -- already answers to that.
+func _buy_double_gems() -> void:
+	if GameState.double_gems:
+		return
+
+	_not_for_sale_yet()
+
+
+## Repaints the money row for what is already owned.
+func _price_unlocks() -> void:
+	var owned := GameState.double_gems
+	_double_gems_cost.text = DOUBLE_GEMS_ACTIVE if owned else DOUBLE_GEMS_PRICE
+	_double_gems_cost.add_theme_color_override("font_color", OWNED if owned else UNSOLD)
+	_double_gems.disabled = owned
 
 
 func _buy(id: String) -> void:

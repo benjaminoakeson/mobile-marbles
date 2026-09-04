@@ -15,6 +15,16 @@ extends StaticBody3D
 ## Fires once the ball is through and on its way out. The level is over by then.
 signal level_completed
 
+## How fast the ring has to have been travelling for the break to count as the
+## goal having come to the ball rather than the other way about, in metres a
+## second.
+##
+## Low, because a ring bolted to the level reports exactly nothing: anything
+## reporting more than a crawl is moving under its own power, and a ring moving
+## under its own power carries itself clear of the ball without the ball being
+## sent anywhere.
+const MOVING_GOAL_SPEED := 0.5
+
 # --- Level Finished Settings ---
 ## The least the ball may leave the ring at, in metres a second.
 ##
@@ -294,8 +304,11 @@ func _send_off(player: RigidBody3D, heading: Vector3) -> void:
 	# before anything was done to the body. Redirecting rather than leaving the
 	# velocity untouched costs nothing -- the two are the same direction -- and
 	# it keeps a ball that clipped the rim on its way through flying straight.
-	var carried := maxf(player.linear_velocity.length(), minimum_exit_speed)
-	player.linear_velocity = heading * carried
+	#
+	# Only for a ball that ARRIVED, though. See `_ball_did_the_arriving`.
+	if _ball_did_the_arriving():
+		var carried := maxf(player.linear_velocity.length(), minimum_exit_speed)
+		player.linear_velocity = heading * carried
 
 	# The ball is nobody's to steer now, so its grip and its brake come off with
 	# the steering. Left on, they would haul the send-off up short.
@@ -335,6 +348,30 @@ func _send_off(player: RigidBody3D, heading: Vector3) -> void:
 
 	level_completed.emit()
 	_show_menu()
+
+
+## Whether it was the BALL that arrived at the goal, rather than the goal that
+## came to the ball.
+##
+## The send-off is written for a ring standing still and a ball rolling into it.
+## Everything it does to the body follows from that: the ball is put back on its
+## heading and floored at [member minimum_exit_speed] so that one which barely
+## trickled through still gets clear of a rim it is sitting right inside.
+##
+## A ring mounted on a spinner turns all of that around. IT arrives, at fifty
+## metres a second, breaks its own glass against a ball that may not have moved
+## at all, and is most of a level away before the menu is up. There is no rim
+## left to get clear of. Nothing has touched the ball either -- the hole in the
+## ring passed round it and the glass in the way of it shattered -- so the honest
+## answer is that a ball which was standing still is still standing still.
+##
+## Floor it anyway and the ball rolls off under its own power having been given
+## no input, which is the level appearing to play itself.
+func _ball_did_the_arriving() -> bool:
+	if _glass == null:
+		return true
+
+	return _glass.speed_when_broken() <= MOVING_GOAL_SPEED
 
 
 ## The gems taken after the goal was, for as long as the ball is still going.

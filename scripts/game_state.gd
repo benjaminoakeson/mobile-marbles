@@ -12,6 +12,10 @@ signal lives_changed(lives: int)
 ## Gems banked, for the shop to draw on.
 signal bank_changed(bank: int)
 
+## The double-gems purchase went through. The shop tile listens, so the thing
+## just bought stops offering itself for sale the moment it is owned.
+signal double_gems_changed(active: bool)
+
 ## Gems counted towards the next extra life, and what they have to add up to.
 signal gem_progress_changed(collected: int, target: int)
 
@@ -110,6 +114,12 @@ const STARTING_LIVES := 3
 ## reading the count can tell "unlimited" from "three" -- see
 ## [method has_infinite_lives].
 const INFINITE_LIVES := -1
+
+## What the double-gems purchase multiplies a gem by ON THE WAY INTO THE BANK.
+##
+## The bank only. A gem is worth the same to the score either way -- see
+## [method collect_gem] for why that line is drawn where it is.
+const DOUBLE_GEMS_MULTIPLIER := 2
 
 ## What a level's gems have to add up to for the first extra life of a run.
 ## About one level's worth, so a run that keeps finding gems keeps its lives up.
@@ -227,6 +237,15 @@ var challenges_done := {}
 ## Every gem ever collected, banked for good and spent in the shop. A level's
 ## own gem tally resets with the level; this never does.
 var bank := 0
+
+## Whether the player has bought the double-gems modifier.
+##
+## Bought once with real money and kept for good, so it is saved with the rest of
+## the player rather than with the run: it survives a game over, a set restarted,
+## and `leave_run()`. Nothing hands it back -- see [method grant_double_gems].
+##
+## What it changes is the BANK, and only the bank. See [method collect_gem].
+var double_gems := false
 
 ## Which marble the player is wearing, as a `MarbleSkins` id. Purely cosmetic:
 ## nothing about a level is gated on it. What IS gated is which marbles can be
@@ -660,11 +679,26 @@ func stop_timing() -> void:
 
 ## A gem was picked up. It counts three times over: towards this level's score,
 ## towards the bank the shop spends, and towards the next extra life.
+##
+## The three are counted SEPARATELY, which is what lets the double-gems purchase
+## touch one of them and leave the other two alone:
+##
+##   * The SCORE takes the gem at face value, always. A score is a claim about
+##     how the level was played, and it is set against the player's own bests,
+##     the crowns, and everyone else's numbers. A score that can be bought is not
+##     a score, so money is not allowed anywhere near this line.
+##   * The BANK takes the doubled value. The bank is a wallet, not a record --
+##     it buys marbles and nothing else -- so paying to fill it faster costs
+##     nobody anything.
+##   * The EXTRA LIFE climb takes face value too, for the same reason as the
+##     score rather than a different one: lives are how hard the game is, and
+##     the item this modifier replaced on the shelf was literally infinite
+##     lives. Doubling this would sell that back through the side door.
 func collect_gem(points: int) -> void:
 	gem_score += points
 	add_score(points)
 
-	bank += points
+	bank += banked_value(points)
 	bank_changed.emit(bank)
 
 	run_gems += points
@@ -673,6 +707,33 @@ func collect_gem(points: int) -> void:
 
 	# Banked the moment it is picked up, so quitting part way through a level
 	# does not cost the player gems they have already collected.
+	save_progress()
+
+
+## What a gem worth [param points] puts in the bank, which is double what it is
+## worth to everything else once the modifier is owned.
+##
+## Public because the shop draws the wallet and wants to be able to say what a
+## gem is worth now, and because it is the one place the multiplier is applied.
+func banked_value(points: int) -> int:
+	return points * DOUBLE_GEMS_MULTIPLIER if double_gems else points
+
+
+## Turns the double-gems modifier on for good.
+##
+## This is the seam a store hooks into: when the purchase clears, whatever is
+## holding the receipt calls this and nothing else has to change. It is safe to
+## call again -- a restore on a new device runs through here too, and a player
+## who already has it must not be told they have just bought it a second time.
+##
+## Written to disk immediately rather than left to the next save. What was just
+## paid for must survive the game being killed on the very next breath.
+func grant_double_gems() -> void:
+	if double_gems:
+		return
+
+	double_gems = true
+	double_gems_changed.emit(double_gems)
 	save_progress()
 
 
@@ -1524,6 +1585,7 @@ func save_progress() -> void:
 	file.set_value("run", "lives", lives)
 	file.set_value("run", "extra_life_target", extra_life_target)
 	file.set_value("bank", "gems", bank)
+	file.set_value("purchases", "double_gems", double_gems)
 	file.set_value("best", "score", best_score)
 	file.set_value("best", "time", best_time)
 	file.set_value("best", "crowns", crowns)
@@ -1560,6 +1622,7 @@ func load_progress() -> void:
 		# Saved part way through a game over. Start the next session playable.
 		lives = STARTING_LIVES
 	bank = file.get_value("bank", "gems", 0)
+	double_gems = file.get_value("purchases", "double_gems", false)
 	best_score = file.get_value("best", "score", {})
 	best_time = file.get_value("best", "time", {})
 	crowns = file.get_value("best", "crowns", {})
@@ -1621,6 +1684,7 @@ func load_progress() -> void:
 
 	lives_changed.emit(lives)
 	bank_changed.emit(bank)
+	double_gems_changed.emit(double_gems)
 
 
 ## Turns the old "how many cleared, in order" count into the level list the
@@ -1647,8 +1711,12 @@ func _adopt_legacy_progress(legacy: Dictionary) -> void:
 # Driven by the dev popup on the levels page, which only opens in a debug build.
 
 ## Wipes the save back to a first run: nothing cleared, no challenges, no best
-## times or scores, an empty bank, the marble back to the default one, and the
-## dev unlock off again.
+## times or scores, an empty bank, the marble back to the default one, the dev
+## unlock off again, and the double-gems purchase gone with the rest of it.
+##
+## That last one is the only thing here that was ever paid for. It goes because
+## this is a first run and a first run has not bought anything -- and on a real
+## device the store is what puts a purchase back, not the save file.
 ##
 ## Written to disk straight away rather than left for the next save, so quitting
 ## immediately afterwards cannot resurrect the old progress.
@@ -1660,6 +1728,7 @@ func dev_reset_progress() -> void:
 	crowns = {}
 	bank = 0
 	dev_unlock_all = false
+	double_gems = false
 	marble_skin = MarbleSkins.DEFAULT
 	owned_skins = {MarbleSkins.DEFAULT: true}
 
@@ -1674,6 +1743,7 @@ func dev_reset_progress() -> void:
 	_deal_lives()
 
 	bank_changed.emit(bank)
+	double_gems_changed.emit(double_gems)
 	marble_skin_changed.emit(marble_skin)
 	owned_skins_changed.emit()
 	shop_changed.emit()
@@ -1685,8 +1755,13 @@ func dev_reset_progress() -> void:
 ## catalogue with it. Nothing is marked as finished and nothing is written into
 ## the owned set -- see `dev_unlock_all` for why -- so `dev_reset_progress()` is
 ## the way back off.
+##
+## The double-gems modifier is the one exception, and it IS written down. There
+## is no store in the build to buy it from, so without this there is no way to
+## see the thing working at all; and it is on the same way back off as the rest.
 func dev_unlock_everything() -> void:
 	dev_unlock_all = true
+	grant_double_gems()
 
 	# The marble picker and the shop shelf are both built from `owns_skin()`,
 	# and neither is listening for a world opening -- so the skins have to say

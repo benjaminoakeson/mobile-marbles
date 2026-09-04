@@ -232,6 +232,10 @@ var _is_orbiting := false
 ## resumed.
 var _is_fallout := false
 
+## Which way round the fallout shot is looking, kept from the last tick the ball
+## was far enough off the vertical to say -- see [method _watch_the_fall].
+var _fall_yaw := 0.0
+
 ## Set while the opening shot is running, and never set again once it has landed.
 var _is_intro := false
 
@@ -306,6 +310,17 @@ var _settled_climb := 0.0
 ## `sky_rotation` lives on the Environment, and there is no sense in every level
 ## carrying its own copy of a sky shader.
 var _environment: Environment = null
+
+## The lean the sky has to undo: what this physics tick asked for, and what the
+## one before it did.
+##
+## Two of each because the sky is turned on every DRAWN frame while the lean is
+## only decided on a tick, and the camera the sky has to match sits between the
+## pair. See [method _process].
+var _sky_pitch := 0.0
+var _sky_roll := 0.0
+var _sky_pitch_prev := 0.0
+var _sky_roll_prev := 0.0
 
 @onready var _spring: SpringArm3D = $CameraSpring
 
@@ -528,6 +543,16 @@ func start_fallout_watch() -> void:
 	_set_manual_yaw(false)
 	_recentring = false
 	_camera.rotation.z = 0.0
+
+	# The sky is straightened in the same frame as the cut -- BOTH halves of it.
+	# `_lean_the_sky()` keeps the lean from the tick before as well as this one,
+	# because the drawn sky is blended between the two by the interpolation
+	# fraction. Called once, it leaves the old lean in the "before" slot with
+	# nothing ever moving it on, and every drawn frame from then on blends from
+	# that stale tilt towards zero by a fraction that runs 0 to 1 and snaps back
+	# on every tick: the whole backdrop rocking at tick rate for as long as the
+	# fall lasts, whenever the thumb was on the stick as the ball went over.
+	_lean_the_sky(0.0, 0.0)
 	_lean_the_sky(0.0, 0.0)
 
 	# Framed first, the way the chase would have framed it: the rig on the ball,
@@ -535,14 +560,16 @@ func start_fallout_watch() -> void:
 	# exactly where the shot wants to stand.
 	global_rotation.y = wrapf(global_rotation.y + deg_to_rad(fallout_yaw_degrees), -PI, PI)
 	global_position = _target.global_position
-	_spring.spring_length = fallout_distance
 	_spring.rotation.x = deg_to_rad(fallout_pitch_degrees)
-	_spring.force_update_transform()
+
+	# Where the camera WOULD stand at arm's length, worked out from the arm
+	# rather than read off the camera: the arm only places the camera on its own
+	# physics tick, so right now the camera is still wherever the chase left it.
+	var eye := _spring.global_transform * Vector3(0.0, 0.0, fallout_distance)
 
 	# And then the arm is taken away and the rig is left standing where the
 	# CAMERA was. From here the rig IS the camera: turning it turns the shot on
 	# the spot instead of swinging it round a pivot that is no longer there.
-	var eye := _camera.global_position
 	_spring.spring_length = 0.0
 	_spring.rotation.x = 0.0
 	global_position = eye
@@ -550,6 +577,11 @@ func start_fallout_watch() -> void:
 	_settled_climb = 0.0
 
 	_watch_the_fall()
+
+	# A cut, so the frame it lands on is not blended with the chase that came
+	# before it. Without this the camera is drawn sweeping from behind the ball
+	# to the new stand over the first frame.
+	reset_physics_interpolation()
 
 
 func start_victory_orbit() -> void:
@@ -605,9 +637,12 @@ func _set_manual_yaw(on: bool) -> void:
 ## the camera's own position by now, so this is the camera turning on the spot --
 ## no part of it travels.
 ##
-## The up vector is swapped out when the ball is almost straight down, which it
-## works towards as it falls: with the two in line there is no way to tell which
-## way up the shot should be, and asking for one is an error rather than a guess.
+## Turned as a yaw and a pitch, never with `looking_at`: the ball works towards
+## straight below the camera as it falls, and a look-at with its up vector in
+## line with where it is looking has no roll to choose, so it snaps a quarter
+## turn and can flicker between the two answers while the ball drifts about the
+## line. A turntable has no such moment -- the yaw simply holds its last good
+## reading once the ball is too nearly underneath to give a fresh one.
 func _watch_the_fall() -> void:
 	if _target == null:
 		return
@@ -616,10 +651,12 @@ func _watch_the_fall() -> void:
 	if to_ball.length_squared() < 0.0001:
 		return
 
-	var facing := to_ball.normalized()
-	var up := Vector3.UP if absf(facing.dot(Vector3.UP)) < 0.999 else Vector3.FORWARD
+	var flat := Vector3(to_ball.x, 0.0, to_ball.z)
+	if flat.length() > 0.05:
+		_fall_yaw = atan2(-flat.x, -flat.z)
+	var pitch := atan2(to_ball.y, flat.length())
 
-	global_basis = Basis.looking_at(facing, up)
+	global_basis = Basis.from_euler(Vector3(pitch, _fall_yaw, 0.0))
 
 	# The yaw the rest of the rig reads is now whatever the turn left behind, so
 	# nothing downstream measures its next move against a heading from before the
@@ -671,28 +708,59 @@ func _hold_the_sky_still() -> void:
 			return
 
 
-## Turns the sky back by the shot's own tilt, so on screen it does not move.
+## Notes the lean the sky has to undo. Turning it is [method _process]'s job.
 ##
 ## The two angles are the illusion's share and nothing else: the pitch the thumb
-## added on top of the resting shot, and the roll. Both are undone about the
-## CAMERA's axes and then expressed in world ones, because that is the frame the
-## sky is read in.
+## added on top of the resting shot, and the roll. Recorded rather than acted on
+## because a tick is not when the sky is needed -- see [method _process].
 func _lean_the_sky(pitch: float, roll: float) -> void:
+	_sky_pitch_prev = _sky_pitch
+	_sky_roll_prev = _sky_roll
+	_sky_pitch = pitch
+	_sky_roll = roll
+
+
+## Turns the sky back out from under the shot's own tilt, so on screen it does
+## not move.
+##
+## Once per DRAWN frame, and not with the rest of the shot on the physics tick,
+## because THE CAMERA IS INTERPOLATED. What gets drawn is a blend of where the
+## arm was last tick and where it is now, and on almost every frame it is neither
+## -- so a sky turned to match the tick is turned to match a camera that is not
+## on screen. The gap is worth up to four degrees on a flick of the stick and a
+## degree and a half held all the way round a circle of the thumb, which reads as
+## a horizon shivering against the motion rather than standing still. A
+## background that will not hold still while the world leans is the whole of what
+## makes people ill, so the sky is worked out against the camera actually being
+## drawn, with the lean blended by the same fraction the engine blends the arm
+## by. Get this on the tick instead and the illusion is off by a few degrees for
+## as long as the thumb is moving.
+func _process(_delta: float) -> void:
 	if _environment == null:
 		return
 
-	# What the camera would be pointing if the thumb had never touched it. Undoing
-	# the roll first and then the pitch is the order they were applied in, run
-	# backwards -- the arm pitches and the camera rolls inside it.
-	var actual := _camera.global_transform.basis
-	var clean := actual * Basis(Vector3.BACK, -roll) * Basis(Vector3.RIGHT, -pitch)
+	var along := Engine.get_physics_interpolation_fraction() \
+			if _camera.is_physics_interpolated_and_enabled() else 1.0
+	var pitch := lerpf(_sky_pitch_prev, _sky_pitch, along)
+	var roll := lerpf(_sky_roll_prev, _sky_roll, along)
 
-	# The turn that carries the clean view back onto the real one. Godot reads the
-	# sky by turning the eye direction by the INVERSE of `sky_rotation`, so the
-	# basis handed over is the one that maps clean onto actual, not the other way
-	# about. Get that backwards and the sky swings the opposite way to the shot
-	# instead of holding still, which doubles the tilt rather than cancelling it.
-	_environment.sky_rotation = (actual * clean.inverse()).get_euler()
+	# The turn that carries the CLEAN view -- what the camera would be pointing
+	# if the thumb had never touched it -- back onto the one being drawn. Godot
+	# reads the sky by turning the eye direction by the INVERSE of
+	# `sky_rotation`, so the basis handed over is the one that maps clean onto
+	# actual, not the other way about. Get that backwards and the sky swings the
+	# opposite way to the shot instead of holding still, which doubles the tilt
+	# rather than cancelling it.
+	#
+	# Both are undone about the CAMERA's axes and then expressed in world ones,
+	# because that is the frame the sky is read in. Pitch outside roll is the
+	# order they were applied in -- the arm pitches and the camera rolls inside
+	# it -- run backwards.
+	var actual := _camera.get_global_transform_interpolated().basis
+	_environment.sky_rotation = (actual
+			* Basis(Vector3.RIGHT, pitch)
+			* Basis(Vector3.BACK, roll)
+			* actual.inverse()).get_euler()
 
 
 func _physics_process(delta: float) -> void:
@@ -703,6 +771,9 @@ func _physics_process(delta: float) -> void:
 	# shot moves: see `start_fallout_watch()`.
 	if _is_fallout:
 		_watch_the_fall()
+		# Kept in step every tick, the way the chase and the intro keep it, so the
+		# drawn sky always blends between two agreeing readings.
+		_lean_the_sky(0.0, 0.0)
 		return
 
 	# Looking the level over before any of it starts. Nothing below this runs:
@@ -724,6 +795,11 @@ func _physics_process(delta: float) -> void:
 		# the same framing every time.
 		_spring.rotation.x = lerp(_spring.rotation.x, _rest_pitch, pos_weight)
 		_camera.rotation.z = lerp(_camera.rotation.z, 0.0, pos_weight)
+
+		# The sky comes back with the shot. Left out, the tilt the last roll was
+		# holding stays undone against a camera that has straightened up, and the
+		# horizon sits crooked for the whole of the victory turn.
+		_lean_the_sky(_spring.rotation.x - _rest_pitch, _camera.rotation.z)
 		return
 
 	# 2. Figure out which way the ball is moving. The two axes of the shot want

@@ -1,6 +1,6 @@
 [gd_scene format=4 uid="uid://da611a4t07o1f"]
 
-[ext_resource type="Environment" uid="uid://bdesertenv001" path="res://environments/desert.tres" id="1_nj53l"]
+[ext_resource type="PackedScene" path="res://environments/world_2.tscn" id="1_nj53l"]
 [ext_resource type="PackedScene" path="res://scenes/thumbstick.tscn" id="2_by60g"]
 [ext_resource type="PackedScene" path="res://scenes/UI/hud.tscn" id="3_c53gc"]
 [ext_resource type="PackedScene" uid="uid://brgmkpo6nfamg" path="res://scenes/camera.tscn" id="4_ldxcl"]
@@ -47,12 +47,11 @@ _surfaces = [{
 }]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_x1k1j"]
-size = Vector3(101, 88, 100)
+size = Vector3(39, 71, 84)
 
 [node name="1-4" type="Node3D" unique_id=1614486416]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1291218271]
-environment = ExtResource("1_nj53l")
+[node name="WorldEnvironment" parent="." unique_id=529110042 instance=ExtResource("1_nj53l")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=821745350]
 transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
@@ -72,7 +71,7 @@ offset_bottom = 385.0
 [node name="Camera" parent="." unique_id=499086097 instance=ExtResource("4_ldxcl")]
 
 [node name="Player" parent="." unique_id=70575149 instance=ExtResource("5_w4upr")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -47)
 
 [node name="Level" type="StaticBody3D" parent="." unique_id=167280447]
 script = ExtResource("6_qdbxj")
@@ -126,7 +125,6 @@ script = ExtResource("10_t5lp1")
 spin = 1
 spin_degrees = 270.0
 spin_axis = Vector3(0, 0, 1)
-carries_riders = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Spinny1" unique_id=1338584177]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 9, 0)
@@ -142,7 +140,6 @@ script = ExtResource("10_t5lp1")
 spin = 1
 spin_degrees = 300.0
 spin_axis = Vector3(0, 0, 1)
-carries_riders = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Spinny2" unique_id=1794934105]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 9, 0)
@@ -158,7 +155,6 @@ script = ExtResource("10_t5lp1")
 spin = 1
 spin_degrees = 150.0
 spin_axis = Vector3(0, 0, 1)
-carries_riders = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Spinny3" unique_id=1583914577]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 9, 0)
@@ -174,7 +170,6 @@ script = ExtResource("10_t5lp1")
 spin = 1
 spin_degrees = 360.0
 spin_axis = Vector3(0, 0, 1)
-carries_riders = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Spinny4" unique_id=724292840]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 9, 0)
@@ -190,7 +185,6 @@ script = ExtResource("10_t5lp1")
 spin = 1
 spin_degrees = 320.0
 spin_axis = Vector3(0, 0, 1)
-carries_riders = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Level/Spinny5" unique_id=737938210]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 9, 0)
@@ -274,5 +268,5 @@ collision_mask = 4
 script = ExtResource("13_v2v1y")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="AliveZone" unique_id=697321873]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -31.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.5, -23.5)
 shape = SubResource("BoxShape3D_x1k1j")

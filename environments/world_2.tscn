@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Environment" uid="uid://chmj2g4y17j8u" path="res://environments/desert_chasm.tres" id="1_ds2wk"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" unique_id=529110042]
+environment = ExtResource("1_ds2wk")

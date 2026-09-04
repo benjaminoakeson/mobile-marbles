@@ -1,6 +1,6 @@
 [gd_scene format=4 uid="uid://c5f28wxpwr4pu"]
 
-[ext_resource type="Environment" uid="uid://bdesertenv001" path="res://environments/desert.tres" id="1_m4sdd"]
+[ext_resource type="PackedScene" path="res://environments/world_2.tscn" id="1_m4sdd"]
 [ext_resource type="PackedScene" path="res://scenes/thumbstick.tscn" id="2_anehr"]
 [ext_resource type="PackedScene" path="res://scenes/UI/hud.tscn" id="3_uopxb"]
 [ext_resource type="PackedScene" uid="uid://brgmkpo6nfamg" path="res://scenes/camera.tscn" id="4_8tnyu"]
@@ -76,12 +76,11 @@ cornering = 1
 metadata/_custom_type_script = "uid://2775aui7o25x"
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_x1k1j"]
-size = Vector3(101, 88, 124)
+size = Vector3(65, 54, 64)
 
 [node name="1-2" type="Node3D" unique_id=1614486416]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1291218271]
-environment = ExtResource("1_m4sdd")
+[node name="WorldEnvironment" parent="." unique_id=529110042 instance=ExtResource("1_m4sdd")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=821745350]
 transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
@@ -305,5 +304,5 @@ collision_mask = 4
 script = ExtResource("12_ydjvu")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="AliveZone" unique_id=697321873]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 4.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 21.5, 0)
 shape = SubResource("BoxShape3D_x1k1j")

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bij7ji8s1j2nq"]
+
+[ext_resource type="Environment" uid="uid://do5oncjtjfahd" path="res://environments/valley.tres" id="1_uk1k7"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" unique_id=416320005]
+environment = ExtResource("1_uk1k7")

@@ -1,6 +1,6 @@
 [gd_scene format=4 uid="uid://dhe7tb54d4b2f"]
 
-[ext_resource type="Environment" uid="uid://doistbak7qjoo" path="res://environments/forest.tres" id="1_ap1dg"]
+[ext_resource type="PackedScene" uid="uid://bij7ji8s1j2nq" path="res://environments/world_1.tscn" id="1_ap1dg"]
 [ext_resource type="PackedScene" uid="uid://odyo2cun2tc" path="res://scenes/player.tscn" id="2_g8dam"]
 [ext_resource type="PackedScene" uid="uid://brgmkpo6nfamg" path="res://scenes/camera.tscn" id="3_ut66c"]
 [ext_resource type="PackedScene" path="res://scenes/thumbstick.tscn" id="4_mdv52"]
@@ -42,8 +42,7 @@ size = Vector3(68, 34, 99)
 
 [node name="t-2" type="Node3D" unique_id=924034932]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1148341025]
-environment = ExtResource("1_ap1dg")
+[node name="WorldEnvironment" parent="." unique_id=416320005 instance=ExtResource("1_ap1dg")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2013135875]
 transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)

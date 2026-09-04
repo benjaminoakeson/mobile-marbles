@@ -48,11 +48,13 @@ const CHAPTERS := [
 ## a list shorter than `CHAPTERS`, falls back to the difficulty itself, so a
 ## chapter is never nameless while a world is still being written.
 const CHAPTER_NAMES := {
-	# World 2 has one chapter so far. A world with no entry, or a list shorter
-	# than the chapters it has built, falls back to the difficulty -- so this can
-	# stay one name long until the next chapter turns up.
+	# A world with no entry, or a list shorter than the chapters it has built,
+	# falls back to the difficulty -- so this only has to be as long as the
+	# chapters that exist, and grows as they turn up.
 	2: [
-		"Temple Entrance",
+		"Dust Bowl",
+		"Dust In My Eyes",
+		"Eat My Dust",
 	],
 	1: [
 		"Simple Beginnings",
@@ -100,6 +102,20 @@ const CATALOG := {
 			"res://scenes/levels/world_2/chapter1/1_4.tscn",
 			"res://scenes/levels/world_2/chapter1/1_5.tscn",
 		],
+		"Easy": [
+			"res://scenes/levels/world_2/chapter2/1-1.tscn",
+			"res://scenes/levels/world_2/chapter2/1-2.tscn",
+			"res://scenes/levels/world_2/chapter2/1-3.tscn",
+			"res://scenes/levels/world_2/chapter2/1-4.tscn",
+			"res://scenes/levels/world_2/chapter2/1-5.tscn",
+		],
+		"Medium": [
+			"res://scenes/levels/world_2/chapter3/1-1.tscn",
+			"res://scenes/levels/world_2/chapter3/1-2.tscn",
+			"res://scenes/levels/world_2/chapter3/1-3.tscn",
+			"res://scenes/levels/world_2/chapter3/1-4.tscn",
+			"res://scenes/levels/world_2/chapter3/1-5.tscn",
+		],
 	},
 }
 
@@ -134,6 +150,21 @@ const NAMES := {
 	"res://scenes/levels/world_2/chapter1/1_3.tscn": "Pyramid Towers",
 	"res://scenes/levels/world_2/chapter1/1_4.tscn": "Watch Out",
 	"res://scenes/levels/world_2/chapter1/1_5.tscn": "Curvy Path",
+	"res://scenes/levels/world_2/chapter2/1-1.tscn": "The Floor Is Moving",
+	"res://scenes/levels/world_2/chapter2/1-2.tscn": "Triangle Flip",
+	"res://scenes/levels/world_2/chapter2/1-3.tscn": "Smash Some Glass",
+	"res://scenes/levels/world_2/chapter2/1-4.tscn": "Desert Rollercoaster",
+	"res://scenes/levels/world_2/chapter2/1-5.tscn": "3-2-1 Liftoff",
+
+	# World 2, third set. Each is built around one thing and named for it: a
+	# course that simply stops being wide, ferries and sweeping arms, wind across
+	# the walkways, a floor that will not hold a ball that stops, and a goal that
+	# comes round to the player rather than waiting to be reached.
+	"res://scenes/levels/world_2/chapter3/1-1.tscn": "Narrow Margins",
+	"res://scenes/levels/world_2/chapter3/1-2.tscn": "Roundabout",
+	"res://scenes/levels/world_2/chapter3/1-3.tscn": "Crosswinds",
+	"res://scenes/levels/world_2/chapter3/1-4.tscn": "Glass Ceiling",
+	"res://scenes/levels/world_2/chapter3/1-5.tscn": "Catch The Ring",
 
 	# Names waiting on levels that are not built yet. Kept here so they are not
 	# lost; move one up into the list above as its level appears.

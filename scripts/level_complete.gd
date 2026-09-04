@@ -12,7 +12,7 @@ extends CanvasLayer
 ## ring's business: this reads `GameState.last_award` and shows whatever is in it.
 ##
 ## The crowns above the score are the level's five, in their own colours. Any won
-## for the first time this run spiral into place one at a time, each laying the
+## for the first time this run pop into place one at a time, each laying the
 ## words for what it was won for across itself in its own colour -- see
 ## `crowns.gd`.
 ##
@@ -29,16 +29,27 @@ extends CanvasLayer
 
 @export_group("Crowns")
 
-## How a crown arrives: bigger than its slot, out at the end of a radius, and
-## wound several turns round from square. All three run out together over the
-## landing, so it spirals in, shrinks and straightens as one movement.
-@export var crown_punch := 2.2
-@export var crown_spiral_radius := 210.0
-@export var crown_spiral_turns := 1.35
+## How a crown arrives: it pops straight into its slot, swelling past the size it
+## is going to end up before easing back down onto it.
+##
+## The badge never leaves the slot -- there is no flight in and nothing to track
+## across the panel. A crown appears where it belongs and the swell is the whole
+## of the arrival, which is what makes five of them landing in a row read as five
+## crowns rather than five things flying about.
+##
+## This is how far past its resting size it swells at the peak, as a multiple of
+## it. Around one and a half is a pop; much more and the badge is briefly the
+## size of its neighbours' slots as well as its own.
+@export var crown_punch := 1.45
 
-## How long that landing takes, and how long the panel waits on it before
-## bringing in the next crown.
-@export var crown_drop := 0.42
+## How long the swell takes, and how long the ease back down onto the slot takes.
+##
+## The swell is the shorter of the two on purpose: out fast and back slow is what
+## reads as a pop, where the two halves at the same pace read as a throb.
+@export var crown_expand := 0.16
+@export var crown_settle := 0.26
+
+## How long the panel waits on a landed crown before bringing in the next one.
 @export var crown_hold := 0.9
 
 ## How the words lie across their crown. Slanted so that several of them can be
@@ -48,7 +59,7 @@ extends CanvasLayer
 
 ## How long the words take to fade up as their crown lands.
 ##
-## Slow, and slowest at the start: the crown spirals in hard and fast, and words
+## Slow, and slowest at the start: the crown pops in hard and fast, and words
 ## that snapped on with it would be a second thing happening in the same instant.
 ## They surface under it instead, and are still arriving after it has landed.
 @export var cheer_fade_in := 0.75
@@ -344,13 +355,14 @@ func _on_level_rebanked() -> void:
 	_stamp_record_if_won()
 
 
-## One crown arriving: wound out and round, spiralling into its slot, with its
-## words fading in over the top and out again a beat later.
+## One crown arriving: popped into its slot out of nothing, swelling past its
+## resting size and easing back onto it, with its words fading in over the top
+## and out again a beat later.
 ##
-## The spiral is driven from a single 0-to-1 run rather than as three separate
-## tweens on position, rotation and scale. They are one movement -- the angle
-## that swings the badge round is the same angle it is turned by -- and three
-## tweens racing each other could never guarantee that.
+## Two tweens on the one property, back to back, rather than one run driving a
+## shape: the swell and the settle are separately timed and separately eased --
+## that difference is the pop -- and saying so as two tweens is what lets each
+## keep its own pace.
 ##
 ## The words are faded out AFTER this returns rather than waited on, so the next
 ## crown is already on its way in while the last one's line clears.
@@ -363,13 +375,14 @@ func _land_crown(crown: int) -> void:
 	# already in the colour this puts it in.
 	badge.modulate = Crowns.colour_for(crown)
 
+	# Swelling about the middle rather than the corner, so the badge grows into
+	# its slot evenly instead of shouldering out of one side of it.
 	badge.pivot_offset = badge.size * 0.5
-	_spiral(badge, 0.0)
+	badge.position = Vector2.ZERO
+	badge.rotation = 0.0
+	badge.scale = Vector2.ZERO
 	badge.show()
 
-	# Told where the crown is GOING, not where it is: the badge is out at the end
-	# of the spiral by now, and centring the line on it would fling the words
-	# across the panel with it.
 	_say(crown, badge.get_parent() as Control)
 	Audio.play(Audio.EXTRA_LIFE)
 
@@ -378,26 +391,13 @@ func _land_crown(crown: int) -> void:
 	# tween's `finished` never fires -- the crown after this one would never
 	# land -- and an interval on the end of the chain says the same thing without
 	# leaving the mechanism that works.
-	var land := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	land.tween_method(func(along: float) -> void: _spiral(badge, along),
-			0.0, 1.0, crown_drop / _speed)
+	var land := create_tween().set_trans(Tween.TRANS_CUBIC)
+	land.tween_property(badge, "scale", Vector2.ONE * crown_punch,
+			crown_expand / _speed).set_ease(Tween.EASE_OUT)
+	land.tween_property(badge, "scale", Vector2.ONE,
+			crown_settle / _speed).set_ease(Tween.EASE_IN_OUT)
 	land.chain().tween_interval(crown_hold / _speed)
 	await land.finished
-
-
-## Where a crown is when it is `along` of the way in: 0 is wound right out, 1 is
-## home, square and the size of its slot.
-##
-## The angle is what does the work. It runs down to nothing, and it is used three
-## times over -- to swing the badge round its slot, to set how far out it is
-## swung, and to turn the badge itself -- so all of it arrives at once.
-func _spiral(badge: Control, along: float) -> void:
-	var left := 1.0 - along
-	var angle := crown_spiral_turns * TAU * left
-
-	badge.position = Vector2.from_angle(angle) * crown_spiral_radius * left
-	badge.rotation = angle
-	badge.scale = Vector2.ONE * lerpf(crown_punch, 1.0, along)
 
 
 ## Lays this crown's words across it, in the crown's own colour, and fades them

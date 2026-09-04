@@ -39,9 +39,18 @@ extends Control
 ## bottom corner -- would otherwise be swallowed whole and never see the press.
 const BLOCKER_GROUP := "blocks_thumbstick"
 
-@export var knob_travel := 250.0 
-@export var knob_radius := 90.0
-@export var dead_zone := 0.1
+@export var knob_travel := 375.0
+@export var knob_radius := 135.0
+## How far the thumb must be from the middle before the stick reports anything,
+## in units of its travel. Zero, so the stick answers the very first pixel of a
+## push: the base lands under the thumb wherever it presses, so there is no
+## slop between finger and stick for a dead zone to swallow -- all one would do
+## here is make the smallest, most careful steering inputs the ones the stick
+## refuses to hear.
+##
+## The middle itself is still the middle: a thumb resting exactly on the base
+## reports nothing and gives up its lane, so the next push picks fresh.
+@export var dead_zone := 0.0
 
 ## How many lanes the gate has WHEN IT IS IN. Eight is the arcade one -- the
 ## squares and the diagonals. Four makes it a d-pad. Whether the gate is in at
@@ -189,7 +198,7 @@ func _move_knob(pos: Vector2) -> void:
 func _read_thumb() -> void:
 	var strength := _thumb.length()
 
-	if strength < dead_zone:
+	if strength <= dead_zone:
 		# Back in the middle, so the next push picks its lane fresh rather than
 		# favouring whichever one the last one ended in.
 		#
@@ -301,8 +310,9 @@ func _draw() -> void:
 					centre + _lane_on_screen(i) * knob_travel,
 					Color(1, 1, 1, 0.45 if lit else 0.10), 2.0, true)
 
-		draw_arc(centre, knob_travel * dead_zone, 0.0, TAU, 24,
-				Color(1, 1, 1, 0.18), 2.0, true)
+		if dead_zone > 0.0:
+			draw_arc(centre, knob_travel * dead_zone, 0.0, TAU, 24,
+					Color(1, 1, 1, 0.18), 2.0, true)
 	else:
 		draw_circle(centre, knob_travel, Color(1, 1, 1, 0.08))
 		draw_arc(centre, knob_travel, 0.0, TAU, 48, Color(1, 1, 1, 0.30), 3.0, true)

@@ -54,6 +54,10 @@ pointing/emulate_touch_from_mouse=true
 [physics]
 
 3d/physics_engine="Jolt Physics"
+jolt_physics_3d/simulation/penetration_slop=0.005
+jolt_physics_3d/simulation/speculative_contact_distance=0.02
+jolt_physics_3d/simulation/baumgarte_stabilization_factor=0.2
+jolt_physics_3d/simulation/bounce_velocity_threshold=2.5
 common/physics_interpolation=true
 
 [rendering]

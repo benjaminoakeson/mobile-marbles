@@ -68,6 +68,28 @@ const DEBRIS_MASK := 9    # Static | Debris
 ## ball that has already settled against a pane is not read as arriving at it.
 const CONTACT_SLOP := 0.02
 
+## The most places along one tick's travel the sweep will look. A ceiling on the
+## work rather than a tuning knob: at a sixtieth of a second, reaching it means
+## a pane crossing tens of metres a tick, which nothing in the game does.
+const MAX_SWEEP_STEPS := 64
+
+## How much further than its own speed accounts for the ball may have moved in a
+## tick and still be treated as having TRAVELLED there.
+##
+## Not 1.0, because a tick that ends in a bounce leaves the ball reporting a
+## speed with nothing to do with the ground it covered getting there. Generous,
+## because what this separates is travel from TELEPORTING: a ball put back on its
+## spawn point after a fall has crossed half a level between one tick and the
+## next, and the step it appears to have taken can pass through any pane in that
+## level. Only the backstop in [method _blow_coming] needs this -- looking ahead
+## reads a velocity, which no teleport has.
+const TELEPORT_ALLOWANCE := 3.0
+
+## How fast a shard has to be leaving before it is worth sweeping its path, in
+## metres a second. Set at roughly a shard's own width per physics tick, which is
+## the speed above which the ordinary solver can step it clean through a floor.
+const CARRY_NEEDS_CCD := 6.0
+
 ## This pane's own copy of [member surface_material], tinted to [member colour].
 ## Built on demand and thrown away whenever the material is swapped, so a pane
 ## that is never recoloured never makes one.
@@ -256,6 +278,18 @@ var _tinted: Material = null
 @export var burst_off_face := 1.6
 @export var burst_spin := 11.0
 
+## What share of the pane's OWN speed the shards leave carrying, for a pane that
+## is going somewhere. 1.0 is the honest answer -- glass does not stop dead the
+## instant it breaks -- and it is the default because a goal ring swinging
+## through the player wants its glass thrown down the level after it, not dropped
+## on the spot.
+##
+## The knob is here because honest is fast. World 2's ring comes round at fifty
+## metres a second, so its glass is a long way off screen inside a second; wind
+## this down if the smash wants longer to be looked at. Nothing bolted to a floor
+## reads it either way -- there is no speed to take a share of.
+@export_range(0.0, 1.0) var debris_carry := 1.0
+
 ## Kilograms a cubic metre. Nothing but the shards themselves feels this -- they
 ## meet the stage, which is immovable, and each other, where only the ratio
 ## between them counts. It is here so a big shard shoulders a sliver aside rather
@@ -297,6 +331,48 @@ var _leaned := 0.0
 ## rather than waiting to be told that it was.
 var _ball_radius := 0.5
 
+## Where the pane stood at the end of the last physics tick.
+##
+## A pane bolted to something that MOVES does its own closing, and until this
+## existed nothing here could see that. Everything below used to be measured off
+## `_ball.linear_velocity` alone, against a pane assumed to be standing still --
+## so a ball sitting quietly in front of the goal ring on world 2's spinner
+## reported no approach at all, while the ring came round at fifty metres a
+## second and swept straight through it. Read against `global_transform`, this
+## is what tells the pane's share of the closing from the ball's.
+var _was := Transform3D.IDENTITY
+
+## Whether there is a tick behind `_was` yet. Without it the first tick reads the
+## pane as having arrived from the world origin at enormous speed.
+var _has_was := false
+
+## Where the ball was at the end of the last physics tick, and whether there has
+## been one. The other half of the step just taken; see [method _blow_coming].
+var _ball_was := Vector3.ZERO
+var _has_ball_was := false
+
+## The step the pane just made, as the transform that carried it there, and how
+## long it took. What the shards are handed when the pane breaks -- see
+## [method _pane_velocity_at]. Identity and zero for a pane going nowhere, which
+## is every pane bolted to a floor.
+var _moved := Transform3D.IDENTITY
+var _moved_over := 0.0
+
+## How fast the pane itself was travelling when it broke, in metres a second.
+##
+## Zero for every pane bolted to a floor, which is to say for every break where
+## the BALL did the arriving. What reads it is the goal ring: a ball that came to
+## the goal is owed a way out of the rim, and a ball the goal came to is owed
+## nothing at all. See `goal_ring.gd::_ball_did_the_arriving()`.
+var _broke_at_speed := 0.0
+
+## Where the blow that `_blow_coming` found lands, in world space.
+##
+## Kept here rather than returned alongside the blow because the sweep is the
+## only thing that knows it: the strike happens somewhere PART WAY through the
+## step, which is neither where the ball is now nor where it ends up.
+var _blow_at := Vector3.ZERO
+
 ## Set once a run at the pane has been answered, and cleared when the ball turns
 ## away from it. One approach is one blow.
 ##
@@ -336,6 +412,8 @@ func _ready() -> void:
 
 	_play_gravity = _ball.gravity_scale
 	_ball_radius = _measure_ball()
+	_was = global_transform
+	_has_was = true
 
 	# Deferred, because a pane is a child of the very body it is looking for --
 	# the goal ring's glass sits two levels inside it -- and Godot readies
@@ -349,12 +427,25 @@ func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint() or _ball == null:
 		return
 
+	# Where the pane has just come from, taken before anything can return: a
+	# pane that skips a tick of this -- pinned on the opening drop, say -- must
+	# not come back and read that whole gap as one enormous step.
+	var came_from := _was if _has_was else global_transform
+	var ball_came_from := _ball_was
+	var had_ball := _has_ball_was
+	_was = global_transform
+	_has_was = true
+	_ball_was = _ball.global_position
+	_has_ball_was = true
+	_moved = global_transform * came_from.affine_inverse()
+	_moved_over = delta
+
 	# Nothing left to break, or the ball is pinned on the level's opening drop
 	# and has not started playing yet.
 	if _broken or _ball.freeze:
 		return
 
-	var blow := _blow_coming(delta)
+	var blow := _blow_coming(delta, came_from, ball_came_from, had_ball)
 
 	if blow <= 0.0:
 		# Away from the pane, across it, or nowhere near it. Whatever it does
@@ -365,7 +456,7 @@ func _physics_process(delta: float) -> void:
 		var threshold := break_impulse * (cracked_strength if _cracked else 1.0)
 
 		if blow >= threshold:
-			_shatter(_ball.global_position)
+			_shatter(_blow_at)
 
 			# The whole cost of going through, and the only thing done to the
 			# ball. The pane is out of the world before the step that would have
@@ -381,7 +472,7 @@ func _physics_process(delta: float) -> void:
 			# bounces the ball off it in its own time -- off the real angle it
 			# struck at, with the pane's own physics material. Nothing is added
 			# on top of that.
-			_craze(_ball.global_position)
+			_craze(_blow_at)
 			_hit_answered = true
 
 	# Every tick, whatever the speed said. A ball shouldered against the glass is
@@ -405,26 +496,133 @@ func _physics_process(delta: float) -> void:
 ## to solve, and the ball never touches the glass at all.
 ##
 ## Only the speed into the face counts. See `break_impulse`.
-func _blow_coming(delta: float) -> float:
+##
+## Measured in the PANE'S OWN FRAME, where the pane is the thing standing still
+## and the ball does all the moving. A pane bolted to the floor is the same
+## question either way -- its frame is not going anywhere -- but a pane bolted to
+## something that moves is not: the goal ring on world 2's spinner arrives face
+## first at fifty metres a second, and against a ball sitting quietly in front of
+## it the ball's own velocity says nothing whatever is happening. In the pane's
+## frame that ball is doing fifty metres a second at the glass, which is the
+## truth of it -- being hit by a ring is the same as running into one.
+func _blow_coming(delta: float, came_from: Transform3D, ball_came_from: Vector3,
+		had_ball: bool) -> float:
+	if delta <= 0.0:
+		return 0.0
+
+	# The step to come, guessed from the step just made. Read first and read
+	# AHEAD, because a pane that decides here is out of the world before the
+	# solver has anything to solve, and the ball goes through without ever
+	# touching the glass. See the note on this function.
+	var ahead := _crossing(global_transform, _step_on(came_from),
+			_ball.global_position,
+			_ball.global_position + _ball.linear_velocity * delta, delta)
+	if ahead > 0.0:
+		return ahead
+
+	# And the step just TAKEN, as a backstop.
+	#
+	# Looking ahead means guessing what the pane will do next out of what it did
+	# last, and a pane that has only just started moving -- a spinner let go the
+	# moment the clock starts -- has no last to guess from. That one tick is the
+	# single gap in the look-ahead, so the tick after it checks the ground that
+	# was actually covered, where there is nothing left to guess.
+	#
+	# A blow found here is a tick late and the solver has already had its say, so
+	# it is the fallback and not the reading. What it buys is that the answer no
+	# longer depends on the guess being right: every tick of travel is looked at
+	# either before it happens or after, and a pane cannot cross the ball in one
+	# without this seeing it.
+	if not had_ball:
+		return 0.0
+
+	# Unless the ball did not travel that step at all. A respawn puts it back on
+	# its spawn point between two ticks, and read as movement that is a stride
+	# across the whole level which sweeps every pane in it -- so a ball that fell
+	# off would smash the goal on its way back to the start.
+	var stepped := ball_came_from.distance_to(_ball.global_position)
+	if stepped > _ball.linear_velocity.length() * delta * TELEPORT_ALLOWANCE \
+			+ _ball_radius:
+		return 0.0
+
+	return _crossing(came_from, global_transform, ball_came_from,
+			_ball.global_position, delta)
+
+
+## The blow a single step works out to, or zero if the ball is not caught in it.
+##
+## The step is given as the pane's two poses and the ball's two positions, which
+## is everything a frame of relative motion is. Whether it is the step to come or
+## the step just gone is the caller's business.
+func _crossing(from_pose: Transform3D, to_pose: Transform3D,
+		ball_from: Vector3, ball_to: Vector3, delta: float) -> float:
 	var thin := _thin_axis()
-	var here := to_local(_ball.global_position)
+	var here := from_pose.affine_inverse() * ball_from
+	var lands := to_pose.affine_inverse() * ball_to
 
-	# The face on the ball's side of the pane, so a floor is hit from above and
+	# Which side of the pane the ball starts on, so a floor is hit from above and
 	# from below by the same arithmetic.
-	var face := _face_normal() * (1.0 if here[thin] >= 0.0 else -1.0)
+	var side := 1.0 if here[thin] >= 0.0 else -1.0
 
-	var closing := -_ball.linear_velocity.dot(face)
+	var closing := (here[thin] - lands[thin]) * side / delta
 	if closing <= 0.0:
 		return 0.0
 
-	if not _over_face(here, thin):
-		return 0.0
+	var reach := size[thin] * 0.5 + _ball_radius
 
-	# Still short of the pane once this step has run. Nothing yet.
-	if _gap_to_face(here, thin) > closing * delta + CONTACT_SLOP:
-		return 0.0
+	# Walked ACROSS the step rather than read at its two ends. This is the strict
+	# part: a pane coming round on a spinner reaches the ball and is clean past
+	# it inside one tick, and the ends of that tick show the ball in front of the
+	# glass and then behind it with nothing in between -- which is precisely the
+	# ring going through the player. See [method _sweep_steps].
+	var steps := _sweep_steps(here, lands, reach)
+	for i in steps + 1:
+		var at := float(i) / float(steps)
+		var world := ball_from.lerp(ball_to, at)
 
-	return _ball.mass * closing
+		# Interpolated rather than stepped in a straight line, so a pane swung
+		# round on an arm is followed round its arc instead of cut across it.
+		var local := from_pose.interpolate_with(to_pose, at).affine_inverse() * world
+
+		# CONTACT_SLOP keeps the old reading's tolerance for a ball arriving
+		# exactly on the face rather than a hair inside it.
+		if absf(local[thin]) > reach + CONTACT_SLOP:
+			continue
+		if not _over_face(local, thin):
+			continue
+
+		_blow_at = world
+		return _ball.mass * closing
+
+	return 0.0
+
+
+## The pane's last step, taken again from where it now stands: its best guess at
+## where it will be once this tick has run. A pane that is not moving predicts
+## itself exactly, and the whole reading above then falls back to the ball's own
+## approach, which is what it always was.
+func _step_on(came_from: Transform3D) -> Transform3D:
+	return global_transform * came_from.affine_inverse() * global_transform
+
+
+## How many places along one step have to be looked at for the pane not to be
+## able to stride over the ball entirely.
+##
+## The ball is catchable while it is within `reach` of the pane's middle -- a
+## band `2 * reach` deep -- so no two samples may be further apart than that, or
+## there is a gap the pane can cross unseen. Spaced at `reach` rather than at
+## twice it, so a sample lands INSIDE the band rather than on its very edge.
+##
+## Almost always 1: a pane and a ball barely moving relative to each other cover
+## no ground in a sixtieth of a second. It is the fast ones this is for, and they
+## can afford it -- there is one pane in a level asking this, and it stops asking
+## the moment it breaks.
+func _sweep_steps(here: Vector3, lands: Vector3, reach: float) -> int:
+	var travel := here.distance_to(lands)
+	if travel <= 0.0 or reach <= 0.0:
+		return 1
+
+	return clampi(int(ceil(travel / reach)), 1, MAX_SWEEP_STEPS)
 
 
 ## Finds what the player steers, once every node in the level has readied.
@@ -562,6 +760,12 @@ func shatter() -> void:
 
 func is_broken() -> bool:
 	return _broken
+
+
+## How fast the pane itself was going when it broke, in metres a second. Zero for
+## a pane that was standing still, and for one that has not broken at all.
+func speed_when_broken() -> float:
+	return _broke_at_speed
 
 
 ## Whether the pane is crazed but still standing. A pane that went on to break
@@ -784,6 +988,10 @@ func _crack_material() -> StandardMaterial3D:
 
 func _shatter(impact_point: Vector3) -> void:
 	_broken = true
+
+	# Taken before anything else, because it is a reading of the tick that is
+	# breaking the pane and nothing below it is.
+	_broke_at_speed = _pane_velocity_at(impact_point).length()
 
 	# Deferred because this runs inside the physics step, where taking a shape
 	# out from under the solver mid-solve is not allowed.
@@ -1057,15 +1265,68 @@ func _throw_one(host: Node, placement: Transform3D, face: Vector3,
 	var away := body.global_position - impact_point
 	away = away.normalized() if away.length_squared() > 0.0001 else face
 
+	# Whatever the PANE was carrying, carried on. Glass does not stop dead the
+	# instant it breaks: the goal ring on world 2's spinner comes round at fifty
+	# metres a second, and its glass should go on down the level at fifty metres
+	# a second with the burst spread on top. Without this every shard is created
+	# at rest in mid-air and drops straight down out of a ring that is already
+	# gone, which reads as the effect being switched off rather than as glass
+	# being smashed.
+	#
+	# Read at each shard's own position, because a pane on the end of an arm has
+	# no single speed: the far edge of the ring is travelling faster than the
+	# near one, and the piece cut from there should leave carrying more.
+	var carried := _pane_velocity_at(body.global_position) * debris_carry
+
 	var spread := _rng.randf_range(0.7, 1.3)
-	body.linear_velocity = (away * burst_out + face * burst_off_face) * spread
+	body.linear_velocity = (away * burst_out + face * burst_off_face) * spread + carried
 	body.angular_velocity = Vector3(
 		_rng.randf_range(-1.0, 1.0),
 		_rng.randf_range(-1.0, 1.0),
-		_rng.randf_range(-1.0, 1.0)) * burst_spin
+		_rng.randf_range(-1.0, 1.0)) * burst_spin + _pane_spin() * debris_carry
+
+	# Glass thrown this hard crosses more ground in a tick than it is wide, and
+	# the level it is thrown down is thin static geometry. Left to the ordinary
+	# solver it drops through the floor on the first step and the smash is over
+	# before it is seen. Only the fast ones pay for this, and only for the couple
+	# of seconds they live.
+	if carried.length_squared() > CARRY_NEEDS_CCD * CARRY_NEEDS_CCD:
+		body.continuous_cd = true
 
 	_debris.append(body)
 	_retire(body, shape, mesh_node)
+
+
+## How fast the pane itself is travelling through [param point], in metres a
+## second, worked out from the step it last made.
+##
+## Zero for a pane that is not going anywhere, so everything built on this leaves
+## an ordinary pane exactly as it was.
+func _pane_velocity_at(point: Vector3) -> Vector3:
+	if _moved_over <= 0.0:
+		return Vector3.ZERO
+
+	return (_moved * point - point) / _moved_over
+
+
+## The pane's own turn, in radians a second about a world axis. A ring swinging
+## round on an arm hands its shards that turn along with its speed, so they leave
+## tumbling the way the ring was going rather than the way it was pointing.
+func _pane_spin() -> Vector3:
+	if _moved_over <= 0.0:
+		return Vector3.ZERO
+
+	var turned := _moved.basis.orthonormalized().get_rotation_quaternion()
+	var angle := turned.get_angle()
+	if absf(angle) < 0.000001:
+		return Vector3.ZERO
+
+	# A tick's turn is a few degrees; anything the far side of half a turn is the
+	# quaternion taking the short way round and is not a rate worth reporting.
+	if angle > PI:
+		angle -= TAU
+
+	return turned.get_axis().normalized() * (angle / _moved_over)
 
 
 ## Stands a flat cell up into a solid: the cell for a top face, the same for a

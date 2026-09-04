@@ -1,12 +1,13 @@
 extends Node3D
 
 ## Shows a level in the menu, turning slowly on the spot so it can be looked
-## over before it is played.
+## over before it is played -- or turned by hand, with a drag across it.
 ##
 ## The level scene is loaded whole and then stripped back to the parts worth
-## looking at -- the ball, the level's own camera, the on-screen controls and
-## the trigger volumes all go -- and what is left is frozen. Nothing here plays
-## the level: it only poses for the picture.
+## looking at -- the ball, the level's own camera, the on-screen controls, the
+## trigger volumes and the world it is played in all go -- and what is left is
+## frozen, except for the parts of it that move. Nothing here plays the level:
+## it only poses for the picture, but a ferry or a spinner poses better moving.
 
 ## How fast the view goes round the level, in degrees a second.
 @export var spin_degrees := 8.0
@@ -18,9 +19,30 @@ extends Node3D
 ## facing.
 @export var pitch_degrees := 50.0
 
-## Slack left around the level, as a multiple of its size. Above 1.0 so a long
-## level does not brush the edges of the frame as it comes round.
-@export var margin := 1.05
+## Slack left around the level, as a multiple of its size.
+##
+## Below 1.0 on purpose. The frame is fitted to the level's bounding BALL, and a
+## long thin run fills only a sliver of its own ball, so at 1.0 the level sat
+## small in the middle of a lot of nothing. Pulling in past it trades the odd
+## corner brushing the frame mid-turn for a level that fills the card.
+@export var margin := 0.8
+
+@export_group("Drag")
+
+## Radians the level turns for each pixel dragged across it.
+@export var drag_yaw_radians := 0.006
+
+## Degrees the camera tilts for each pixel dragged up or down it.
+@export var drag_pitch_degrees := 0.25
+
+## How low the camera may be dragged, in degrees off the horizontal. Any lower
+## and a long level turns end-on and vanishes.
+@export var pitch_min_degrees := 22.0
+
+## And how high, short of straight down.
+@export var pitch_max_degrees := 78.0
+
+@export_group("")
 
 @onready var _stage: Node3D = $Stage
 @onready var _rig: Node3D = $Rig
@@ -34,8 +56,18 @@ var _radius := 1.0
 ## What is on the stage, so asking for the same level twice does not rebuild it.
 var _shown := ""
 
+## Whether a finger is on the preview. The idle turn stops while one is, so the
+## level goes where the finger takes it and nowhere else.
+var _dragging := false
+
+## The tilt the page was authored with, put back for every new level so that
+## switching between two of them compares like with like.
+var _rest_pitch := 0.0
+
 
 func _ready() -> void:
+	_rest_pitch = pitch_degrees
+
 	# How far back the camera has to sit depends on how wide the viewport is,
 	# which is not settled until the page has been laid out -- and changes again
 	# whenever the window does.
@@ -43,7 +75,29 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if _dragging:
+		return
 	_rig.rotate_y(deg_to_rad(spin_degrees) * delta)
+
+
+## A finger has landed on the preview. Called by the drag overlay above it.
+func begin_drag() -> void:
+	_dragging = true
+
+
+## And lifted off it. The idle turn picks up again from wherever it was left.
+func end_drag() -> void:
+	_dragging = false
+
+
+## Turns the view by a drag, given in pixels. Across turns the level on the spot
+## under the finger; up and down tilts the camera over it, kept between
+## glancing and overhead.
+func turn(relative: Vector2) -> void:
+	_rig.rotate_y(-relative.x * drag_yaw_radians)
+	pitch_degrees = clampf(pitch_degrees - relative.y * drag_pitch_degrees,
+			pitch_min_degrees, pitch_max_degrees)
+	_aim_camera()
 
 
 ## Puts a level on show. An empty path clears the stage, for a slot with nothing
@@ -74,7 +128,17 @@ func show_level(path: String) -> void:
 	level.process_mode = Node.PROCESS_MODE_DISABLED
 	_stage.add_child(level)
 
+	# Except for the parts of it that move. A ferry or a spinner seen standing
+	# still is a level that looks broken, not one at rest. Each is woken on its
+	# own, above the frozen parent, and told not to wait for a level start that
+	# the menu never sends.
+	for node in level.find_children("*", "", true, false):
+		if node is MovingPlatform:
+			node.process_mode = Node.PROCESS_MODE_ALWAYS
+			(node as MovingPlatform).preview()
+
 	_measure(level)
+	pitch_degrees = _rest_pitch
 	_aim_camera()
 
 	# Every level starts its turn from the same angle, so switching between two
@@ -116,6 +180,12 @@ func _is_scenery(node: Node) -> bool:
 		return false
 
 	if node is CSGShape3D and not (node as CSGShape3D).visible:
+		return false
+
+	# The world the level is played in -- its sky, its light, its haze -- is not
+	# the level. On the menu the level is a thing on a card, and it gets the
+	# card's own light instead: see the WorldEnvironment beside the stage.
+	if node is WorldEnvironment:
 		return false
 
 	return not node.is_in_group("player")

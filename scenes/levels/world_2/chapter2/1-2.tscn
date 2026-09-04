@@ -1,6 +1,6 @@
 [gd_scene format=4 uid="uid://bupvfkhrc1kg2"]
 
-[ext_resource type="Environment" uid="uid://bdesertenv001" path="res://environments/desert.tres" id="1_xjs6w"]
+[ext_resource type="PackedScene" path="res://environments/world_2.tscn" id="1_xjs6w"]
 [ext_resource type="PackedScene" path="res://scenes/thumbstick.tscn" id="2_2850d"]
 [ext_resource type="PackedScene" path="res://scenes/UI/hud.tscn" id="3_f6drh"]
 [ext_resource type="PackedScene" uid="uid://brgmkpo6nfamg" path="res://scenes/camera.tscn" id="4_scs1r"]
@@ -64,12 +64,11 @@ _surfaces = [{
 }]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_6x1ae"]
-size = Vector3(104, 110, 225)
+size = Vector3(42, 36, 121)
 
 [node name="1-2" type="Node3D" unique_id=1614486416]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1291218271]
-environment = ExtResource("1_xjs6w")
+[node name="WorldEnvironment" parent="." unique_id=529110042 instance=ExtResource("1_xjs6w")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=821745350]
 transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
@@ -98,7 +97,6 @@ spin = 2
 spin_degrees = 150.0
 spin_axis = Vector3(0, 0, 1)
 step_degrees = 120.0
-carries_riders = false
 
 [node name="CSGBakedCollisionShape3D" type="CollisionShape3D" parent="AnimatableBody3D" unique_id=1304321099]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3, 53)
@@ -186,7 +184,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
 
 [node name="GoalRing" parent="Level" unique_id=325633537 instance=ExtResource("12_0ogph")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -112)
-slow_time = 24.0
 fast_time = 12.0
 
 [node name="Gems" type="Node3D" parent="Level" unique_id=51730275]
@@ -428,5 +425,5 @@ collision_mask = 4
 script = ExtResource("14_elwsc")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="AliveZone" unique_id=614242323]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.5, -64.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.5, -53.5)
 shape = SubResource("BoxShape3D_6x1ae")
